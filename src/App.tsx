@@ -769,7 +769,7 @@ export default function App() {
                 className="hidden sm:flex items-center gap-1.5 hover:opacity-80 transition-opacity font-bold"
               >
                 <AtSign className="w-3.5 h-3.5" />
-                <span>Threads</span>
+                <span>@meramudotco</span>
               </a>
               <span className="text-neutral-300">|</span>
               <span className="flex items-center gap-1 text-neutral-700 font-semibold">
