@@ -114,6 +114,7 @@ const UI_STRINGS = {
     menuSearch: 'Cari Berita',
     menuCategories: 'Rubrik',
     menuAbout: 'Tentang Meramu.co',
+    menuContact: 'Kontak',
     justNow: 'Baru saja',
     minRead: 'Menit Baca',
   },
@@ -138,6 +139,7 @@ const UI_STRINGS = {
     menuSearch: 'Search News',
     menuCategories: 'Categories',
     menuAbout: 'About Meramu.co',
+    menuContact: 'Contact',
     justNow: 'Just now',
     minRead: 'Min Read',
   },
@@ -914,63 +916,61 @@ export default function App() {
         </div>
 
         {/* Main Brand & Action Navbar */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center gap-4">
           {/* Official Brand Logo / Wordmark */}
           <a
             href="/"
-            className="flex items-center gap-3 text-left group focus:outline-none cursor-pointer"
+            className="flex items-center gap-3 text-left group focus:outline-none cursor-pointer order-1"
           >
             <MeramuLogo brandSettings={brandSettings} size="md" />
           </a>
 
-          {/* Search & Admin Switcher */}
-          <div className="flex items-center gap-2.5 sm:gap-3 ml-auto">
-            {activeView !== 'admin' && (
-              <form action="/cari" method="get" className="relative w-40 sm:w-64">
-                <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="text"
-                  name="q"
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    if (activeView !== 'home') navigateToHome();
-                  }}
-                  placeholder={t.searchPlaceholder}
-                  className="w-full pl-9 pr-7 py-1.5 bg-neutral-100 hover:bg-neutral-200/60 focus:bg-white text-sm rounded-full border border-transparent focus:border-[#0D1B8C] focus:outline-none transition-all"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </form>
-            )}
-            {activeView !== 'admin' && (
-              <button
-                type="button"
-                aria-label="Menu"
-                aria-expanded={menuOpen}
-                onClick={() => setMenuOpen((o) => !o)}
-                className="w-9 h-9 flex flex-col items-center justify-center gap-[5px] rounded-full hover:bg-neutral-100 transition-colors cursor-pointer flex-none"
-              >
-                {menuOpen ? (
-                  <X className="w-5 h-5 text-neutral-800" />
-                ) : (
-                  <>
-                    <span className="block w-5 h-[2px] bg-neutral-800 rounded" />
-                    <span className="block w-5 h-[2px] bg-neutral-800 rounded" />
-                    <span className="block w-5 h-[2px] bg-neutral-800 rounded" />
-                  </>
-                )}
-              </button>
-            )}
-
-          </div>
+          {/* Hamburger: mobile = sejajar logo (row 1, far right); desktop = far right after search */}
+          {activeView !== 'admin' && (
+            <button
+              type="button"
+              aria-label="Menu"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((o) => !o)}
+              className="order-2 ml-auto sm:order-3 sm:ml-0 w-9 h-9 flex flex-col items-center justify-center gap-[5px] rounded-full hover:bg-neutral-100 transition-colors cursor-pointer flex-none"
+            >
+              {menuOpen ? (
+                <X className="w-5 h-5 text-neutral-800" />
+              ) : (
+                <>
+                  <span className="block w-5 h-[2px] bg-neutral-800 rounded" />
+                  <span className="block w-5 h-[2px] bg-neutral-800 rounded" />
+                  <span className="block w-5 h-[2px] bg-neutral-800 rounded" />
+                </>
+              )}
+            </button>
+          )}
+          {/* Search: mobile = full-width row 2; desktop = row 1 before the hamburger */}
+          {activeView !== 'admin' && (
+            <form action="/cari" method="get" className="relative w-full sm:w-64 order-3 sm:order-2 sm:ml-auto">
+              <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                name="q"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (activeView !== 'home') navigateToHome();
+                }}
+                placeholder={t.searchPlaceholder}
+                className="w-full pl-9 pr-7 py-1.5 bg-neutral-100 hover:bg-neutral-200/60 focus:bg-white text-sm rounded-full border border-transparent focus:border-[#0D1B8C] focus:outline-none transition-all"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </form>
+          )}
         </div>
 
         {/* Category Navigation Bar (Only on Reader Views) */}
@@ -1037,27 +1037,30 @@ export default function App() {
                   </a>
                 ))}
               </nav>
-              <div className="mt-4 pt-4 border-t border-neutral-100 flex flex-wrap items-center gap-x-4 gap-y-3">
+              <div className="mt-4 text-xs font-bold tracking-widest text-neutral-400 uppercase">{t.menuContact}</div>
+              <nav className="mt-2 grid gap-1 sm:grid-cols-2">
                 <a
                   href={`https://instagram.com/${brandSettings.instagram.replace('@', '')}`}
                   target="_blank"
                   rel="noreferrer"
                   style={{ color: brandSettings.accentColor }}
-                  className="flex items-center gap-1.5 text-sm font-bold hover:opacity-80"
+                  className="flex items-center gap-1.5 py-2 px-3 rounded-lg text-[15px] font-bold hover:bg-neutral-100"
                 >
-                  <InstagramIcon className="w-3.5 h-3.5" />
-                  <span>@{brandSettings.instagram.replace('@', '')}</span>
+                  <InstagramIcon className="w-4 h-4" />
+                  <span>Instagram @{brandSettings.instagram.replace('@', '')}</span>
                 </a>
                 <a
                   href="https://www.threads.net/@meramudotco"
                   target="_blank"
                   rel="noreferrer"
                   style={{ color: brandSettings.accentColor }}
-                  className="flex items-center gap-1.5 text-sm font-bold hover:opacity-80"
+                  className="flex items-center gap-1.5 py-2 px-3 rounded-lg text-[15px] font-bold hover:bg-neutral-100"
                 >
-                  <AtSign className="w-3.5 h-3.5" />
-                  <span>@meramudotco</span>
+                  <AtSign className="w-4 h-4" />
+                  <span>Threads @meramudotco</span>
                 </a>
+              </nav>
+              <div className="mt-4 pt-4 border-t border-neutral-100 flex flex-wrap items-center gap-x-4 gap-y-3">
                 <div className="flex items-center rounded-full border border-neutral-200 overflow-hidden">
                   <button
                     type="button"
