@@ -110,6 +110,10 @@ const UI_STRINGS = {
     followSub: 'Update visual harian di Instagram',
     newsroom: 'Dapur Redaksi',
     viewSite: 'Lihat Website',
+    menuHome: 'Beranda',
+    menuSearch: 'Cari Berita',
+    menuCategories: 'Rubrik',
+    menuAbout: 'Tentang Meramu.co',
     justNow: 'Baru saja',
     minRead: 'Menit Baca',
   },
@@ -130,6 +134,10 @@ const UI_STRINGS = {
     followSub: 'Daily visual updates on Instagram',
     newsroom: 'Newsroom',
     viewSite: 'View Website',
+    menuHome: 'Home',
+    menuSearch: 'Search News',
+    menuCategories: 'Categories',
+    menuAbout: 'About Meramu.co',
     justNow: 'Just now',
     minRead: 'Min Read',
   },
@@ -407,6 +415,8 @@ export default function App() {
       window.localStorage.setItem('meramu-lang', l);
     } catch {}
   };
+  // Hamburger menu (top-right corner): the whole site nav in one place.
+  const [menuOpen, setMenuOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
   // Admin CMS State
@@ -888,21 +898,16 @@ export default function App() {
                 <Globe className="w-3.5 h-3.5" />
                 {brandSettings.domain}
               </span>
-              <span className="text-neutral-300">|</span>
-              {activeView === 'admin' ? (
-                <a
-                  href="/"
-                  className="font-semibold text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer"
-                >
-                  {t.viewSite}
-                </a>
-              ) : (
-                <a
-                  href="/dapur-redaksi"
-                  className="font-semibold text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer"
-                >
-                  {t.newsroom}
-                </a>
+              {activeView === 'admin' && (
+                <>
+                  <span className="text-neutral-300">|</span>
+                  <a
+                    href="/"
+                    className="font-semibold text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer"
+                  >
+                    {t.viewSite}
+                  </a>
+                </>
               )}
             </div>
           </div>
@@ -945,6 +950,25 @@ export default function App() {
                 )}
               </form>
             )}
+            {activeView !== 'admin' && (
+              <button
+                type="button"
+                aria-label="Menu"
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen((o) => !o)}
+                className="w-9 h-9 flex flex-col items-center justify-center gap-[5px] rounded-full hover:bg-neutral-100 transition-colors cursor-pointer flex-none"
+              >
+                {menuOpen ? (
+                  <X className="w-5 h-5 text-neutral-800" />
+                ) : (
+                  <>
+                    <span className="block w-5 h-[2px] bg-neutral-800 rounded" />
+                    <span className="block w-5 h-[2px] bg-neutral-800 rounded" />
+                    <span className="block w-5 h-[2px] bg-neutral-800 rounded" />
+                  </>
+                )}
+              </button>
+            )}
 
           </div>
         </div>
@@ -977,6 +1001,88 @@ export default function App() {
                   </a>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {/* Hamburger menu panel (reader views only; Dapur Redaksi lives here) */}
+        {activeView !== 'admin' && menuOpen && (
+          <div className="border-t border-neutral-100 bg-white max-h-[70vh] overflow-y-auto">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold tracking-widest text-neutral-400 uppercase">Menu</span>
+                <button
+                  type="button"
+                  aria-label="Tutup menu"
+                  onClick={() => setMenuOpen(false)}
+                  className="text-neutral-400 hover:text-neutral-700 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <nav className="mt-3 grid gap-1 sm:grid-cols-2">
+                <a href="/" className="block py-2 px-3 rounded-lg text-[15px] font-semibold text-neutral-800 hover:bg-neutral-100">{t.menuHome}</a>
+                <a href="/cari" className="block py-2 px-3 rounded-lg text-[15px] font-semibold text-neutral-800 hover:bg-neutral-100">{t.menuSearch}</a>
+                <a href="/tentang" className="block py-2 px-3 rounded-lg text-[15px] font-semibold text-neutral-800 hover:bg-neutral-100">{t.menuAbout}</a>
+              </nav>
+              <div className="mt-4 text-xs font-bold tracking-widest text-neutral-400 uppercase">{t.menuCategories}</div>
+              <nav className="mt-2 grid gap-1 sm:grid-cols-2">
+                {CATEGORIES.filter((c) => c !== 'Semua').map((category) => (
+                  <a
+                    key={category}
+                    href={categoryHref(category)}
+                    className="block py-2 px-3 rounded-lg text-[15px] font-semibold text-neutral-800 hover:bg-neutral-100"
+                  >
+                    {catLabel(category)}
+                  </a>
+                ))}
+              </nav>
+              <div className="mt-4 pt-4 border-t border-neutral-100 flex flex-wrap items-center gap-x-4 gap-y-3">
+                <a
+                  href={`https://instagram.com/${brandSettings.instagram.replace('@', '')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: brandSettings.accentColor }}
+                  className="flex items-center gap-1.5 text-sm font-bold hover:opacity-80"
+                >
+                  <InstagramIcon className="w-3.5 h-3.5" />
+                  <span>@{brandSettings.instagram.replace('@', '')}</span>
+                </a>
+                <a
+                  href="https://www.threads.net/@meramudotco"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: brandSettings.accentColor }}
+                  className="flex items-center gap-1.5 text-sm font-bold hover:opacity-80"
+                >
+                  <AtSign className="w-3.5 h-3.5" />
+                  <span>@meramudotco</span>
+                </a>
+                <div className="flex items-center rounded-full border border-neutral-200 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => { switchLang('id'); setMenuOpen(false); }}
+                    style={lang === 'id' ? { backgroundColor: brandSettings.accentColor, color: '#ffffff' } : {}}
+                    className="px-2.5 py-1 text-[11px] font-bold cursor-pointer text-neutral-600"
+                  >
+                    ID
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { switchLang('en'); setMenuOpen(false); }}
+                    style={lang === 'en' ? { backgroundColor: brandSettings.accentColor, color: '#ffffff' } : {}}
+                    className="px-2.5 py-1 text-[11px] font-bold cursor-pointer text-neutral-600"
+                  >
+                    EN
+                  </button>
+                </div>
+                <a
+                  href="/dapur-redaksi"
+                  className="text-sm font-semibold text-neutral-500 hover:text-neutral-900"
+                >
+                  {t.newsroom}
+                </a>
+              </div>
             </div>
           </div>
         )}
