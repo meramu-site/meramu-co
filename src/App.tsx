@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import {
   getAuth,
@@ -506,18 +506,91 @@ export default function App() {
       .slice(0, 3);
   }, [articles, currentArticle]);
 
-  // Navigation Handlers
+  // Navigation Handlers + per-article URLs.
+  // Every article gets its own address (/berita/<id>) so the browser back
+  // button returns to the previous view instead of leaving the site, and
+  // the share button copies the article link instead of the homepage.
+  const articlePath = (articleId) => `/berita/${articleId}`;
+
+  const pushPath = (path) => {
+    try {
+      if (window.location.pathname !== path) {
+        window.history.pushState({ path }, '', path);
+      }
+    } catch (e) { /* embedded views / private mode may block history */ }
+  };
+
   const openArticle = (articleId) => {
     setSelectedArticleId(articleId);
     setActiveView('article');
+    pushPath(articlePath(articleId));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const navigateToHome = () => {
+    setActiveView('home');
+    pushPath('/');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const goHome = (category = 'Semua') => {
     setSelectedCategory(category);
-    setActiveView('home');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigateToHome();
   };
+
+  // Per-article URL routing: browser back/forward buttons.
+  const articlesRef = useRef(articles);
+  useEffect(() => {
+    articlesRef.current = articles;
+  }, [articles]);
+
+  useEffect(() => {
+    const applyPath = (path) => {
+      const match = path.match(/^\/berita\/([^/]+)\/?$/);
+      if (match) {
+        const id = decodeURIComponent(match[1]);
+        if (articlesRef.current.some((a) => a.id === id)) {
+          setSelectedArticleId(id);
+          setActiveView('article');
+          window.scrollTo({ top: 0 });
+          return;
+        }
+      }
+      setActiveView('home');
+    };
+    const onPopState = () => applyPath(window.location.pathname);
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  // Deep link: opening /berita/<id> directly shows that article once loaded.
+  const initialRouteHandled = useRef(false);
+  useEffect(() => {
+    if (initialRouteHandled.current || isLoading || articles.length === 0) return;
+    const match = window.location.pathname.match(/^\/berita\/([^/]+)\/?$/);
+    if (!match) return;
+    initialRouteHandled.current = true;
+    const id = decodeURIComponent(match[1]);
+    if (articles.some((a) => a.id === id)) {
+      setSelectedArticleId(id);
+      setActiveView('article');
+      try {
+        window.history.replaceState({ path: articlePath(id) }, '', articlePath(id));
+      } catch (e) {}
+    } else {
+      try {
+        window.history.replaceState({ path: '/' }, '', '/');
+      } catch (e) {}
+      setActiveView('home');
+    }
+  }, [articles, isLoading]);
+
+  // Tab title follows the open article (helps shared links + browser tabs).
+  useEffect(() => {
+    document.title = currentArticle
+      ? `${currentArticle.title} — Meramu.co`
+      : 'Meramu.co — Portal Berita';
+  }, [currentArticle]);
 
   // Admin Handlers
   const handleAdminLogin = async (e) => {
@@ -541,7 +614,7 @@ export default function App() {
     try {
       await signOut(auth);
       await signInAnonymously(auth);
-      setActiveView('home');
+      navigateToHome();
     } catch (err) {
       console.error('Admin logout error:', err);
     }
@@ -787,7 +860,7 @@ export default function App() {
               <button
                 onClick={() => {
                   if (activeView === 'admin') {
-                    setActiveView('home');
+                    navigateToHome();
                   } else {
                     setActiveView('admin');
                   }
@@ -820,7 +893,7 @@ export default function App() {
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
-                    if (activeView !== 'home') setActiveView('home');
+                    if (activeView !== 'home') navigateToHome();
                   }}
                   placeholder="Cari topik, berita..."
                   className="w-full pl-9 pr-7 py-1.5 bg-neutral-100 hover:bg-neutral-200/60 focus:bg-white text-sm rounded-full border border-transparent focus:border-[#0D1B8C] focus:outline-none transition-all"
@@ -1118,7 +1191,7 @@ export default function App() {
           <div className="max-w-3xl mx-auto">
             {/* Back Navigation */}
             <button
-              onClick={() => setActiveView('home')}
+              onClick={() => navigateToHome()}
               className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-600 hover:text-neutral-900 mb-6 group cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -1335,7 +1408,7 @@ export default function App() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setActiveView('home')}
+                  onClick={() => navigateToHome()}
                   className="w-full py-2.5 rounded-xl bg-white border border-neutral-200 text-neutral-700 font-bold text-sm hover:bg-neutral-50 transition-colors cursor-pointer"
                 >
                   Kembali ke Beranda
