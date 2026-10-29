@@ -65,6 +65,7 @@ function shell({ title, description, canonical, body }) {
 <link rel="canonical" href="${escapeHtml(canonical)}" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_ID}');</script>
+<script>(function(){try{if(localStorage.getItem('meramu-theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}})();</script>
 <style>
   *{box-sizing:border-box} body{margin:0;font-family:ui-sans-system,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#171717;background:#fff}
   a{color:${ACCENT}} .accent{height:6px;background:${ACCENT}}
@@ -85,6 +86,16 @@ function shell({ title, description, canonical, body }) {
   .card .meta{font-size:12px;color:#a3a3a3}
   .back{display:inline-block;margin-top:24px;font-weight:700;text-decoration:none}
   footer{border-top:1px solid #e5e5e5;padding:24px;text-align:center;font-size:13px;color:#737373}
+  html.dark body{background:#09090b;color:#f4f4f5}
+  html.dark header{border-bottom-color:rgba(255,255,255,.1)}
+  html.dark .brand small{color:#a3a3a3}
+  html.dark .head nav a{color:#f4f4f5}
+  html.dark .count{color:#a3a3a3}
+  html.dark form.search input{background:#27272a;border-color:rgba(255,255,255,.15);color:#f4f4f5}
+  html.dark .card{color:#f4f4f5;border-top-color:rgba(255,255,255,.1)}
+  html.dark .card img{background:#27272a}
+  html.dark .card p{color:#d4d4d8}
+  html.dark footer{border-top-color:rgba(255,255,255,.1);color:#a3a3a3}
 </style>
 </head>
 <body>

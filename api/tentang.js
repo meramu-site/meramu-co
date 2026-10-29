@@ -55,6 +55,7 @@ export default async function handler(req, res) {
 <meta property="og:url" content="${escapeHtml(canonical)}" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_ID}');</script>
+<script>(function(){try{if(localStorage.getItem('meramu-theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}})();</script>
 <style>
   *{box-sizing:border-box} body{margin:0;font-family:ui-sans-system,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#171717;background:#fff}
   a{color:${ACCENT}} .accent{height:6px;background:${ACCENT}}
@@ -73,6 +74,15 @@ export default async function handler(req, res) {
   .back{display:inline-block;margin-top:32px;font-weight:700;text-decoration:none}
   footer{border-top:1px solid #e5e5e5;padding:24px;text-align:center;font-size:13px;color:#737373}
   @media(max-width:640px){h1{font-size:26px} article p{font-size:16px}}
+  html.dark body{background:#09090b;color:#f4f4f5}
+  html.dark header{border-bottom-color:rgba(255,255,255,.1)}
+  html.dark .brand small{color:#a3a3a3}
+  html.dark .head nav a{color:#f4f4f5}
+  html.dark .meta{color:#a3a3a3;border-bottom-color:rgba(255,255,255,.1)}
+  html.dark .meta b{color:#f4f4f5}
+  html.dark article p{color:#d4d4d8}
+  html.dark .social span{color:#a3a3a3}
+  html.dark footer{border-top-color:rgba(255,255,255,.1);color:#a3a3a3}
 </style>
 </head>
 <body>
