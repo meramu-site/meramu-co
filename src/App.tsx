@@ -24,6 +24,7 @@ import {
   Clock, 
   Share2, 
   ArrowLeft, 
+  AtSign,
   Trash, 
   PenLine, 
   Check, 
@@ -292,14 +293,14 @@ function MeramuLogo({ brandSettings, size = 'md' }) {
         </span>
       </div>
       {size !== 'sm' && (
-        <div className="hidden md:flex flex-col border-l border-neutral-200 pl-3">
+        <div className="hidden md:flex flex-col justify-center self-stretch border-l border-neutral-200 pl-3">
           <span
             style={{ color: bgColor }}
-            className="text-[10px] font-extrabold uppercase tracking-widest leading-tight"
+            className="text-lg sm:text-xl font-extrabold uppercase tracking-widest leading-tight"
           >
             Official Portal
           </span>
-          <span className="text-[11px] text-neutral-400 font-medium leading-tight mt-0.5">
+          <span className="text-sm sm:text-base text-neutral-400 font-medium leading-tight mt-0.5">
             {brandSettings.domain}
           </span>
         </div>
@@ -760,10 +761,34 @@ export default function App() {
                 <span>@{brandSettings.instagram.replace('@', '')}</span>
               </a>
               <span className="text-neutral-300">|</span>
+              <a
+                href="https://www.threads.net/@meramudotco"
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: brandSettings.accentColor }}
+                className="hidden sm:flex items-center gap-1.5 hover:opacity-80 transition-opacity font-bold"
+              >
+                <AtSign className="w-3.5 h-3.5" />
+                <span>Threads</span>
+              </a>
+              <span className="text-neutral-300">|</span>
               <span className="flex items-center gap-1 text-neutral-700 font-semibold">
                 <Globe className="w-3.5 h-3.5" />
                 {brandSettings.domain}
               </span>
+              <span className="text-neutral-300">|</span>
+              <button
+                onClick={() => {
+                  if (activeView === 'admin') {
+                    setActiveView('home');
+                  } else {
+                    setActiveView('admin');
+                  }
+                }}
+                className="font-semibold text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer"
+              >
+                {activeView === 'admin' ? 'Lihat Website' : 'Dapur Redaksi'}
+              </button>
             </div>
           </div>
         </div>
@@ -804,33 +829,6 @@ export default function App() {
               </div>
             )}
 
-            <button
-              onClick={() => {
-                if (activeView === 'admin') {
-                  setActiveView('home');
-                } else {
-                  setActiveView('admin');
-                }
-              }}
-              style={
-                activeView === 'admin'
-                  ? { backgroundColor: '#111827', color: '#ffffff' }
-                  : { backgroundColor: brandSettings.accentColor, color: '#ffffff' }
-              }
-              className="flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-bold shadow-xs hover:opacity-90 transition-all cursor-pointer"
-            >
-              {activeView === 'admin' ? (
-                <>
-                  <Eye className="w-4 h-4" />
-                  <span>Lihat Website</span>
-                </>
-              ) : (
-                <>
-                  <SquarePen className="w-4 h-4" />
-                  <span>Dapur Redaksi</span>
-                </>
-              )}
-            </button>
           </div>
         </div>
 
@@ -1220,6 +1218,7 @@ export default function App() {
                 <div className="text-xs text-neutral-400">
                   © {new Date().getFullYear()} {brandSettings.siteName} ({brandSettings.domain})
                 </div>
+                {isAdmin && (
                 <button
                   onClick={() => {
                     startEditArticle(currentArticle);
@@ -1230,6 +1229,7 @@ export default function App() {
                   <PenLine className="w-3.5 h-3.5" />
                   <span>Edit Artikel Ini di Dapur Redaksi</span>
                 </button>
+                )}
               </div>
             </article>
 
