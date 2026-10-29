@@ -17,6 +17,9 @@ const SLUG_TO_CATEGORY = {
   'lifestyle': 'Lifestyle',
   'tech': 'Tech',
   'berita-umum': 'Berita Umum',
+  'sports': 'Sports',
+  'esports': 'Esports',
+  'politik': 'Politik',
 };
 
 function escapeHtml(s) {
