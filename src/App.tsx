@@ -841,7 +841,7 @@ export default function App() {
       {/* ========================================== */}
       {/* TOP BAR & EDITORIAL HEADER                 */}
       {/* ========================================== */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-neutral-200">
+      <header className="sticky top-0 z-40 bg-white border-b border-neutral-200">
         {/* Top Royal Blue Brand Accent Line */}
         <div
           style={{ backgroundColor: brandSettings.accentColor }}
