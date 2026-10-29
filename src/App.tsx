@@ -32,7 +32,6 @@ import {
   Palette, 
   Star, 
   Eye, 
-  Globe, 
   ChevronRight, 
   BookOpen,
   Image as ImageIcon,
@@ -41,7 +40,9 @@ import {
   Layers,
   Copy,
   ExternalLink,
-  CircleAlert
+  CircleAlert,
+  Moon,
+  Sun
 } from 'lucide-react';
 
 // ==========================================
@@ -368,7 +369,7 @@ function MeramuLogo({ brandSettings, size = 'md' }) {
         </span>
       </div>
       {size !== 'sm' && (
-        <div className="hidden md:flex flex-col justify-center self-stretch border-l border-neutral-200 pl-3">
+        <div className="hidden md:flex flex-col justify-center self-stretch border-l border-neutral-200 pl-3 dark:border-white/10">
           <span
             style={{ color: bgColor }}
             className="text-lg sm:text-xl font-extrabold uppercase tracking-widest leading-tight"
@@ -417,6 +418,22 @@ export default function App() {
       window.localStorage.setItem('meramu-lang', l);
     } catch {}
   };
+  // Theme: always light on first visit; a manual toggle choice persists
+  // in localStorage and wins on later visits. The device setting is NOT read.
+  const [theme, setTheme] = useState(() => {
+    try {
+      const saved = window.localStorage.getItem('meramu-theme');
+      if (saved === 'dark' || saved === 'light') return saved;
+    } catch {}
+    return 'light';
+  });
+  useEffect(() => {
+    try {
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+      window.localStorage.setItem('meramu-theme', theme);
+    } catch {}
+  }, [theme]);
+  const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
   // Hamburger menu (top-right corner): the whole site nav in one place.
   const [menuOpen, setMenuOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
@@ -801,7 +818,7 @@ export default function App() {
 
       if (trimmed.startsWith('## ')) {
         return (
-          <h3 key={index} className="text-xl font-bold text-neutral-900 mt-6 mb-3">
+          <h3 key={index} className="text-xl font-bold text-neutral-900 mt-6 mb-3 dark:text-neutral-100">
             {trimmed.replace('## ', '')}
           </h3>
         );
@@ -811,14 +828,14 @@ export default function App() {
           <blockquote
             key={index}
             style={{ borderLeftColor: brandSettings.accentColor }}
-            className="my-4 pl-4 italic text-neutral-700 border-l-4 font-serif text-lg bg-neutral-50 py-2.5 pr-4 rounded-r-xl"
+            className="my-4 pl-4 italic text-neutral-700 border-l-4 font-serif text-lg bg-neutral-50 py-2.5 pr-4 rounded-r-xl dark:text-neutral-300 dark:bg-neutral-900"
           >
             "{trimmed.replace('> ', '')}"
           </blockquote>
         );
       }
       return (
-        <p key={index} className="my-3 text-neutral-700 leading-relaxed text-base sm:text-lg">
+        <p key={index} className="my-3 text-neutral-700 leading-relaxed text-base sm:text-lg dark:text-neutral-300">
           {trimmed}
         </p>
       );
@@ -826,7 +843,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-neutral-900 flex flex-col font-sans selection:bg-[#0D1B8C] selection:text-white">
+    <div className="min-h-screen bg-white text-neutral-900 flex flex-col font-sans selection:bg-[#0D1B8C] selection:text-white dark:bg-neutral-950 dark:text-neutral-100">
       {/* Toast Notification */}
       {toastMessage && (
         <div
@@ -841,7 +858,7 @@ export default function App() {
       {/* ========================================== */}
       {/* TOP BAR & EDITORIAL HEADER                 */}
       {/* ========================================== */}
-      <header className="sticky top-0 z-40 bg-white border-b border-neutral-200">
+      <header className="sticky top-0 z-40 bg-white border-b border-neutral-200 dark:bg-neutral-950 dark:border-white/10">
         {/* Top Royal Blue Brand Accent Line */}
         <div
           style={{ backgroundColor: brandSettings.accentColor }}
@@ -849,15 +866,15 @@ export default function App() {
         />
 
         {/* Top Utility Strip */}
-        <div className="border-b border-neutral-100 bg-neutral-50/70">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-9 flex items-center justify-between text-xs text-neutral-500">
+        <div className="border-b border-neutral-100 bg-neutral-50/70 dark:border-white/10 dark:bg-neutral-900">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-9 flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
             <div className="flex items-center gap-2">
-              <div className="flex items-center rounded-full border border-neutral-200 overflow-hidden">
+              <div className="flex items-center rounded-full border border-neutral-200 overflow-hidden dark:border-white/10">
                 <button
                   type="button"
                   onClick={() => switchLang('id')}
                   style={lang === 'id' ? { backgroundColor: brandSettings.accentColor, color: '#ffffff' } : {}}
-                  className="px-2.5 py-1 text-[11px] font-bold cursor-pointer text-neutral-600"
+                  className="px-2.5 py-1 text-[11px] font-bold cursor-pointer text-neutral-600 dark:text-neutral-400"
                 >
                   ID
                 </button>
@@ -865,7 +882,7 @@ export default function App() {
                   type="button"
                   onClick={() => switchLang('en')}
                   style={lang === 'en' ? { backgroundColor: brandSettings.accentColor, color: '#ffffff' } : {}}
-                  className="px-2.5 py-1 text-[11px] font-bold cursor-pointer text-neutral-600"
+                  className="px-2.5 py-1 text-[11px] font-bold cursor-pointer text-neutral-600 dark:text-neutral-400"
                 >
                   EN
                 </button>
@@ -874,17 +891,6 @@ export default function App() {
               <span className="hidden sm:inline truncate max-w-xs">{brandSettings.tagline}</span>
             </div>
             <div className="flex items-center gap-4">
-              <a
-                href={`https://instagram.com/${brandSettings.instagram.replace('@', '')}`}
-                target="_blank"
-                rel="noreferrer"
-                style={{ color: brandSettings.accentColor }}
-                className="flex items-center gap-1.5 hover:opacity-80 transition-opacity font-bold"
-              >
-                <InstagramIcon className="w-3.5 h-3.5" />
-                <span>@{brandSettings.instagram.replace('@', '')}</span>
-              </a>
-              <span className="text-neutral-300">|</span>
               <a
                 href="https://www.threads.net/@meramudotco"
                 target="_blank"
@@ -895,22 +901,30 @@ export default function App() {
                 <AtSign className="w-3.5 h-3.5" />
                 <span>@meramudotco</span>
               </a>
-              <span className="text-neutral-300">|</span>
-              <span className="flex items-center gap-1 text-neutral-700 font-semibold">
-                <Globe className="w-3.5 h-3.5" />
-                {brandSettings.domain}
-              </span>
               {activeView === 'admin' && (
                 <>
                   <span className="text-neutral-300">|</span>
                   <a
                     href="/"
-                    className="font-semibold text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer"
+                    className="font-semibold text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer dark:text-neutral-400 dark:hover:text-white"
                   >
                     {t.viewSite}
                   </a>
                 </>
               )}
+              <span className="hidden sm:inline text-neutral-300">|</span>
+              <button
+                type="button"
+                aria-label={theme === 'dark' ? 'Mode terang' : 'Mode gelap'}
+                onClick={toggleTheme}
+                className="w-7 h-7 flex items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-200/60 transition-colors cursor-pointer dark:text-neutral-400 dark:hover:bg-neutral-700"
+              >
+                {theme === 'dark' ? (
+                  <Sun className="w-4 h-4" />
+                ) : (
+                  <Moon className="w-4 h-4" />
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -932,15 +946,15 @@ export default function App() {
               aria-label="Menu"
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((o) => !o)}
-              className="order-2 ml-auto sm:order-3 sm:ml-0 w-9 h-9 flex flex-col items-center justify-center gap-[5px] rounded-full hover:bg-neutral-100 transition-colors cursor-pointer flex-none"
+              className="order-2 ml-auto sm:order-3 sm:ml-0 w-9 h-9 flex flex-col items-center justify-center gap-[5px] rounded-full hover:bg-neutral-100 transition-colors cursor-pointer flex-none dark:hover:bg-neutral-800"
             >
               {menuOpen ? (
-                <X className="w-5 h-5 text-neutral-800" />
+                <X className="w-5 h-5 text-neutral-800 dark:text-neutral-100" />
               ) : (
                 <>
-                  <span className="block w-5 h-[2px] bg-neutral-800 rounded" />
-                  <span className="block w-5 h-[2px] bg-neutral-800 rounded" />
-                  <span className="block w-5 h-[2px] bg-neutral-800 rounded" />
+                  <span className="block w-5 h-[2px] bg-neutral-800 rounded dark:bg-neutral-200" />
+                  <span className="block w-5 h-[2px] bg-neutral-800 rounded dark:bg-neutral-200" />
+                  <span className="block w-5 h-[2px] bg-neutral-800 rounded dark:bg-neutral-200" />
                 </>
               )}
             </button>
@@ -958,13 +972,13 @@ export default function App() {
                   if (activeView !== 'home') navigateToHome();
                 }}
                 placeholder={t.searchPlaceholder}
-                className="w-full pl-9 pr-7 py-1.5 bg-neutral-100 hover:bg-neutral-200/60 focus:bg-white text-sm rounded-full border border-transparent focus:border-[#0D1B8C] focus:outline-none transition-all"
+                className="w-full pl-9 pr-7 py-1.5 bg-neutral-100 hover:bg-neutral-200/60 focus:bg-white text-sm rounded-full border border-transparent focus:border-[#0D1B8C] focus:outline-none transition-all dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:focus:bg-neutral-800"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -975,7 +989,7 @@ export default function App() {
 
         {/* Category Navigation Bar (Only on Reader Views) */}
         {activeView !== 'admin' && (
-          <div className="border-t border-neutral-100 bg-white">
+          <div className="border-t border-neutral-100 bg-white dark:border-white/10 dark:bg-neutral-900">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-2.5">
               {CATEGORIES.map((category) => {
                 const isActive = selectedCategory === category && activeView === 'home';
@@ -994,7 +1008,7 @@ export default function App() {
                     className={`px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-all cursor-pointer ${
                       isActive
                         ? 'shadow-xs'
-                        : 'text-neutral-600 hover:text-[#0D1B8C] hover:bg-blue-50/60'
+                        : 'text-neutral-600 hover:text-[#0D1B8C] hover:bg-blue-50/60 dark:text-neutral-300 dark:hover:text-neutral-100 dark:hover:bg-white/10'
                     }`}
                   >
                     {catLabel(category)}
@@ -1007,7 +1021,7 @@ export default function App() {
 
         {/* Hamburger menu panel (reader views only; Dapur Redaksi lives here) */}
         {activeView !== 'admin' && menuOpen && (
-          <div className="border-t border-neutral-100 bg-white max-h-[70vh] overflow-y-auto">
+          <div className="border-t border-neutral-100 bg-white max-h-[70vh] overflow-y-auto dark:border-white/10 dark:bg-neutral-900">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold tracking-widest text-neutral-400 uppercase">Menu</span>
@@ -1015,15 +1029,15 @@ export default function App() {
                   type="button"
                   aria-label="Tutup menu"
                   onClick={() => setMenuOpen(false)}
-                  className="text-neutral-400 hover:text-neutral-700 cursor-pointer"
+                  className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
               <nav className="mt-3 grid gap-1 sm:grid-cols-2">
-                <a href="/" className="block py-2 px-3 rounded-lg text-[15px] font-semibold text-neutral-800 hover:bg-neutral-100">{t.menuHome}</a>
-                <a href="/cari" className="block py-2 px-3 rounded-lg text-[15px] font-semibold text-neutral-800 hover:bg-neutral-100">{t.menuSearch}</a>
-                <a href="/tentang" className="block py-2 px-3 rounded-lg text-[15px] font-semibold text-neutral-800 hover:bg-neutral-100">{t.menuAbout}</a>
+                <a href="/" className="block py-2 px-3 rounded-lg text-[15px] font-semibold text-neutral-800 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-800">{t.menuHome}</a>
+                <a href="/cari" className="block py-2 px-3 rounded-lg text-[15px] font-semibold text-neutral-800 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-800">{t.menuSearch}</a>
+                <a href="/tentang" className="block py-2 px-3 rounded-lg text-[15px] font-semibold text-neutral-800 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-800">{t.menuAbout}</a>
               </nav>
               <div className="mt-4 text-xs font-bold tracking-widest text-neutral-400 uppercase">{t.menuCategories}</div>
               <nav className="mt-2 grid gap-1 sm:grid-cols-2">
@@ -1031,7 +1045,7 @@ export default function App() {
                   <a
                     key={category}
                     href={categoryHref(category)}
-                    className="block py-2 px-3 rounded-lg text-[15px] font-semibold text-neutral-800 hover:bg-neutral-100"
+                    className="block py-2 px-3 rounded-lg text-[15px] font-semibold text-neutral-800 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-800"
                   >
                     {catLabel(category)}
                   </a>
@@ -1044,7 +1058,7 @@ export default function App() {
                   target="_blank"
                   rel="noreferrer"
                   style={{ color: brandSettings.accentColor }}
-                  className="flex items-center gap-1.5 py-2 px-3 rounded-lg text-[15px] font-bold hover:bg-neutral-100"
+                  className="flex items-center gap-1.5 py-2 px-3 rounded-lg text-[15px] font-bold hover:bg-neutral-100 dark:hover:bg-neutral-800"
                 >
                   <InstagramIcon className="w-4 h-4" />
                   <span>Instagram @{brandSettings.instagram.replace('@', '')}</span>
@@ -1054,19 +1068,19 @@ export default function App() {
                   target="_blank"
                   rel="noreferrer"
                   style={{ color: brandSettings.accentColor }}
-                  className="flex items-center gap-1.5 py-2 px-3 rounded-lg text-[15px] font-bold hover:bg-neutral-100"
+                  className="flex items-center gap-1.5 py-2 px-3 rounded-lg text-[15px] font-bold hover:bg-neutral-100 dark:hover:bg-neutral-800"
                 >
                   <AtSign className="w-4 h-4" />
                   <span>Threads @meramudotco</span>
                 </a>
               </nav>
-              <div className="mt-4 pt-4 border-t border-neutral-100 flex flex-wrap items-center gap-x-4 gap-y-3">
-                <div className="flex items-center rounded-full border border-neutral-200 overflow-hidden">
+              <div className="mt-4 pt-4 border-t border-neutral-100 flex flex-wrap items-center gap-x-4 gap-y-3 dark:border-white/10">
+                <div className="flex items-center rounded-full border border-neutral-200 overflow-hidden dark:border-white/10">
                   <button
                     type="button"
                     onClick={() => { switchLang('id'); setMenuOpen(false); }}
                     style={lang === 'id' ? { backgroundColor: brandSettings.accentColor, color: '#ffffff' } : {}}
-                    className="px-2.5 py-1 text-[11px] font-bold cursor-pointer text-neutral-600"
+                    className="px-2.5 py-1 text-[11px] font-bold cursor-pointer text-neutral-600 dark:text-neutral-400"
                   >
                     ID
                   </button>
@@ -1074,14 +1088,14 @@ export default function App() {
                     type="button"
                     onClick={() => { switchLang('en'); setMenuOpen(false); }}
                     style={lang === 'en' ? { backgroundColor: brandSettings.accentColor, color: '#ffffff' } : {}}
-                    className="px-2.5 py-1 text-[11px] font-bold cursor-pointer text-neutral-600"
+                    className="px-2.5 py-1 text-[11px] font-bold cursor-pointer text-neutral-600 dark:text-neutral-400"
                   >
                     EN
                   </button>
                 </div>
                 <a
                   href="/dapur-redaksi"
-                  className="text-sm font-semibold text-neutral-500 hover:text-neutral-900"
+                  className="text-sm font-semibold text-neutral-500 hover:text-neutral-900 dark:text-neutral-400"
                 >
                   {t.newsroom}
                 </a>
@@ -1097,7 +1111,7 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {isLoading ? (
           <div className="py-24 flex flex-col items-center justify-center gap-3 text-neutral-400">
-            <div className="w-8 h-8 border-2 border-neutral-900 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-neutral-900 dark:border-neutral-100 border-t-transparent rounded-full animate-spin" />
             <p className="text-sm font-medium">{t.loading}</p>
           </div>
         ) : activeView === 'home' ? (
@@ -1107,12 +1121,12 @@ export default function App() {
           <div className="space-y-12">
             {/* Search / Category Filter Status Banner */}
             {(selectedCategory !== 'Semua' || searchQuery.trim() !== '') && (
-              <div className="flex items-center justify-between bg-white px-5 py-3.5 rounded-2xl border border-neutral-200/80 shadow-2xs">
+              <div className="flex items-center justify-between bg-white px-5 py-3.5 rounded-2xl border border-neutral-200/80 shadow-2xs dark:bg-neutral-900 dark:border-white/10">
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="text-neutral-500">{t.showing}</span>
-                  <span className="font-bold text-neutral-900">{catLabel(selectedCategory)}</span>
+                  <span className="text-neutral-500 dark:text-neutral-400">{t.showing}</span>
+                  <span className="font-bold text-neutral-900 dark:text-neutral-100">{catLabel(selectedCategory)}</span>
                   {searchQuery && (
-                    <span className="text-neutral-600">
+                    <span className="text-neutral-600 dark:text-neutral-400">
                       {t.forKeyword} <strong>"{searchQuery}"</strong>
                     </span>
                   )}
@@ -1122,7 +1136,7 @@ export default function App() {
                     setSelectedCategory('Semua');
                     setSearchQuery('');
                   }}
-                  className="text-xs font-semibold text-neutral-500 hover:text-neutral-900 underline"
+                  className="text-xs font-semibold text-neutral-500 hover:text-neutral-900 underline dark:text-neutral-400"
                 >
                   {t.resetFilter}
                 </button>
@@ -1135,9 +1149,9 @@ export default function App() {
                 {/* Main Featured Story (8 cols) */}
                 <a
                   href={`/berita/${featuredArticle.id}`}
-                  className="lg:col-span-8 block group cursor-pointer bg-white rounded-2xl border border-neutral-200/80 overflow-hidden shadow-2xs hover:shadow-md transition-all"
+                  className="lg:col-span-8 block group cursor-pointer bg-white rounded-2xl border border-neutral-200/80 overflow-hidden shadow-2xs hover:shadow-md transition-all dark:bg-neutral-900 dark:border-white/10"
                 >
-                  <div className="relative aspect-16/9 w-full overflow-hidden bg-neutral-100">
+                  <div className="relative aspect-16/9 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
                     <img
                       src={featuredArticle.imageUrl}
                       alt={featuredArticle.title}
@@ -1150,25 +1164,25 @@ export default function App() {
                       >
                         {t.mainHeadline}
                       </span>
-                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/95 text-neutral-900 backdrop-blur-xs shadow-sm">
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/95 text-neutral-900 backdrop-blur-xs shadow-sm dark:text-neutral-100">
                         {featuredArticle.category}
                       </span>
                     </div>
                   </div>
                   <div className="p-6 sm:p-8">
-                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-neutral-900 tracking-tight leading-tight group-hover:underline decoration-2 underline-offset-4">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-neutral-900 tracking-tight leading-tight group-hover:underline decoration-2 underline-offset-4 dark:text-neutral-100">
                       {featuredArticle.title}
                     </h1>
-                    <p className="mt-3 text-neutral-600 text-base sm:text-lg leading-relaxed line-clamp-3">
+                    <p className="mt-3 text-neutral-600 text-base sm:text-lg leading-relaxed line-clamp-3 dark:text-neutral-400">
                       {featuredArticle.excerpt}
                     </p>
-                    <div className="mt-6 pt-4 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500">
+                    <div className="mt-6 pt-4 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500 dark:border-white/10 dark:text-neutral-400">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-neutral-800">{featuredArticle.author}</span>
+                        <span className="font-semibold text-neutral-800 dark:text-neutral-100">{featuredArticle.author}</span>
                         <span>•</span>
                         <span>{formatDate(featuredArticle.createdAt)}</span>
                       </div>
-                      <span className="flex items-center gap-1 font-medium text-neutral-600">
+                      <span className="flex items-center gap-1 font-medium text-neutral-600 dark:text-neutral-400">
                         <Clock className="w-3.5 h-3.5" />
                         {readTimeLabel(featuredArticle.readTime)}
                       </span>
@@ -1177,25 +1191,25 @@ export default function App() {
                 </a>
 
                 {/* Pilihan Redaksi / Trending Sidebar (4 cols) */}
-                <div className="lg:col-span-4 bg-white rounded-2xl border border-neutral-200/80 p-6 shadow-2xs">
-                  <div className="flex items-center gap-2 pb-4 mb-5 border-b border-neutral-100">
+                <div className="lg:col-span-4 bg-white rounded-2xl border border-neutral-200/80 p-6 shadow-2xs dark:bg-neutral-900 dark:border-white/10">
+                  <div className="flex items-center gap-2 pb-4 mb-5 border-b border-neutral-100 dark:border-white/10">
                     <TrendingUp
                       style={{ color: brandSettings.accentColor }}
                       className="w-5 h-5"
                     />
-                    <h2 className="text-base font-extrabold uppercase tracking-wider text-neutral-900">
+                    <h2 className="text-base font-extrabold uppercase tracking-wider text-neutral-900 dark:text-neutral-100">
                       {t.editorsPicks}
                     </h2>
                   </div>
 
-                  <div className="divide-y divide-neutral-100">
+                  <div className="divide-y divide-neutral-100 dark:divide-white/10">
                     {trendingArticles.map((item, idx) => (
                       <a
                         key={item.id}
                         href={`/berita/${item.id}`}
                         className="py-4 first:pt-0 last:pb-0 group cursor-pointer flex gap-4 items-start"
                       >
-                        <span className="text-2xl font-black text-neutral-200 group-hover:text-neutral-900 transition-colors leading-none select-none">
+                        <span className="text-2xl font-black text-neutral-400 dark:text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white transition-colors leading-none select-none">
                           0{idx + 1}
                         </span>
                         <div className="space-y-1.5 flex-1">
@@ -1205,7 +1219,7 @@ export default function App() {
                           >
                             {item.category}
                           </span>
-                          <h3 className="text-sm font-bold text-neutral-900 leading-snug group-hover:underline">
+                          <h3 className="text-sm font-bold text-neutral-900 leading-snug group-hover:underline dark:text-neutral-100">
                             {item.title}
                           </h3>
                           <div className="flex items-center gap-2 text-[11px] text-neutral-400">
@@ -1233,13 +1247,13 @@ export default function App() {
                   </div>
 
                   {/* Quick Instagram CTA Box */}
-                  <div className="mt-6 pt-5 border-t border-neutral-100">
+                  <div className="mt-6 pt-5 border-t border-neutral-100 dark:border-white/10">
                     <a
                       href={`https://instagram.com/${brandSettings.instagram.replace('@', '')}`}
                       target="_blank"
                       rel="noreferrer"
                       style={{ backgroundColor: `${brandSettings.accentColor}08` }}
-                      className="flex items-center justify-between p-3.5 rounded-xl hover:opacity-90 border border-neutral-200/80 transition-all group"
+                      className="flex items-center justify-between p-3.5 rounded-xl hover:opacity-90 border border-neutral-200/80 transition-all group dark:border-white/10"
                     >
                       <div className="flex items-center gap-3">
                         <div
@@ -1255,7 +1269,7 @@ export default function App() {
                           >
                             {t.follow} @{brandSettings.instagram.replace('@', '')}
                           </span>
-                          <span className="text-[11px] text-neutral-500 block">
+                          <span className="text-[11px] text-neutral-500 block dark:text-neutral-400">
                             {t.followSub}
                           </span>
                         </div>
@@ -1272,24 +1286,24 @@ export default function App() {
 
             {/* LATEST NEWS GRID SECTION */}
             <section>
-              <div className="flex items-center justify-between mb-6 pb-3 border-b border-neutral-200">
+              <div className="flex items-center justify-between mb-6 pb-3 border-b border-neutral-200 dark:border-white/10">
                 <div className="flex items-center gap-2.5">
                   <span
                     style={{ backgroundColor: brandSettings.accentColor }}
                     className="w-2.5 h-2.5 rounded-full"
                   />
-                  <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-neutral-900">
+                  <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-neutral-900 dark:text-neutral-100">
                     {selectedCategory === 'Semua' ? t.latest : `${t.section} ${catLabel(selectedCategory)}`}
                   </h2>
                 </div>
-                <span className="text-xs text-neutral-500 font-medium">
+                <span className="text-xs text-neutral-500 font-medium dark:text-neutral-400">
                   {filteredArticles.length} {t.articlesAvailable}
                 </span>
               </div>
 
               {gridArticles.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-neutral-200/80 p-12 text-center">
-                  <p className="text-neutral-500 font-medium">
+                <div className="bg-white rounded-2xl border border-neutral-200/80 p-12 text-center dark:bg-neutral-900 dark:border-white/10">
+                  <p className="text-neutral-500 font-medium dark:text-neutral-400">
                     {t.noResults}
                   </p>
                   <button
@@ -1297,7 +1311,7 @@ export default function App() {
                       setSelectedCategory('Semua');
                       setSearchQuery('');
                     }}
-                    className="mt-4 px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold"
+                    className="mt-4 px-4 py-2 rounded-full bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900 text-xs font-semibold"
                   >
                     {t.showAllNews}
                   </button>
@@ -1308,29 +1322,29 @@ export default function App() {
                     <a
                       key={article.id}
                       href={`/berita/${article.id}`}
-                      className="bg-white rounded-2xl border border-neutral-200/80 overflow-hidden shadow-2xs hover:shadow-md transition-all group cursor-pointer flex flex-col"
+                      className="bg-white rounded-2xl border border-neutral-200/80 overflow-hidden shadow-2xs hover:shadow-md transition-all group cursor-pointer flex flex-col dark:bg-neutral-900 dark:border-white/10"
                     >
-                      <div className="relative aspect-16/10 w-full bg-neutral-100 overflow-hidden">
+                      <div className="relative aspect-16/10 w-full bg-neutral-100 overflow-hidden dark:bg-neutral-800">
                         <img
                           src={article.imageUrl}
                           alt={article.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
-                        <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/95 text-neutral-900 shadow-xs">
+                        <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/95 text-neutral-900 shadow-xs dark:text-neutral-100">
                           {article.category}
                         </span>
                       </div>
                       <div className="p-5 flex-1 flex flex-col justify-between">
                         <div>
-                          <h3 className="text-lg font-bold text-neutral-900 leading-snug group-hover:underline decoration-1 underline-offset-4">
+                          <h3 className="text-lg font-bold text-neutral-900 leading-snug group-hover:underline decoration-1 underline-offset-4 dark:text-neutral-100">
                             {article.title}
                           </h3>
-                          <p className="mt-2 text-sm text-neutral-600 line-clamp-2 leading-relaxed">
+                          <p className="mt-2 text-sm text-neutral-600 line-clamp-2 leading-relaxed dark:text-neutral-400">
                             {article.excerpt}
                           </p>
                         </div>
-                        <div className="mt-5 pt-3.5 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-400">
-                          <span className="font-medium text-neutral-700">{article.author}</span>
+                        <div className="mt-5 pt-3.5 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-400 dark:border-white/10">
+                          <span className="font-medium text-neutral-700 dark:text-neutral-300">{article.author}</span>
                           <div className="flex items-center gap-2">
                             <span>{formatDate(article.createdAt)}</span>
                             <span>•</span>
@@ -1352,13 +1366,13 @@ export default function App() {
             {/* Back Navigation */}
             <button
               onClick={() => navigateToHome()}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-600 hover:text-neutral-900 mb-6 group cursor-pointer"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-600 hover:text-neutral-900 mb-6 group cursor-pointer dark:text-neutral-400 dark:hover:text-white"
             >
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
               <span>Kembali ke Beranda</span>
             </button>
 
-            <article className="bg-white rounded-3xl border border-neutral-200/80 shadow-xs overflow-hidden p-6 sm:p-10 lg:p-12">
+            <article className="bg-white rounded-3xl border border-neutral-200/80 shadow-xs overflow-hidden p-6 sm:p-10 lg:p-12 dark:bg-neutral-900 dark:border-white/10">
               {/* Category & Meta Header */}
               <div className="flex flex-wrap items-center gap-2.5 mb-4">
                 <button
@@ -1369,24 +1383,24 @@ export default function App() {
                   {currentArticle.category}
                 </button>
                 <span className="text-neutral-300">•</span>
-                <span className="text-xs font-medium text-neutral-500 flex items-center gap-1">
+                <span className="text-xs font-medium text-neutral-500 flex items-center gap-1 dark:text-neutral-400">
                   <Clock className="w-3.5 h-3.5" />
                   {currentArticle.readTime}
                 </span>
               </div>
 
               {/* Main Title */}
-              <h1 className="text-2xl sm:text-4xl font-extrabold text-neutral-900 tracking-tight leading-tight">
+              <h1 className="text-2xl sm:text-4xl font-extrabold text-neutral-900 tracking-tight leading-tight dark:text-neutral-100">
                 {currentArticle.title}
               </h1>
 
               {/* Excerpt / Lead */}
-              <p className="mt-4 text-base sm:text-xl text-neutral-600 leading-relaxed font-normal">
+              <p className="mt-4 text-base sm:text-xl text-neutral-600 leading-relaxed font-normal dark:text-neutral-400">
                 {currentArticle.excerpt}
               </p>
 
               {/* Author & Share Bar */}
-              <div className="mt-6 pt-6 border-t border-neutral-100 flex flex-wrap items-center justify-between gap-4">
+              <div className="mt-6 pt-6 border-t border-neutral-100 flex flex-wrap items-center justify-between gap-4 dark:border-white/10">
                 <div className="flex items-center gap-3">
                   <div
                     style={{ backgroundColor: brandSettings.accentColor }}
@@ -1395,10 +1409,10 @@ export default function App() {
                     {currentArticle.author?.charAt(0) || 'M'}
                   </div>
                   <div>
-                    <span className="text-sm font-bold text-neutral-900 block">
+                    <span className="text-sm font-bold text-neutral-900 block dark:text-neutral-100">
                       {currentArticle.author}
                     </span>
-                    <span className="text-xs text-neutral-500 block">
+                    <span className="text-xs text-neutral-500 block dark:text-neutral-400">
                       Diterbitkan {formatDate(currentArticle.createdAt)}
                     </span>
                   </div>
@@ -1411,7 +1425,7 @@ export default function App() {
                       navigator.clipboard?.writeText(window.location.href);
                       showToast('Tautan artikel berhasil disalin!');
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 text-neutral-700 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 text-neutral-700 transition-colors cursor-pointer dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:text-neutral-300"
                   >
                     <Copy className="w-3.5 h-3.5" />
                     <span>Salin Link</span>
@@ -1422,7 +1436,7 @@ export default function App() {
                     )}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-colors dark:bg-emerald-950 dark:hover:bg-emerald-900 dark:text-emerald-300"
                   >
                     <Share2 className="w-3.5 h-3.5" />
                     <span>WhatsApp</span>
@@ -1433,7 +1447,7 @@ export default function App() {
               {/* Featured Image */}
               {currentArticle.imageUrl && (
                 <figure className="my-8">
-                  <div className="rounded-2xl overflow-hidden bg-neutral-100 aspect-16/9">
+                  <div className="rounded-2xl overflow-hidden bg-neutral-100 aspect-16/9 dark:bg-neutral-800">
                     <img
                       src={currentArticle.imageUrl}
                       alt={currentArticle.title}
@@ -1441,7 +1455,7 @@ export default function App() {
                     />
                   </div>
                   {currentArticle.imageCaption && (
-                    <figcaption className="mt-2.5 text-xs text-neutral-500 text-center italic">
+                    <figcaption className="mt-2.5 text-xs text-neutral-500 text-center italic dark:text-neutral-400">
                       {currentArticle.imageCaption}
                     </figcaption>
                   )}
@@ -1454,7 +1468,7 @@ export default function App() {
               </div>
 
               {/* Footer Tag & Quick Edit Button for Admin */}
-              <div className="mt-10 pt-6 border-t border-neutral-100 flex items-center justify-between">
+              <div className="mt-10 pt-6 border-t border-neutral-100 flex items-center justify-between dark:border-white/10">
                 <div className="text-xs text-neutral-400">
                   © {new Date().getFullYear()} {brandSettings.siteName} ({brandSettings.domain})
                 </div>
@@ -1464,7 +1478,7 @@ export default function App() {
                     startEditArticle(currentArticle);
                     setActiveView('admin');
                   }}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-500 hover:text-neutral-900 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-500 hover:text-neutral-900 cursor-pointer dark:text-neutral-400"
                 >
                   <PenLine className="w-3.5 h-3.5" />
                   <span>Edit Artikel Ini di Dapur Redaksi</span>
@@ -1476,7 +1490,7 @@ export default function App() {
             {/* Related Articles Section */}
             {relatedArticles.length > 0 && (
               <div className="mt-12">
-                <h3 className="text-lg font-extrabold text-neutral-900 mb-4">
+                <h3 className="text-lg font-extrabold text-neutral-900 mb-4 dark:text-neutral-100">
                   Berita Terkait di {currentArticle.category}
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1484,16 +1498,16 @@ export default function App() {
                     <div
                       key={rel.id}
                       onClick={() => openArticle(rel.id)}
-                      className="bg-white p-4 rounded-2xl border border-neutral-200/80 hover:shadow-md transition-all cursor-pointer group"
+                      className="bg-white p-4 rounded-2xl border border-neutral-200/80 hover:shadow-md transition-all cursor-pointer group dark:bg-neutral-900 dark:border-white/10"
                     >
-                      <div className="aspect-16/10 rounded-xl overflow-hidden bg-neutral-100 mb-3">
+                      <div className="aspect-16/10 rounded-xl overflow-hidden bg-neutral-100 mb-3 dark:bg-neutral-800">
                         <img
                           src={rel.imageUrl}
                           alt={rel.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                         />
                       </div>
-                      <h4 className="text-sm font-bold text-neutral-900 group-hover:underline line-clamp-2">
+                      <h4 className="text-sm font-bold text-neutral-900 group-hover:underline line-clamp-2 dark:text-neutral-100">
                         {rel.title}
                       </h4>
                       <span className="text-[11px] text-neutral-400 block mt-2">
@@ -1510,7 +1524,7 @@ export default function App() {
           /* VIEW 3: DAPUR REDAKSI (ADMIN CMS) */
           /* ========================================== */
           !isAdmin ? (
-            <div className="max-w-md mx-auto bg-white rounded-2xl border border-neutral-200/80 p-6 sm:p-8 shadow-sm">
+            <div className="max-w-md mx-auto bg-white rounded-2xl border border-neutral-200/80 p-6 sm:p-8 shadow-sm dark:bg-neutral-900 dark:border-white/10">
               <div className="flex items-center gap-2 mb-2">
                 <span
                   style={{ backgroundColor: brandSettings.accentColor }}
@@ -1519,43 +1533,43 @@ export default function App() {
                   Dapur Redaksi
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-neutral-900">
+              <h1 className="text-xl sm:text-2xl font-extrabold text-neutral-900 dark:text-neutral-100">
                 Login Admin {brandSettings.siteName}
               </h1>
-              <p className="text-sm text-neutral-500 mt-1 mb-6">
+              <p className="text-sm text-neutral-500 mt-1 mb-6 dark:text-neutral-400">
                 Masuk dengan akun admin untuk mengelola berita. Pembaca tidak perlu login.
               </p>
               {!FIREBASE_READY && (
-                <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
+                <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 dark:text-amber-300 dark:bg-amber-950 dark:border-amber-800">
                   Mode demo: Firebase belum terhubung, jadi login admin belum bisa dipakai.
                   Hubungkan Firebase production dulu, baru akun admin bisa dibuat.
                 </p>
               )}
               <form onSubmit={handleAdminLogin} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-neutral-700 mb-1">Email admin</label>
+                  <label className="block text-xs font-bold text-neutral-700 mb-1 dark:text-neutral-300">Email admin</label>
                   <input
                     type="email"
                     required
                     value={adminEmail}
                     onChange={(e) => setAdminEmail(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:border-white/10"
                     placeholder="admin@meramu.site"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-neutral-700 mb-1">Password</label>
+                  <label className="block text-xs font-bold text-neutral-700 mb-1 dark:text-neutral-300">Password</label>
                   <input
                     type="password"
                     required
                     value={adminPassword}
                     onChange={(e) => setAdminPassword(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:border-white/10"
                     placeholder="••••••••"
                   />
                 </div>
                 {adminError && (
-                  <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                  <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3 dark:text-red-400 dark:bg-red-950 dark:border-red-800">
                     {adminError}
                   </p>
                 )}
@@ -1569,7 +1583,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => navigateToHome()}
-                  className="w-full py-2.5 rounded-xl bg-white border border-neutral-200 text-neutral-700 font-bold text-sm hover:bg-neutral-50 transition-colors cursor-pointer"
+                  className="w-full py-2.5 rounded-xl bg-white border border-neutral-200 text-neutral-700 font-bold text-sm hover:bg-neutral-50 transition-colors cursor-pointer dark:bg-neutral-900 dark:border-white/10 dark:text-neutral-300"
                 >
                   Kembali ke Beranda
                 </button>
@@ -1578,7 +1592,7 @@ export default function App() {
           ) : (
           <div className="space-y-6">
             {/* Admin Header Banner */}
-            <div className="bg-white rounded-2xl border border-neutral-200/80 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
+            <div className="bg-white rounded-2xl border border-neutral-200/80 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs dark:bg-neutral-900 dark:border-white/10">
               <div>
                 <div className="flex items-center gap-2">
                   <span
@@ -1587,11 +1601,11 @@ export default function App() {
                   >
                     CMS Cloud Aktif
                   </span>
-                  <h1 className="text-xl sm:text-2xl font-extrabold text-neutral-900">
+                  <h1 className="text-xl sm:text-2xl font-extrabold text-neutral-900 dark:text-neutral-100">
                     Dapur Redaksi {brandSettings.siteName}
                   </h1>
                 </div>
-                <p className="text-sm text-neutral-500 mt-1">
+                <p className="text-sm text-neutral-500 mt-1 dark:text-neutral-400">
                   Kelola artikel berita, pilih headline utama, dan sesuaikan warna identitas serta logo @meramudotco.
                 </p>
               </div>
@@ -1607,7 +1621,7 @@ export default function App() {
                 </button>
                 <button
                   onClick={handleAdminLogout}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-neutral-200 text-neutral-700 text-xs sm:text-sm font-bold hover:bg-neutral-50 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-neutral-200 text-neutral-700 text-xs sm:text-sm font-bold hover:bg-neutral-50 transition-colors cursor-pointer dark:bg-neutral-900 dark:border-white/10 dark:text-neutral-300"
                 >
                   <span>Keluar</span>
                 </button>
@@ -1615,13 +1629,13 @@ export default function App() {
             </div>
 
             {/* Admin Sub-Navigation Tabs */}
-            <div className="flex items-center gap-2 border-b border-neutral-200 pb-3">
+            <div className="flex items-center gap-2 border-b border-neutral-200 pb-3 dark:border-white/10">
               <button
                 onClick={() => setAdminTab('articles')}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                   adminTab === 'articles'
-                    ? 'bg-neutral-900 text-white'
-                    : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200/80'
+                    ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
+                    : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200/80 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:border-white/10'
                 }`}
               >
                 <Layers className="w-4 h-4" />
@@ -1634,8 +1648,8 @@ export default function App() {
                 }}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                   adminTab === 'editor'
-                    ? 'bg-neutral-900 text-white'
-                    : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200/80'
+                    ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
+                    : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200/80 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:border-white/10'
                 }`}
               >
                 <SquarePen className="w-4 h-4" />
@@ -1646,8 +1660,8 @@ export default function App() {
                 onClick={() => setAdminTab('brand')}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                   adminTab === 'brand'
-                    ? 'bg-neutral-900 text-white'
-                    : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200/80'
+                    ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
+                    : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200/80 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:border-white/10'
                 }`}
               >
                 <Palette className="w-4 h-4" />
@@ -1657,11 +1671,11 @@ export default function App() {
 
             {/* TAB 1: MANAGE ARTICLES LIST */}
             {adminTab === 'articles' && (
-              <div className="bg-white rounded-2xl border border-neutral-200/80 overflow-hidden shadow-2xs">
+              <div className="bg-white rounded-2xl border border-neutral-200/80 overflow-hidden shadow-2xs dark:bg-neutral-900 dark:border-white/10">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-neutral-100 bg-neutral-50/70 text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+                      <tr className="border-b border-neutral-100 bg-neutral-50/70 text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-400">
                         <th className="py-3.5 px-5">Artikel</th>
                         <th className="py-3.5 px-4">Kategori</th>
                         <th className="py-3.5 px-4">Status Headline</th>
@@ -1669,28 +1683,28 @@ export default function App() {
                         <th className="py-3.5 px-5 text-right">Aksi</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-neutral-100 text-sm">
+                    <tbody className="divide-y divide-neutral-100 dark:divide-white/10 text-sm">
                       {articles.map((article) => (
-                        <tr key={article.id} className="hover:bg-neutral-50/60 transition-colors">
+                        <tr key={article.id} className="hover:bg-neutral-50/60 dark:hover:bg-white/5 transition-colors">
                           <td className="py-4 px-5 max-w-md">
                             <div className="flex items-center gap-3.5">
                               <img
                                 src={article.imageUrl}
                                 alt={article.title}
-                                className="w-14 h-10 rounded-lg object-cover bg-neutral-100 shrink-0"
+                                className="w-14 h-10 rounded-lg object-cover bg-neutral-100 shrink-0 dark:bg-neutral-800"
                               />
                               <div>
-                                <div className="font-bold text-neutral-900 line-clamp-1">
+                                <div className="font-bold text-neutral-900 line-clamp-1 dark:text-neutral-100">
                                   {article.title}
                                 </div>
-                                <div className="text-xs text-neutral-500 mt-0.5">
+                                <div className="text-xs text-neutral-500 mt-0.5 dark:text-neutral-400">
                                   Oleh {article.author} • {article.readTime}
                                 </div>
                               </div>
                             </div>
                           </td>
                           <td className="py-4 px-4">
-                            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-neutral-100 text-neutral-800">
+                            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-100">
                               {article.category}
                             </span>
                           </td>
@@ -1699,8 +1713,8 @@ export default function App() {
                               onClick={() => handleToggleFeatured(article)}
                               className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                                 article.isFeatured
-                                  ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                                  : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
+                                  ? 'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900 dark:text-amber-200 dark:border-amber-700'
+                                  : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700'
                               }`}
                             >
                               <Star
@@ -1711,7 +1725,7 @@ export default function App() {
                               <span>{article.isFeatured ? 'Headline Utama' : 'Jadikan Headline'}</span>
                             </button>
                           </td>
-                          <td className="py-4 px-4 text-xs text-neutral-500 whitespace-nowrap">
+                          <td className="py-4 px-4 text-xs text-neutral-500 whitespace-nowrap dark:text-neutral-400">
                             {formatDate(article.createdAt)}
                           </td>
                           <td className="py-4 px-5 text-right whitespace-nowrap">
@@ -1719,28 +1733,28 @@ export default function App() {
                               <button
                                 onClick={() => openArticle(article.id)}
                                 title="Lihat Artikel"
-                                className="p-2 rounded-lg text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 cursor-pointer"
+                                className="p-2 rounded-lg text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 cursor-pointer dark:text-neutral-400 dark:hover:bg-neutral-800"
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => startEditArticle(article)}
                                 title="Edit Artikel"
-                                className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 cursor-pointer"
+                                className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 cursor-pointer dark:text-blue-400 dark:hover:bg-blue-950"
                               >
                                 <PenLine className="w-4 h-4" />
                               </button>
                               {deleteConfirmId === article.id ? (
-                                <div className="inline-flex items-center gap-1 bg-rose-50 px-2 py-1 rounded-lg border border-rose-200">
+                                <div className="inline-flex items-center gap-1 bg-rose-50 px-2 py-1 rounded-lg border border-rose-200 dark:bg-rose-950 dark:border-rose-800">
                                   <button
                                     onClick={() => handleDeleteArticle(article.id)}
-                                    className="text-xs font-bold text-rose-600 hover:underline px-1 cursor-pointer"
+                                    className="text-xs font-bold text-rose-600 hover:underline px-1 cursor-pointer dark:text-rose-400"
                                   >
                                     Hapus!
                                   </button>
                                   <button
                                     onClick={() => setDeleteConfirmId(null)}
-                                    className="text-xs text-neutral-500 px-1 cursor-pointer"
+                                    className="text-xs text-neutral-500 px-1 cursor-pointer dark:text-neutral-400"
                                   >
                                     Batal
                                   </button>
@@ -1749,7 +1763,7 @@ export default function App() {
                                 <button
                                   onClick={() => setDeleteConfirmId(article.id)}
                                   title="Hapus Artikel"
-                                  className="p-2 rounded-lg text-rose-600 hover:bg-rose-50 cursor-pointer"
+                                  className="p-2 rounded-lg text-rose-600 hover:bg-rose-50 cursor-pointer dark:text-rose-400 dark:hover:bg-rose-950"
                                 >
                                   <Trash className="w-4 h-4" />
                                 </button>
@@ -1771,9 +1785,9 @@ export default function App() {
                 className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start"
               >
                 {/* Left Column: Main Content Editor (8 cols) */}
-                <div className="lg:col-span-8 bg-white rounded-2xl border border-neutral-200/80 p-6 space-y-5 shadow-2xs">
-                  <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
-                    <h2 className="text-lg font-extrabold text-neutral-900">
+                <div className="lg:col-span-8 bg-white rounded-2xl border border-neutral-200/80 p-6 space-y-5 shadow-2xs dark:bg-neutral-900 dark:border-white/10">
+                  <div className="flex items-center justify-between border-b border-neutral-100 pb-4 dark:border-white/10">
+                    <h2 className="text-lg font-extrabold text-neutral-900 dark:text-neutral-100">
                       {editingArticle ? 'Edit Artikel Berita' : 'Tulis Artikel Baru'}
                     </h2>
                     <span className="text-xs text-neutral-400">
@@ -1782,7 +1796,7 @@ export default function App() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2 dark:text-neutral-300">
                       Judul Berita Utama *
                     </label>
                     <input
@@ -1791,12 +1805,12 @@ export default function App() {
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                       placeholder="Contoh: Geliat Skena Musik & Komedi Independen di Tahun Ini..."
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-neutral-900 focus:outline-none text-base font-bold"
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-neutral-900 focus:outline-none text-base font-bold dark:border-white/10 dark:focus:border-neutral-100"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2 dark:text-neutral-300">
                       Ringkasan / Subtitle (Excerpt) *
                     </label>
                     <textarea
@@ -1805,16 +1819,16 @@ export default function App() {
                       value={formData.excerpt}
                       onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
                       placeholder="Ringkasan singkat 1-2 kalimat yang menarik pembaca untuk klik..."
-                      className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 focus:border-neutral-900 focus:outline-none text-sm"
+                      className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 focus:border-neutral-900 focus:outline-none text-sm dark:border-white/10 dark:focus:border-neutral-100"
                     />
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 dark:text-neutral-300">
                         Isi Lengkap Berita *
                       </label>
-                      <div className="flex items-center gap-2 text-[11px] text-neutral-500">
+                      <div className="flex items-center gap-2 text-[11px] text-neutral-500 dark:text-neutral-400">
                         <span>Tips: Awal dengan <strong>## Subjudul</strong> atau <strong>&gt; Kutipan</strong></span>
                       </div>
                     </div>
@@ -1824,25 +1838,25 @@ export default function App() {
                       value={formData.content}
                       onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                       placeholder="Tulis isi berita di sini... Pisahkan antar paragraf dengan menekan Enter dua kali."
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-neutral-900 focus:outline-none text-sm leading-relaxed font-sans"
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-neutral-900 focus:outline-none text-sm leading-relaxed font-sans dark:border-white/10 dark:focus:border-neutral-100"
                     />
                   </div>
                 </div>
 
                 {/* Right Column: Metadata & Publishing Settings (4 cols) */}
-                <div className="lg:col-span-4 bg-white rounded-2xl border border-neutral-200/80 p-6 space-y-5 shadow-2xs">
-                  <h3 className="text-sm font-extrabold uppercase tracking-wider text-neutral-900 border-b border-neutral-100 pb-3">
+                <div className="lg:col-span-4 bg-white rounded-2xl border border-neutral-200/80 p-6 space-y-5 shadow-2xs dark:bg-neutral-900 dark:border-white/10">
+                  <h3 className="text-sm font-extrabold uppercase tracking-wider text-neutral-900 border-b border-neutral-100 pb-3 dark:text-neutral-100 dark:border-white/10">
                     Pengaturan Publikasi
                   </h3>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2 dark:text-neutral-300">
                       Kategori / Rubrik
                     </label>
                     <select
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 focus:border-neutral-900 focus:outline-none text-sm font-semibold bg-white"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 focus:border-neutral-900 focus:outline-none text-sm font-semibold bg-white dark:border-white/10 dark:focus:border-neutral-100 dark:bg-neutral-900"
                     >
                       {CATEGORIES.filter((c) => c !== 'Semua').map((cat) => (
                         <option key={cat} value={cat}>
@@ -1853,7 +1867,7 @@ export default function App() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2 dark:text-neutral-300">
                       Nama Penulis / Redaksi
                     </label>
                     <input
@@ -1861,13 +1875,13 @@ export default function App() {
                       value={formData.author}
                       onChange={(e) => setFormData({ ...formData, author: e.target.value })}
                       placeholder="Redaksi Meramu"
-                      className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 focus:border-neutral-900 focus:outline-none text-sm"
+                      className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 focus:border-neutral-900 focus:outline-none text-sm dark:border-white/10 dark:focus:border-neutral-100"
                     />
                   </div>
 
                   {/* Image URL & Quick Presets */}
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2 dark:text-neutral-300">
                       URL Foto Thumbnail
                     </label>
                     <input
@@ -1875,7 +1889,7 @@ export default function App() {
                       value={formData.imageUrl}
                       onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
                       placeholder="https://images.unsplash.com/..."
-                      className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 focus:border-neutral-900 focus:outline-none text-xs"
+                      className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 focus:border-neutral-900 focus:outline-none text-xs dark:border-white/10 dark:focus:border-neutral-100"
                     />
                     <div className="mt-2">
                       <span className="text-[11px] text-neutral-400 block mb-1.5">
@@ -1887,7 +1901,7 @@ export default function App() {
                             key={preset.label}
                             type="button"
                             onClick={() => setFormData({ ...formData, imageUrl: preset.url })}
-                            className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-neutral-100 hover:bg-neutral-200 text-neutral-700 cursor-pointer"
+                            className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-neutral-100 hover:bg-neutral-200 text-neutral-700 cursor-pointer dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:text-neutral-300"
                           >
                             {preset.label}
                           </button>
@@ -1896,7 +1910,7 @@ export default function App() {
                     </div>
 
                     {formData.imageUrl && (
-                      <div className="mt-3 rounded-xl overflow-hidden aspect-16/9 bg-neutral-100 border border-neutral-200">
+                      <div className="mt-3 rounded-xl overflow-hidden aspect-16/9 bg-neutral-100 border border-neutral-200 dark:bg-neutral-800 dark:border-white/10">
                         <img
                           src={formData.imageUrl}
                           alt="Preview"
@@ -1907,7 +1921,7 @@ export default function App() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2 dark:text-neutral-300">
                       Caption Foto (Opsional)
                     </label>
                     <input
@@ -1915,20 +1929,20 @@ export default function App() {
                       value={formData.imageCaption}
                       onChange={(e) => setFormData({ ...formData, imageCaption: e.target.value })}
                       placeholder="Keterangan singkat di bawah foto..."
-                      className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 focus:border-neutral-900 focus:outline-none text-xs"
+                      className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 focus:border-neutral-900 focus:outline-none text-xs dark:border-white/10 dark:focus:border-neutral-100"
                     />
                   </div>
 
                   {/* Checkboxes for Headline & Pilihan Redaksi */}
-                  <div className="space-y-2.5 pt-2 border-t border-neutral-100">
+                  <div className="space-y-2.5 pt-2 border-t border-neutral-100 dark:border-white/10">
                     <label className="flex items-center gap-2.5 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={formData.isFeatured}
                         onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
-                        className="w-4 h-4 rounded text-neutral-900 focus:ring-0"
+                        className="w-4 h-4 rounded text-neutral-900 focus:ring-0 dark:text-neutral-100"
                       />
-                      <span className="text-xs font-bold text-neutral-800">
+                      <span className="text-xs font-bold text-neutral-800 dark:text-neutral-100">
                         Jadikan Headline Utama (Hero Banner)
                       </span>
                     </label>
@@ -1938,9 +1952,9 @@ export default function App() {
                         type="checkbox"
                         checked={formData.isTrending}
                         onChange={(e) => setFormData({ ...formData, isTrending: e.target.checked })}
-                        className="w-4 h-4 rounded text-neutral-900 focus:ring-0"
+                        className="w-4 h-4 rounded text-neutral-900 focus:ring-0 dark:text-neutral-100"
                       />
-                      <span className="text-xs font-semibold text-neutral-700">
+                      <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
                         Masukkan ke Daftar "Pilihan Redaksi"
                       </span>
                     </label>
@@ -1958,7 +1972,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => setAdminTab('articles')}
-                      className="w-full py-2.5 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-semibold text-xs cursor-pointer"
+                      className="w-full py-2.5 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-semibold text-xs cursor-pointer dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:text-neutral-300"
                     >
                       Batal
                     </button>
@@ -1971,19 +1985,19 @@ export default function App() {
             {adminTab === 'brand' && (
               <form
                 onSubmit={handleSaveBrandSettings}
-                className="max-w-2xl bg-white rounded-2xl border border-neutral-200/80 p-6 sm:p-8 space-y-6 shadow-2xs"
+                className="max-w-2xl bg-white rounded-2xl border border-neutral-200/80 p-6 sm:p-8 space-y-6 shadow-2xs dark:bg-neutral-900 dark:border-white/10"
               >
                 <div>
-                  <h2 className="text-lg font-extrabold text-neutral-900">
+                  <h2 className="text-lg font-extrabold text-neutral-900 dark:text-neutral-100">
                     Pengaturan Identitas Visual & Logo (@meramudotco)
                   </h2>
-                  <p className="text-xs text-neutral-500 mt-1">
+                  <p className="text-xs text-neutral-500 mt-1 dark:text-neutral-400">
                     Logo dan warna otomatis menggunakan Meramu Royal Blue (#0D1B8C) sesuai identitas resmi kamu.
                   </p>
                 </div>
 
                 {/* Live Logo Preview Box */}
-                <div className="p-5 rounded-2xl bg-neutral-50 border border-neutral-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="p-5 rounded-2xl bg-neutral-50 border border-neutral-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4 dark:bg-neutral-900 dark:border-white/10">
                   <div>
                     <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 block mb-2">
                       Preview Logo Aktif
@@ -1996,8 +2010,8 @@ export default function App() {
                       onClick={() => setBrandSettings({ ...brandSettings, logoStyle: 'badge' })}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                         brandSettings.logoStyle !== 'minimal'
-                          ? 'bg-neutral-900 text-white border-neutral-900'
-                          : 'bg-white text-neutral-600 border-neutral-200'
+                          ? 'bg-neutral-900 text-white border-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 dark:border-neutral-100'
+                          : 'bg-white text-neutral-600 border-neutral-200 dark:bg-neutral-900 dark:text-neutral-400 dark:border-white/10'
                       }`}
                     >
                       Box Biru Resmi
@@ -2007,8 +2021,8 @@ export default function App() {
                       onClick={() => setBrandSettings({ ...brandSettings, logoStyle: 'minimal' })}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                         brandSettings.logoStyle === 'minimal'
-                          ? 'bg-neutral-900 text-white border-neutral-900'
-                          : 'bg-white text-neutral-600 border-neutral-200'
+                          ? 'bg-neutral-900 text-white border-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 dark:border-neutral-100'
+                          : 'bg-white text-neutral-600 border-neutral-200 dark:bg-neutral-900 dark:text-neutral-400 dark:border-white/10'
                       }`}
                     >
                       Teks Minimalis
@@ -2018,7 +2032,7 @@ export default function App() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2 dark:text-neutral-300">
                       Nama Brand / Header
                     </label>
                     <input
@@ -2027,11 +2041,11 @@ export default function App() {
                       onChange={(e) =>
                         setBrandSettings({ ...brandSettings, siteName: e.target.value })
                       }
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 text-sm font-bold"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 text-sm font-bold dark:border-white/10"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2 dark:text-neutral-300">
                       Username Instagram (Tanpa @)
                     </label>
                     <input
@@ -2040,13 +2054,13 @@ export default function App() {
                       onChange={(e) =>
                         setBrandSettings({ ...brandSettings, instagram: e.target.value })
                       }
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 text-sm"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 text-sm dark:border-white/10"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2 dark:text-neutral-300">
                     Tagline Media
                   </label>
                   <input
@@ -2055,13 +2069,13 @@ export default function App() {
                     onChange={(e) =>
                       setBrandSettings({ ...brandSettings, tagline: e.target.value })
                     }
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 text-sm"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 text-sm dark:border-white/10"
                   />
                 </div>
 
                 {/* Custom Logo URL Input */}
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2 dark:text-neutral-300">
                     URL File Gambar Logo Kustom (Opsional)
                   </label>
                   <input
@@ -2071,13 +2085,13 @@ export default function App() {
                       setBrandSettings({ ...brandSettings, logoUrl: e.target.value })
                     }
                     placeholder="Kosongkan untuk memakai Logo Box Biru Resmi MERAMU.CO di atas"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 text-sm"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 text-sm dark:border-white/10"
                   />
                 </div>
 
                 {/* Brand Accent Color Picker */}
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2.5 dark:text-neutral-300">
                     Warna Identitas Utama (Brand Color)
                   </label>
                   <div className="flex flex-wrap items-center gap-3">
@@ -2088,7 +2102,7 @@ export default function App() {
                         onClick={() => setBrandSettings({ ...brandSettings, accentColor: c.hex })}
                         className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
                           brandSettings.accentColor === c.hex
-                            ? 'border-neutral-900 bg-neutral-900 text-white shadow-xs'
+                            ? 'border-neutral-900 bg-neutral-900 text-white shadow-xs dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900'
                             : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'
                         }`}
                       >
@@ -2107,16 +2121,16 @@ export default function App() {
                         onChange={(e) =>
                           setBrandSettings({ ...brandSettings, accentColor: e.target.value })
                         }
-                        className="w-9 h-9 rounded-lg cursor-pointer border border-neutral-200"
+                        className="w-9 h-9 rounded-lg cursor-pointer border border-neutral-200 dark:border-white/10"
                       />
-                      <span className="text-xs font-mono text-neutral-500">
+                      <span className="text-xs font-mono text-neutral-500 dark:text-neutral-400">
                         {brandSettings.accentColor}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-neutral-100">
+                <div className="pt-4 border-t border-neutral-100 dark:border-white/10">
                   <button
                     type="submit"
                     style={{ backgroundColor: brandSettings.accentColor }}
@@ -2135,21 +2149,21 @@ export default function App() {
       {/* ========================================== */}
       {/* EDITORIAL FOOTER                           */}
       {/* ========================================== */}
-      <footer className="bg-white border-t border-neutral-200 mt-16">
+      <footer className="bg-white border-t border-neutral-200 mt-16 dark:bg-neutral-900 dark:border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div>
             <MeramuLogo brandSettings={brandSettings} size="sm" />
-            <p className="text-xs text-neutral-500 mt-3 max-w-sm">
+            <p className="text-xs text-neutral-500 mt-3 max-w-sm dark:text-neutral-400">
               {brandSettings.tagline} Hadir secara resmi di <strong>{brandSettings.domain}</strong>.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-neutral-600">
+          <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-neutral-600 dark:text-neutral-400">
             {CATEGORIES.slice(1).map((cat) => (
               <button
                 key={cat}
                 onClick={() => goHome(cat)}
-                className="hover:text-[#0D1B8C] transition-colors cursor-pointer"
+                className="hover:text-[#0D1B8C] dark:hover:text-white transition-colors cursor-pointer"
               >
                 {cat}
               </button>
