@@ -395,6 +395,13 @@ export default function App() {
       articlesRef,
       async (snapshot) => {
         if (snapshot.empty && !seedingInProgress) {
+          // Empty collection: show local seeds immediately so readers never
+          // hang on loading. Only a signed-in admin can write seeds to
+          // Firestore (locked rules); anonymous readers just see the local
+          // seeds until an admin seeds once.
+          setArticles(INITIAL_ARTICLES);
+          setIsLoading(false);
+          if (!user || user.isAnonymous) return;
           setSeedingInProgress(true);
           try {
             for (const item of INITIAL_ARTICLES) {
