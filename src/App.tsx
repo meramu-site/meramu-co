@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import {
   getAuth,
@@ -506,17 +506,23 @@ export default function App() {
       .slice(0, 3);
   }, [articles, currentArticle]);
 
-  // Navigation Handlers
+  // Navigation Handlers.
+  // Public article reading lives on real separate pages (/berita/<id>);
+  // this in-app reader is only the admin preview inside Dapur Redaksi.
   const openArticle = (articleId) => {
     setSelectedArticleId(articleId);
     setActiveView('article');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const goHome = (category = 'Semua') => {
-    setSelectedCategory(category);
+  const navigateToHome = () => {
     setActiveView('home');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const goHome = (category = 'Semua') => {
+    setSelectedCategory(category);
+    navigateToHome();
   };
 
   // Admin Handlers
@@ -541,7 +547,7 @@ export default function App() {
     try {
       await signOut(auth);
       await signInAnonymously(auth);
-      setActiveView('home');
+      navigateToHome();
     } catch (err) {
       console.error('Admin logout error:', err);
     }
@@ -787,7 +793,7 @@ export default function App() {
               <button
                 onClick={() => {
                   if (activeView === 'admin') {
-                    setActiveView('home');
+                    navigateToHome();
                   } else {
                     setActiveView('admin');
                   }
@@ -820,7 +826,7 @@ export default function App() {
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
-                    if (activeView !== 'home') setActiveView('home');
+                    if (activeView !== 'home') navigateToHome();
                   }}
                   placeholder="Cari topik, berita..."
                   className="w-full pl-9 pr-7 py-1.5 bg-neutral-100 hover:bg-neutral-200/60 focus:bg-white text-sm rounded-full border border-transparent focus:border-[#0D1B8C] focus:outline-none transition-all"
@@ -914,9 +920,9 @@ export default function App() {
             {selectedCategory === 'Semua' && !searchQuery.trim() && featuredArticle && (
               <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 {/* Main Featured Story (8 cols) */}
-                <div
-                  onClick={() => openArticle(featuredArticle.id)}
-                  className="lg:col-span-8 group cursor-pointer bg-white rounded-2xl border border-neutral-200/80 overflow-hidden shadow-2xs hover:shadow-md transition-all"
+                <a
+                  href={`/berita/${featuredArticle.id}`}
+                  className="lg:col-span-8 block group cursor-pointer bg-white rounded-2xl border border-neutral-200/80 overflow-hidden shadow-2xs hover:shadow-md transition-all"
                 >
                   <div className="relative aspect-16/9 w-full overflow-hidden bg-neutral-100">
                     <img
@@ -955,7 +961,7 @@ export default function App() {
                       </span>
                     </div>
                   </div>
-                </div>
+                </a>
 
                 {/* Pilihan Redaksi / Trending Sidebar (4 cols) */}
                 <div className="lg:col-span-4 bg-white rounded-2xl border border-neutral-200/80 p-6 shadow-2xs">
@@ -971,9 +977,9 @@ export default function App() {
 
                   <div className="divide-y divide-neutral-100">
                     {trendingArticles.map((item, idx) => (
-                      <article
+                      <a
                         key={item.id}
-                        onClick={() => openArticle(item.id)}
+                        href={`/berita/${item.id}`}
                         className="py-4 first:pt-0 last:pb-0 group cursor-pointer flex gap-4 items-start"
                       >
                         <span className="text-2xl font-black text-neutral-200 group-hover:text-neutral-900 transition-colors leading-none select-none">
@@ -995,7 +1001,7 @@ export default function App() {
                             <span>{item.readTime}</span>
                           </div>
                         </div>
-                      </article>
+                      </a>
                     ))}
                   </div>
 
@@ -1072,9 +1078,9 @@ export default function App() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {gridArticles.map((article) => (
-                    <article
+                    <a
                       key={article.id}
-                      onClick={() => openArticle(article.id)}
+                      href={`/berita/${article.id}`}
                       className="bg-white rounded-2xl border border-neutral-200/80 overflow-hidden shadow-2xs hover:shadow-md transition-all group cursor-pointer flex flex-col"
                     >
                       <div className="relative aspect-16/10 w-full bg-neutral-100 overflow-hidden">
@@ -1105,7 +1111,7 @@ export default function App() {
                           </div>
                         </div>
                       </div>
-                    </article>
+                    </a>
                   ))}
                 </div>
               )}
@@ -1118,7 +1124,7 @@ export default function App() {
           <div className="max-w-3xl mx-auto">
             {/* Back Navigation */}
             <button
-              onClick={() => setActiveView('home')}
+              onClick={() => navigateToHome()}
               className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-600 hover:text-neutral-900 mb-6 group cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -1335,7 +1341,7 @@ export default function App() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setActiveView('home')}
+                  onClick={() => navigateToHome()}
                   className="w-full py-2.5 rounded-xl bg-white border border-neutral-200 text-neutral-700 font-bold text-sm hover:bg-neutral-50 transition-colors cursor-pointer"
                 >
                   Kembali ke Beranda
