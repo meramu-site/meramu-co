@@ -76,7 +76,10 @@ const CATEGORIES = [
   'Musik & Komedi',
   'Lifestyle',
   'Tech',
-  'Berita Umum'
+  'Berita Umum',
+  'Sports',
+  'Esports',
+  'Politik'
 ];
 
 // Every section has its own address: category tabs link to real pages.
@@ -86,7 +89,10 @@ const CATEGORY_SLUGS = {
   'Musik & Komedi': 'musik-komedi',
   'Lifestyle': 'lifestyle',
   'Tech': 'tech',
-  'Berita Umum': 'berita-umum'
+  'Berita Umum': 'berita-umum',
+  'Sports': 'sports',
+  'Esports': 'esports',
+  'Politik': 'politik'
 };
 const categoryHref = (category) =>
   category === 'Semua' ? '/' : `/kategori/${CATEGORY_SLUGS[category] || ''}`;
@@ -152,6 +158,9 @@ const CATEGORY_LABELS_EN = {
   'Ekonomi Kreatif': 'Creative Economy',
   'Musik & Komedi': 'Music & Comedy',
   'Berita Umum': 'General News',
+  'Sports': 'Sports',
+  'Esports': 'Esports',
+  'Politik': 'Politics',
 };
 
 const PRESET_COLORS = [
