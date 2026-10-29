@@ -994,9 +994,10 @@ export default function App() {
               {CATEGORIES.map((category) => {
                 const isActive = selectedCategory === category && activeView === 'home';
                 return (
-                  <a
+                  <button
                     key={category}
-                    href={categoryHref(category)}
+                    type="button"
+                    onClick={() => goHome(category)}
                     style={
                       isActive
                         ? {
@@ -1012,7 +1013,7 @@ export default function App() {
                     }`}
                   >
                     {catLabel(category)}
-                  </a>
+                  </button>
                 );
               })}
             </div>
