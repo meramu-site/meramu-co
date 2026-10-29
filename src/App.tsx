@@ -78,6 +78,18 @@ const CATEGORIES = [
   'Berita Umum'
 ];
 
+// Every section has its own address: category tabs link to real pages.
+const CATEGORY_SLUGS = {
+  'Pop Culture': 'pop-culture',
+  'Ekonomi Kreatif': 'ekonomi-kreatif',
+  'Musik & Komedi': 'musik-komedi',
+  'Lifestyle': 'lifestyle',
+  'Tech': 'tech',
+  'Berita Umum': 'berita-umum'
+};
+const categoryHref = (category) =>
+  category === 'Semua' ? '/' : `/kategori/${CATEGORY_SLUGS[category] || ''}`;
+
 const PRESET_COLORS = [
   { name: 'Meramu Royal Blue', hex: '#0D1B8C' },
   { name: 'Meramu Deep Navy', hex: '#081059' },
@@ -525,6 +537,13 @@ export default function App() {
     navigateToHome();
   };
 
+  // Landing directly on /dapur-redaksi opens the admin view.
+  useEffect(() => {
+    if (window.location.pathname === '/dapur-redaksi') {
+      setActiveView('admin');
+    }
+  }, []);
+
   // Admin Handlers
   const handleAdminLogin = async (e) => {
     e.preventDefault();
@@ -790,18 +809,21 @@ export default function App() {
                 {brandSettings.domain}
               </span>
               <span className="text-neutral-300">|</span>
-              <button
-                onClick={() => {
-                  if (activeView === 'admin') {
-                    navigateToHome();
-                  } else {
-                    setActiveView('admin');
-                  }
-                }}
-                className="font-semibold text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer"
-              >
-                {activeView === 'admin' ? 'Lihat Website' : 'Dapur Redaksi'}
-              </button>
+              {activeView === 'admin' ? (
+                <a
+                  href="/"
+                  className="font-semibold text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer"
+                >
+                  Lihat Website
+                </a>
+              ) : (
+                <a
+                  href="/dapur-redaksi"
+                  className="font-semibold text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer"
+                >
+                  Dapur Redaksi
+                </a>
+              )}
             </div>
           </div>
         </div>
@@ -809,20 +831,21 @@ export default function App() {
         {/* Main Brand & Action Navbar */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
           {/* Official Brand Logo / Wordmark */}
-          <button
-            onClick={() => goHome('Semua')}
+          <a
+            href="/"
             className="flex items-center gap-3 text-left group focus:outline-none cursor-pointer"
           >
             <MeramuLogo brandSettings={brandSettings} size="md" />
-          </button>
+          </a>
 
           {/* Search & Admin Switcher */}
           <div className="flex items-center gap-2.5 sm:gap-3 ml-auto">
             {activeView !== 'admin' && (
-              <div className="relative w-40 sm:w-64">
+              <form action="/cari" method="get" className="relative w-40 sm:w-64">
                 <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
+                  name="q"
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -833,13 +856,14 @@ export default function App() {
                 />
                 {searchQuery && (
                   <button
+                    type="button"
                     onClick={() => setSearchQuery('')}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
-              </div>
+              </form>
             )}
 
           </div>
@@ -852,9 +876,9 @@ export default function App() {
               {CATEGORIES.map((category) => {
                 const isActive = selectedCategory === category && activeView === 'home';
                 return (
-                  <button
+                  <a
                     key={category}
-                    onClick={() => goHome(category)}
+                    href={categoryHref(category)}
                     style={
                       isActive
                         ? {
@@ -870,7 +894,7 @@ export default function App() {
                     }`}
                   >
                     {category}
-                  </button>
+                  </a>
                 );
               })}
             </div>
@@ -985,7 +1009,7 @@ export default function App() {
                         <span className="text-2xl font-black text-neutral-200 group-hover:text-neutral-900 transition-colors leading-none select-none">
                           0{idx + 1}
                         </span>
-                        <div className="space-y-1.5">
+                        <div className="space-y-1.5 flex-1">
                           <span
                             style={{ color: brandSettings.accentColor }}
                             className="text-[11px] font-bold uppercase tracking-wider block"
@@ -1001,6 +1025,20 @@ export default function App() {
                             <span>{item.readTime}</span>
                           </div>
                         </div>
+                        {item.imageUrl ? (
+                          <img
+                            src={item.imageUrl}
+                            alt={item.title}
+                            className="w-20 h-20 rounded-xl object-cover shrink-0"
+                          />
+                        ) : (
+                          <div
+                            className="w-20 h-20 rounded-xl shrink-0 flex items-center justify-center text-white text-xl font-black"
+                            style={{ backgroundColor: brandSettings.accentColor }}
+                          >
+                            M
+                          </div>
+                        )}
                       </a>
                     ))}
                   </div>
