@@ -90,6 +90,59 @@ const CATEGORY_SLUGS = {
 const categoryHref = (category) =>
   category === 'Semua' ? '/' : `/kategori/${CATEGORY_SLUGS[category] || ''}`;
 
+// UI language toggle (public chrome only; article bodies, the admin CMS
+// and server-rendered pages stay Indonesian for now).
+const UI_STRINGS = {
+  id: {
+    searchPlaceholder: 'Cari topik, berita...',
+    loading: 'Meramu berita terkini...',
+    showing: 'Menampilkan:',
+    forKeyword: 'dengan kata kunci',
+    resetFilter: 'Reset Filter',
+    mainHeadline: 'Headline Utama',
+    editorsPicks: 'Pilihan Redaksi',
+    latest: 'Terbaru di Meramu',
+    section: 'Rubrik:',
+    articlesAvailable: 'Artikel Tersedia',
+    showAllNews: 'Tampilkan Semua Berita',
+    noResults: 'Belum ada berita yang cocok dengan filter atau pencarian ini.',
+    follow: 'Ikuti',
+    followSub: 'Update visual harian di Instagram',
+    newsroom: 'Dapur Redaksi',
+    viewSite: 'Lihat Website',
+    justNow: 'Baru saja',
+    minRead: 'Menit Baca',
+  },
+  en: {
+    searchPlaceholder: 'Search topics, news...',
+    loading: 'Gathering the latest news...',
+    showing: 'Showing:',
+    forKeyword: 'for keyword',
+    resetFilter: 'Reset Filter',
+    mainHeadline: 'Main Headline',
+    editorsPicks: "Editor's Picks",
+    latest: 'Latest on Meramu',
+    section: 'Section:',
+    articlesAvailable: 'Articles Available',
+    showAllNews: 'Show All News',
+    noResults: 'No news matches this filter or search.',
+    follow: 'Follow',
+    followSub: 'Daily visual updates on Instagram',
+    newsroom: 'Newsroom',
+    viewSite: 'View Website',
+    justNow: 'Just now',
+    minRead: 'Min Read',
+  },
+};
+
+// Category names stay Indonesian in data; only the displayed label switches.
+const CATEGORY_LABELS_EN = {
+  'Semua': 'All',
+  'Ekonomi Kreatif': 'Creative Economy',
+  'Musik & Komedi': 'Music & Comedy',
+  'Berita Umum': 'General News',
+};
+
 const PRESET_COLORS = [
   { name: 'Meramu Royal Blue', hex: '#0D1B8C' },
   { name: 'Meramu Deep Navy', hex: '#081059' },
@@ -337,6 +390,23 @@ export default function App() {
   const [selectedArticleId, setSelectedArticleId] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('Semua');
   const [searchQuery, setSearchQuery] = useState('');
+  // UI language: persisted, public chrome only (see UI_STRINGS).
+  const [lang, setLang] = useState(() => {
+    try {
+      return window.localStorage.getItem('meramu-lang') === 'en' ? 'en' : 'id';
+    } catch {
+      return 'id';
+    }
+  });
+  const t = UI_STRINGS[lang];
+  const catLabel = (c) => (lang === 'en' ? (CATEGORY_LABELS_EN[c] || c) : c);
+  const readTimeLabel = (rt) => (lang === 'en' ? String(rt || '').replace('Menit Baca', t.minRead) : rt);
+  const switchLang = (l) => {
+    setLang(l);
+    try {
+      window.localStorage.setItem('meramu-lang', l);
+    } catch {}
+  };
   const [toastMessage, setToastMessage] = useState(null);
 
   // Admin CMS State
@@ -699,22 +769,15 @@ export default function App() {
     }
   };
 
-  // Date Formatter
+  // Date Formatter (locale follows the UI language toggle)
   const formatDate = (timestamp) => {
-    if (!timestamp) return 'Baru saja';
-    return new Intl.DateTimeFormat('id-ID', {
+    if (!timestamp) return t.justNow;
+    return new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'id-ID', {
       day: 'numeric',
       month: 'long',
       year: 'numeric'
     }).format(new Date(timestamp));
   };
-
-  const todayFormatted = new Intl.DateTimeFormat('id-ID', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  }).format(new Date());
 
   // Render Formatted Content Paragraphs
   const renderArticleContent = (rawText) => {
@@ -776,8 +839,25 @@ export default function App() {
         {/* Top Utility Strip */}
         <div className="border-b border-neutral-100 bg-neutral-50/70">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-9 flex items-center justify-between text-xs text-neutral-500">
-            <div className="flex items-center gap-3">
-              <span className="font-semibold text-neutral-700">{todayFormatted}</span>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center rounded-full border border-neutral-200 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => switchLang('id')}
+                  style={lang === 'id' ? { backgroundColor: brandSettings.accentColor, color: '#ffffff' } : {}}
+                  className="px-2.5 py-1 text-[11px] font-bold cursor-pointer text-neutral-600"
+                >
+                  ID
+                </button>
+                <button
+                  type="button"
+                  onClick={() => switchLang('en')}
+                  style={lang === 'en' ? { backgroundColor: brandSettings.accentColor, color: '#ffffff' } : {}}
+                  className="px-2.5 py-1 text-[11px] font-bold cursor-pointer text-neutral-600"
+                >
+                  EN
+                </button>
+              </div>
               <span className="hidden sm:inline text-neutral-300">|</span>
               <span className="hidden sm:inline truncate max-w-xs">{brandSettings.tagline}</span>
             </div>
@@ -814,14 +894,14 @@ export default function App() {
                   href="/"
                   className="font-semibold text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer"
                 >
-                  Lihat Website
+                  {t.viewSite}
                 </a>
               ) : (
                 <a
                   href="/dapur-redaksi"
                   className="font-semibold text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer"
                 >
-                  Dapur Redaksi
+                  {t.newsroom}
                 </a>
               )}
             </div>
@@ -851,7 +931,7 @@ export default function App() {
                     setSearchQuery(e.target.value);
                     if (activeView !== 'home') navigateToHome();
                   }}
-                  placeholder="Cari topik, berita..."
+                  placeholder={t.searchPlaceholder}
                   className="w-full pl-9 pr-7 py-1.5 bg-neutral-100 hover:bg-neutral-200/60 focus:bg-white text-sm rounded-full border border-transparent focus:border-[#0D1B8C] focus:outline-none transition-all"
                 />
                 {searchQuery && (
@@ -893,7 +973,7 @@ export default function App() {
                         : 'text-neutral-600 hover:text-[#0D1B8C] hover:bg-blue-50/60'
                     }`}
                   >
-                    {category}
+                    {catLabel(category)}
                   </a>
                 );
               })}
@@ -909,7 +989,7 @@ export default function App() {
         {isLoading ? (
           <div className="py-24 flex flex-col items-center justify-center gap-3 text-neutral-400">
             <div className="w-8 h-8 border-2 border-neutral-900 border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm font-medium">Meramu berita terkini...</p>
+            <p className="text-sm font-medium">{t.loading}</p>
           </div>
         ) : activeView === 'home' ? (
           /* ========================================== */
@@ -920,11 +1000,11 @@ export default function App() {
             {(selectedCategory !== 'Semua' || searchQuery.trim() !== '') && (
               <div className="flex items-center justify-between bg-white px-5 py-3.5 rounded-2xl border border-neutral-200/80 shadow-2xs">
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="text-neutral-500">Menampilkan:</span>
-                  <span className="font-bold text-neutral-900">{selectedCategory}</span>
+                  <span className="text-neutral-500">{t.showing}</span>
+                  <span className="font-bold text-neutral-900">{catLabel(selectedCategory)}</span>
                   {searchQuery && (
                     <span className="text-neutral-600">
-                      dengan kata kunci <strong>"{searchQuery}"</strong>
+                      {t.forKeyword} <strong>"{searchQuery}"</strong>
                     </span>
                   )}
                 </div>
@@ -935,7 +1015,7 @@ export default function App() {
                   }}
                   className="text-xs font-semibold text-neutral-500 hover:text-neutral-900 underline"
                 >
-                  Reset Filter
+                  {t.resetFilter}
                 </button>
               </div>
             )}
@@ -959,7 +1039,7 @@ export default function App() {
                         style={{ backgroundColor: brandSettings.accentColor }}
                         className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-white shadow-sm"
                       >
-                        Headline Utama
+                        {t.mainHeadline}
                       </span>
                       <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/95 text-neutral-900 backdrop-blur-xs shadow-sm">
                         {featuredArticle.category}
@@ -981,7 +1061,7 @@ export default function App() {
                       </div>
                       <span className="flex items-center gap-1 font-medium text-neutral-600">
                         <Clock className="w-3.5 h-3.5" />
-                        {featuredArticle.readTime}
+                        {readTimeLabel(featuredArticle.readTime)}
                       </span>
                     </div>
                   </div>
@@ -995,7 +1075,7 @@ export default function App() {
                       className="w-5 h-5"
                     />
                     <h2 className="text-base font-extrabold uppercase tracking-wider text-neutral-900">
-                      Pilihan Redaksi
+                      {t.editorsPicks}
                     </h2>
                   </div>
 
@@ -1022,7 +1102,7 @@ export default function App() {
                           <div className="flex items-center gap-2 text-[11px] text-neutral-400">
                             <span>{formatDate(item.createdAt)}</span>
                             <span>•</span>
-                            <span>{item.readTime}</span>
+                            <span>{readTimeLabel(item.readTime)}</span>
                           </div>
                         </div>
                         {item.imageUrl ? (
@@ -1064,10 +1144,10 @@ export default function App() {
                             style={{ color: brandSettings.accentColor }}
                             className="text-xs font-extrabold block"
                           >
-                            Ikuti @{brandSettings.instagram.replace('@', '')}
+                            {t.follow} @{brandSettings.instagram.replace('@', '')}
                           </span>
                           <span className="text-[11px] text-neutral-500 block">
-                            Update visual harian di Instagram
+                            {t.followSub}
                           </span>
                         </div>
                       </div>
@@ -1090,18 +1170,18 @@ export default function App() {
                     className="w-2.5 h-2.5 rounded-full"
                   />
                   <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-neutral-900">
-                    {selectedCategory === 'Semua' ? 'Terbaru di Meramu' : `Rubrik: ${selectedCategory}`}
+                    {selectedCategory === 'Semua' ? t.latest : `${t.section} ${catLabel(selectedCategory)}`}
                   </h2>
                 </div>
                 <span className="text-xs text-neutral-500 font-medium">
-                  {filteredArticles.length} Artikel Tersedia
+                  {filteredArticles.length} {t.articlesAvailable}
                 </span>
               </div>
 
               {gridArticles.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-neutral-200/80 p-12 text-center">
                   <p className="text-neutral-500 font-medium">
-                    Belum ada berita yang cocok dengan filter atau pencarian ini.
+                    {t.noResults}
                   </p>
                   <button
                     onClick={() => {
@@ -1110,7 +1190,7 @@ export default function App() {
                     }}
                     className="mt-4 px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold"
                   >
-                    Tampilkan Semua Berita
+                    {t.showAllNews}
                   </button>
                 </div>
               ) : (
@@ -1145,7 +1225,7 @@ export default function App() {
                           <div className="flex items-center gap-2">
                             <span>{formatDate(article.createdAt)}</span>
                             <span>•</span>
-                            <span>{article.readTime}</span>
+                            <span>{readTimeLabel(article.readTime)}</span>
                           </div>
                         </div>
                       </div>
