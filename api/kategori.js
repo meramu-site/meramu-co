@@ -13,7 +13,8 @@ const GA_ID = 'G-J3BTYYC4X8';
 const SLUG_TO_CATEGORY = {
   'pop-culture': 'Pop Culture',
   'ekonomi-kreatif': 'Ekonomi Kreatif',
-  'musik-komedi': 'Musik & Komedi',
+  'musik': 'Musik',
+  'entertainment': 'Entertainment',
   'lifestyle': 'Lifestyle',
   'tech': 'Tech',
   'berita-umum': 'Berita Umum',

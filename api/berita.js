@@ -15,7 +15,8 @@ const DEFAULT_OG = `${SITE_URL}/og-image.png`;
 const CATEGORY_SLUGS = {
   'Pop Culture': 'pop-culture',
   'Ekonomi Kreatif': 'ekonomi-kreatif',
-  'Musik & Komedi': 'musik-komedi',
+  'Musik': 'musik',
+  'Entertainment': 'entertainment',
   'Lifestyle': 'lifestyle',
   'Tech': 'tech',
   'Berita Umum': 'berita-umum',

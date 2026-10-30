@@ -15,7 +15,8 @@ const SITE_URL = 'https://meramu.site';
 const CATEGORY_SLUGS = [
   'pop-culture',
   'ekonomi-kreatif',
-  'musik-komedi',
+  'musik',
+  'entertainment',
   'lifestyle',
   'tech',
   'berita-umum',
@@ -115,7 +116,8 @@ export default async function handler(req, res) {
   const slugToCategory = {
     'pop-culture': 'Pop Culture',
     'ekonomi-kreatif': 'Ekonomi Kreatif',
-    'musik-komedi': 'Musik & Komedi',
+    'musik': 'Musik',
+    'entertainment': 'Entertainment',
     'lifestyle': 'Lifestyle',
     'tech': 'Tech',
     'berita-umum': 'Berita Umum',
