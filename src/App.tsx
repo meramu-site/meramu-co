@@ -59,7 +59,7 @@ const firebaseConfig = {
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
-// Without apiKey + projectId the site runs in demo mode: local seed
+// Without apiKey + projectId the site runs in demo mode: no demo
 // articles, no sign-in, no Firestore writes. Admin login needs Firebase
 // plus an admin user created in the Firebase console (see README).
 const FIREBASE_READY = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId);
@@ -70,7 +70,7 @@ const db = FIREBASE_READY ? getFirestore(app) : null;
 const appId = 'meramu-site-app';
 
 // ==========================================
-// CONSTANTS & INITIAL SEED DATA
+// CONSTANTS
 // ==========================================
 const CATEGORIES = [
   'Semua',
@@ -183,104 +183,7 @@ const UNSPLASH_PRESETS = [
   { label: 'Komedi / Mic', url: 'https://images.unsplash.com/photo-1585699324551-f6c309eedeca?auto=format&fit=crop&w=1200&q=80' }
 ];
 
-const INITIAL_ARTICLES = [
-  {
-    id: 'seed-1',
-    title: 'Geliat Skena Stand-Up Comedy Independen: Dari Kafe Sempit Menuju Tur Nasional',
-    excerpt: 'Bagaimana kolektif komika lokal membangun ekosistem pertunjukan mandiri yang tiketnya selalu ludes terjual dalam hitungan menit.',
-    category: 'Musik & Komedi',
-    author: 'Redaksi Meramu',
-    readTime: '5 Menit Baca',
-    imageUrl: 'https://images.unsplash.com/photo-1585699324551-f6c309eedeca?auto=format&fit=crop&w=1200&q=80',
-    imageCaption: 'Suasana open mic dan pertunjukan spesial komedi tunggal di sudut kota Jakarta.',
-    isFeatured: true,
-    isTrending: true,
-    createdAt: Date.now() - 3600000 * 2,
-    content: `Dalam beberapa tahun terakhir, panggung komedi tunggal atau stand-up comedy di Indonesia mengalami pergeseran yang sangat menarik. Jika dulu tolok ukur kesuksesan seorang komika adalah seberapa sering ia tampil di layar kaca televisi nasional, kini panggung-panggung intim di kafe, gedung kesenian, hingga ruang kreatif alternatif justru menjadi primadona utama.
 
-Fenomena ini tidak lepas dari keberanian para komika dan kolektif kreatif dalam memproduksi pertunjukan spesial (special show) mereka sendiri. Dengan mengandalkan promosi organik di media sosial seperti Instagram dan potongan klip pendek, kedekatan antara penampil dan penonton terbangun jauh lebih solid.
-
-## Ekonomi Baru di Balik Tawa
-
-Bukan sekadar hiburan malam akhir pekan, ekosistem pertunjukan komedi independen kini telah memutar roda ekonomi kreatif yang serius. Mulai dari kru produksi panggung, desainer poster, videografer dokumentasi, hingga penjualan merchandise eksklusif maupun rilisan digital (digital download) yang memberikan pemasukan berkelanjutan bagi kreatornya.
-
-> "Penonton sekarang datang bukan cuma mau ketawa, tapi ingin merasakan pengalaman kolektif dan mendukung kejujuran karya komika favorit mereka secara langsung," ungkap salah satu produser pertunjukan lokal.
-
-Ke depannya, kolaborasi antara musisi indie dan komika dalam satu rangkaian tur lintas kota diprediksi akan semakin marak, menciptakan format festival pop-culture baru yang segar bagi anak muda.`
-  },
-  {
-    id: 'seed-2',
-    title: 'Era Baru Brand Lokal: Ketika Storytelling Lebih Kuat dari Sekadar Diskon Besar',
-    excerpt: 'Konsumen muda kini lebih memilih produk dengan narasi komunitas yang autentik dibandingkan perang harga di marketplace.',
-    category: 'Ekonomi Kreatif',
-    author: 'Dimas Pratama',
-    readTime: '4 Menit Baca',
-    imageUrl: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80',
-    imageCaption: 'Studio kreatif tempat perancangan identitas visual dan narasi produk lokal.',
-    isFeatured: false,
-    isTrending: true,
-    createdAt: Date.now() - 3600000 * 8,
-    content: `Persaingan brand lokal di sektor fesyen, kuliner, hingga produk perawatan diri kini memasuki babak pendewasaan. Strategi bakar uang lewat potongan harga ekstrem perlahan ditinggalkan karena terbukti tidak membangun loyalitas jangka panjang.
-
-Sebagai gantinya, studio-studio kreatif dan pemilik jenama lokal mulai berinvestasi serius pada storytelling atau penceritaan. Mereka meramu identitas visual yang rapi, zine cetak terbatas, hingga aktivasi komunitas luring seperti klub lari atau sesi diskusi sore.
-
-## Komunitas Sebagai Fondasi
-
-Ketika sebuah brand mampu merepresentasikan nilai dan gaya hidup audiensnya, produk yang mereka rilis otomatis menjadi medium ekspresi diri. Inilah alasan mengapa perilisan koleksi kapsul kolaborasi antara brand pakaian lokal dengan ilustrator atau musisi independen selalu memicu antusiasme tinggi.`
-  },
-  {
-    id: 'seed-3',
-    title: 'Mengapa Kamera Digital Saku Era 2000-an Kembali Diburu Generasi Muda?',
-    excerpt: 'Di tengah gempuran kamera smartphone beresolusi tinggi, estetika foto low-fi dari digicam lawas justru menjadi simbol gaya baru.',
-    category: 'Pop Culture',
-    author: 'Nadia Larasati',
-    readTime: '3 Menit Baca',
-    imageUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1200&q=80',
-    imageCaption: 'Kamera saku digital yang kembali populer di kalangan pecinta fotografi jalanan.',
-    isFeatured: false,
-    isTrending: true,
-    createdAt: Date.now() - 3600000 * 18,
-    content: `Jika kamu membuka linimasa Instagram belakangan ini, kamu mungkin sering menemukan unggahan foto dengan warna sedikit pudar, kontras flash yang tajam, dan tekstur grain khas sensor CCD awal tahun 2000-an. Tren ini membuat harga kamera digital saku (digicam) bekas di pasar barang antik melonjak drastis.
-
-Bagi banyak anak muda, kesempurnaan algoritma pemrosesan gambar di ponsel pintar terkadang terasa terlalu klinis. Digicam menawarkan ketidaksempurnaan yang terasa hangat, spontan, dan penuh nostalgia.
-
-Selain faktor visual, pengalaman memotret tanpa terganggu notifikasi pesan masuk juga menjadi daya tarik tersendiri dalam menikmati momen bersama teman-teman.`
-  },
-  {
-    id: 'seed-4',
-    title: 'AI untuk Kreator Independen: Alat Bantu Riset atau Pengganti Imajinasi?',
-    excerpt: 'Menilik bagaimana penulis, desainer, dan pekerja media meramu teknologi kecerdasan buatan tanpa kehilangan sentuhan manusiawi.',
-    category: 'Tech',
-    author: 'Raka Wijaya',
-    readTime: '6 Menit Baca',
-    imageUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80',
-    imageCaption: 'Perkembangan teknologi komputasi modern dalam alur kerja kreatif.',
-    isFeatured: false,
-    isTrending: false,
-    createdAt: Date.now() - 3600000 * 28,
-    content: `Kehadiran berbagai perangkat kecerdasan buatan (AI) generatif telah mengubah cara ruang redaksi dan studio desain bekerja. Tugas-tugas administratif seperti transkripsi wawancara, pengelompokan data riset, hingga pembuatan purwarupa kode kini bisa diselesaikan dalam hitungan detik.
-
-Namun, di tengah efisiensi tersebut, nilai dari kurasi manusia justru semakin mahal. Pembaca dan penikmat karya seni tetap mencari sudut pandang personal, empati, serta humor kontekstual yang hanya bisa lahir dari pengalaman hidup nyata.
-
-Kuncinya terletak pada bagaimana kreator memposisikan teknologi sebagai asisten teknis di dapur produksi, sementara kemudi utama rasa dan gagasan tetap dipegang penuh oleh manusia.`
-  },
-  {
-    id: 'seed-5',
-    title: 'Budaya Slow Morning: Tren Kafe Pagi dan Ruang Ketiga di Tengah Hiruk Pikuk Kota',
-    excerpt: 'Alih-alih begadang hingga larut malam, semakin banyak pekerja urban memilih memulai hari dengan kopi pagi dan obrolan santai.',
-    category: 'Lifestyle',
-    author: 'Redaksi Meramu',
-    readTime: '4 Menit Baca',
-    imageUrl: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80',
-    imageCaption: 'Secangkir kopi pagi sebelum memulai rutinitas harian.',
-    isFeatured: false,
-    isTrending: false,
-    createdAt: Date.now() - 3600000 * 42,
-    content: `Ada pemandangan berbeda di berbagai kedai kopi lokal pukul tujuh pagi. Kursi-kursi sudah mulai terisi oleh mereka yang baru selesai berolahraga pagi atau pekerja lepas yang sengaja mencari suasana tenang sebelum jam sibuk dimulai.
-
-Gaya hidup 'slow morning' ini menjadi respons alami terhadap kelelahan bekerja di depan layar sepanjang hari. Menikmati sarapan ringan, membaca berita terkini, dan berbincang tanpa terburu-buru di kedai kopi lingkungan sekitar terbukti membantu menjaga kewarasan mental di tengah ritme kota yang serba cepat.`
-  }
-];
 
 const DEFAULT_BRAND = {
   siteName: 'MERAMU',
@@ -403,7 +306,6 @@ export default function App() {
   const [articles, setArticles] = useState([]);
   const [brandSettings, setBrandSettings] = useState(DEFAULT_BRAND);
   const [isLoading, setIsLoading] = useState(true);
-  const [seedingInProgress, setSeedingInProgress] = useState(false);
 
   // Navigation & UI State
   const [activeView, setActiveView] = useState('home'); // 'home' | 'article' | 'admin'
@@ -491,7 +393,7 @@ export default function App() {
 
   // 1. Firebase Auth Effect
   useEffect(() => {
-    // Demo mode: no Firebase, no sign-in. Readers still see seed articles.
+    // Demo mode: no Firebase, no sign-in. No demo articles are served.
     if (!FIREBASE_READY || !auth) return;
     const initAuth = async () => {
       try {
@@ -509,9 +411,9 @@ export default function App() {
 
   // 2. Firestore Data Sync Effect
   useEffect(() => {
-    // Demo mode: serve local seed articles, no Firestore listeners.
+    // Demo mode: no demo articles — serve an empty list, no Firestore listeners.
     if (!FIREBASE_READY || !db) {
-      setArticles(INITIAL_ARTICLES);
+      setArticles([]);
       setIsLoading(false);
       return;
     }
@@ -524,25 +426,10 @@ export default function App() {
     const unsubArticles = onSnapshot(
       articlesRef,
       async (snapshot) => {
-        if (snapshot.empty && !seedingInProgress) {
-          // Empty collection: show local seeds immediately so readers never
-          // hang on loading. Only a signed-in admin can write seeds to
-          // Firestore (locked rules); anonymous readers just see the local
-          // seeds until an admin seeds once.
-          setArticles(INITIAL_ARTICLES);
+        if (snapshot.empty) {
+          // Empty collection: no demo content anymore — show an empty list.
+          setArticles([]);
           setIsLoading(false);
-          if (!user || user.isAnonymous) return;
-          setSeedingInProgress(true);
-          try {
-            for (const item of INITIAL_ARTICLES) {
-              const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'articles', item.id);
-              await setDoc(docRef, item);
-            }
-          } catch (seedErr) {
-            console.error('Error seeding initial articles:', seedErr);
-          } finally {
-            setSeedingInProgress(false);
-          }
         } else {
           const loaded = snapshot.docs.map((d) => ({
             id: d.id,
@@ -556,8 +443,8 @@ export default function App() {
       },
       (error) => {
         console.error('Firestore articles listener error:', error);
-        // Fallback to local seed if Firestore fails
-        setArticles(INITIAL_ARTICLES);
+        // Fallback to an empty list if Firestore fails
+        setArticles([]);
         setIsLoading(false);
       }
     );
