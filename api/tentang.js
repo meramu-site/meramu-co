@@ -1,6 +1,6 @@
 // Vercel Serverless Function: the About page is its own real page.
 // /tentang is rewritten (vercel.json) to /api/tentang.
-// Static content: the user-approved "Tentang Meramu.co" text (2026-10-30).
+// Static content: the user-approved "Tentang Meramu" text (2026-10-30).
 
 const SITE_URL = 'https://meramu.site';
 const ACCENT = '#0D1B8C';
@@ -18,7 +18,7 @@ function escapeHtml(s) {
 // Approved text, verbatim (user-approved 2026-10-30, good-news angle removed
 // by the user; the unique point is "baca berita secukupnya, lanjut kerja lagi").
 const PARAGRAPHS = [
-  'Meramu.co lahir pada 28 Oktober 2026 — bertepatan dengan Hari Sumpah Pemuda, dan di minggu ketika anak muda Indonesia sedang bersuara paling lantang. Kami lahir dari generasi itu, dan untuk mereka.',
+  'Meramu lahir pada 28 Oktober 2026 — bertepatan dengan Hari Sumpah Pemuda, dan di minggu ketika anak muda Indonesia sedang bersuara paling lantang. Kami lahir dari generasi itu, dan untuk mereka.',
   'Kami percaya satu hal sederhana: baca berita secukupnya, lanjut kerja lagi.',
   'Media lain berlomba bikin kamu betah berlama-lama: feed tanpa ujung, notifikasi tanpa henti, rasa takut ketinggalan. Meramu memilih sebaliknya. Kami adalah kurasi harian untuk yang nggak punya waktu banyak — racikan kabar yang dipilih dengan sengaja: budaya pop, musik dan komedi, ekonomi kreatif, teknologi, dan kabar publik, diterjemahkan ke bahasa sehari-hari.',
   'Secukupnya bukan berarti seadanya. Setiap kabar yang lolos kurasi kami harus menjawab satu pertanyaan: apa yang perlu kamu tahu hari ini, supaya kamu bisa lanjut kerja, lanjut kuliah, lanjut hidup — tanpa merasa ketinggalan?',
@@ -26,13 +26,13 @@ const PARAGRAPHS = [
 ];
 
 export default async function handler(req, res) {
-  const title = 'Tentang Meramu.co';
+  const title = 'Tentang Meramu';
   const description = 'Baca berita secukupnya, lanjut kerja lagi.';
   const canonical = `${SITE_URL}/tentang`;
   const body = `<a class="back" style="margin:0 0 20px" href="/">&larr; Beranda</a>
 <div style="margin-top:20px"><span class="chip">Tentang</span></div>
 <h1>${escapeHtml(title)}</h1>
-<div class="meta"><b>Meramu.co</b><span>•</span><span>Lahir 28 Oktober 2026</span></div>
+<div class="meta"><b>Meramu</b><span>•</span><span>Lahir 28 Oktober 2026</span></div>
 <article>${PARAGRAPHS.map((p) => `<p>${escapeHtml(p)}</p>`).join('\n')}</article>
 <div class="social">
 <a href="https://instagram.com/meramudotco" target="_blank" rel="noreferrer">Instagram @meramudotco</a>
@@ -51,20 +51,20 @@ export default async function handler(req, res) {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>${escapeHtml(title)} — Meramu.co</title>
+<title>${escapeHtml(title)} — Meramu</title>
 <meta name="description" content="${escapeHtml(description)}" />
 <link rel="canonical" href="${escapeHtml(canonical)}" />
 <meta name="robots" content="max-image-preview:large" />
-<meta property="og:title" content="${escapeHtml(title)} — Meramu.co" />
+<meta property="og:title" content="${escapeHtml(title)} — Meramu" />
 <meta property="og:description" content="${escapeHtml(description)}" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="${escapeHtml(canonical)}" />
 <meta property="og:image" content="https://meramu.site/og-image.png" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="${escapeHtml(title)} — Meramu.co" />
+<meta name="twitter:title" content="${escapeHtml(title)} — Meramu" />
 <meta name="twitter:description" content="${escapeHtml(description)}" />
 <meta name="twitter:image" content="https://meramu.site/og-image.png" />
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Meramu.co","url":"https://meramu.site","logo":"https://meramu.site/favicon.svg","description":"Baca berita secukupnya, lanjut kerja lagi.","foundingDate":"2026-10-28","sameAs":["https://instagram.com/meramudotco","https://www.threads.net/@meramudotco"]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Meramu","url":"https://meramu.site","logo":"https://meramu.site/favicon.svg","description":"Baca berita secukupnya, lanjut kerja lagi.","foundingDate":"2026-10-28","sameAs":["https://instagram.com/meramudotco","https://www.threads.net/@meramudotco"]}</script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_ID}');</script>
 <script>(function(){try{if(localStorage.getItem('meramu-theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}})();</script>
@@ -99,9 +99,9 @@ export default async function handler(req, res) {
 </head>
 <body>
 <div class="accent"></div>
-<header><div class="head"><div class="badge">M</div><div class="brand">MERAMU.CO<small>OFFICIAL PORTAL</small></div><nav><a href="/">Beranda</a><a href="https://instagram.com/meramudotco">Instagram</a></nav></div></header>
+<header><div class="head"><div class="badge">M</div><div class="brand">MERAMU<small>Gagasan, kultur, cerita — diramu jadi satu.</small></div><nav><a href="/">Beranda</a><a href="https://instagram.com/meramudotco">Instagram</a></nav></div></header>
 <main>${body}</main>
-<footer>MERAMU.CO — Portal Berita<br /><a href="/">Beranda</a> • <a href="/tentang">Tentang</a> • <a href="/privasi">Privasi</a> • <a href="/kontak">Kontak</a></footer>
+<footer>MERAMU — Portal Berita<br /><a href="/">Beranda</a> • <a href="/tentang">Tentang</a> • <a href="/privasi">Privasi</a> • <a href="/kontak">Kontak</a></footer>
 </body>
 </html>`;
 

@@ -72,17 +72,17 @@ function shell({ title, description, canonical, body }) {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>${escapeHtml(title)} — Meramu.co</title>
+<title>${escapeHtml(title)} — Meramu</title>
 <meta name="description" content="${escapeHtml(description)}" />
 <link rel="canonical" href="${escapeHtml(canonical)}" />
 <meta name="robots" content="max-image-preview:large" />
-<meta property="og:title" content="${escapeHtml(title)} — Meramu.co" />
+<meta property="og:title" content="${escapeHtml(title)} — Meramu" />
 <meta property="og:description" content="${escapeHtml(description)}" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="${escapeHtml(canonical)}" />
 <meta property="og:image" content="https://meramu.site/og-image.png" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="${escapeHtml(title)} — Meramu.co" />
+<meta name="twitter:title" content="${escapeHtml(title)} — Meramu" />
 <meta name="twitter:description" content="${escapeHtml(description)}" />
 <meta name="twitter:image" content="https://meramu.site/og-image.png" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script>
@@ -119,9 +119,9 @@ function shell({ title, description, canonical, body }) {
 </head>
 <body>
 <div class="accent"></div>
-<header><div class="head"><div class="badge">M</div><div class="brand">MERAMU.CO<small>OFFICIAL PORTAL</small></div><nav><a href="/">Beranda</a><a href="https://instagram.com/meramudotco">Instagram</a></nav></div></header>
+<header><div class="head"><div class="badge">M</div><div class="brand">MERAMU<small>Gagasan, kultur, cerita — diramu jadi satu.</small></div><nav><a href="/">Beranda</a><a href="https://instagram.com/meramudotco">Instagram</a></nav></div></header>
 <main>${body}</main>
-<footer>MERAMU.CO — Portal Berita<br /><a href="/">Beranda</a> • <a href="/tentang">Tentang</a> • <a href="/privasi">Privasi</a> • <a href="/kontak">Kontak</a></footer>
+<footer>MERAMU — Portal Berita<br /><a href="/">Beranda</a> • <a href="/tentang">Tentang</a> • <a href="/privasi">Privasi</a> • <a href="/kontak">Kontak</a></footer>
 </body>
 </html>`;
 }
@@ -134,7 +134,7 @@ export default async function handler(req, res) {
   if (!category) {
     return res.status(404).send(shell({
       title: 'Rubrik tidak ditemukan',
-      description: 'Rubrik yang kamu cari tidak ada di Meramu.co.',
+      description: 'Rubrik yang kamu cari tidak ada di Meramu.',
       canonical: `${SITE_URL}/`,
       body: `<h1>Rubrik tidak ditemukan</h1><p class="count">Alamat ini tidak mengarah ke rubrik mana pun.</p><a class="back" href="/">&larr; Kembali ke Beranda</a>`,
     }));
@@ -191,7 +191,7 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
   return res.status(200).send(shell({
     title: `Rubrik: ${category}`,
-    description: `Berita terbaru rubrik ${category} di Meramu.co.`,
+    description: `Berita terbaru rubrik ${category} di Meramu.`,
     canonical: `${SITE_URL}/kategori/${slug}`,
     body: `<a class="back" style="margin:0 0 20px" href="/">&larr; Beranda</a>
 <div style="margin-top:20px"><span class="chip">Rubrik</span></div>

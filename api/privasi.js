@@ -18,21 +18,21 @@ function escapeHtml(s) {
 }
 
 const TITLE = 'Kebijakan Privasi';
-const DESCRIPTION = 'Data apa yang dikumpulkan Meramu.co dan kenapa. Berlaku sejak 30 Oktober 2026.';
+const DESCRIPTION = 'Data apa yang dikumpulkan Meramu dan kenapa. Berlaku sejak 30 Oktober 2026.';
 
 const SECTIONS = [
   {
     h: 'Ringkasnya',
     ps: [
-      'Meramu.co menghargai privasi pembaca. Halaman ini menjelaskan data apa yang kami kumpulkan, kenapa, dan apa yang tidak kami lakukan. Kebijakan ini berlaku sejak 30 Oktober 2026.',
+      'Meramu menghargai privasi pembaca. Halaman ini menjelaskan data apa yang kami kumpulkan, kenapa, dan apa yang tidak kami lakukan. Kebijakan ini berlaku sejak 30 Oktober 2026.',
     ],
   },
   {
     h: 'Data yang kami kumpulkan',
     ps: [
       'Google Analytics: kami memakai Google Analytics untuk memahami pembaca secara agregat — halaman apa yang dibaca, perangkat apa yang dipakai, dan perkiraan wilayah (kota/negara). Data ini tidak mengidentifikasi kamu secara pribadi.',
-      'Pembaca tidak perlu akun: membaca Meramu.co tidak meminta nama, email, atau data pribadi apa pun. Tidak ada kolom komentar dan tidak ada formulir yang mengumpulkan data pembaca.',
-      'Login admin hanya untuk redaksi: halaman Dapur Redaksi dipakai tim Meramu.co untuk menulis dan menerbitkan artikel. Akun redaksi tidak dibagikan ke pembaca.',
+      'Pembaca tidak perlu akun: membaca Meramu tidak meminta nama, email, atau data pribadi apa pun. Tidak ada kolom komentar dan tidak ada formulir yang mengumpulkan data pembaca.',
+      'Login admin hanya untuk redaksi: halaman Dapur Redaksi dipakai tim Meramu untuk menulis dan menerbitkan artikel. Akun redaksi tidak dibagikan ke pembaca.',
       'Gambar dari pihak ketiga: sebagian foto artikel dimuat dari server pihak ketiga (misalnya Wikimedia Commons atau CDN promotor). Saat gambar itu dimuat, server tersebut dapat melihat alamat IP perangkatmu, sesuai kebijakan mereka masing-masing.',
     ],
   },
@@ -63,7 +63,7 @@ export default async function handler(req, res) {
   const body = `<a class="back" style="margin:0 0 20px" href="/">&larr; Beranda</a>
 <div style="margin-top:20px"><span class="chip">Legal</span></div>
 <h1>${escapeHtml(TITLE)}</h1>
-<div class="meta"><b>Meramu.co</b><span>•</span><span>Berlaku sejak 30 Oktober 2026</span></div>
+<div class="meta"><b>Meramu</b><span>•</span><span>Berlaku sejak 30 Oktober 2026</span></div>
 <article>${SECTIONS.map((s) => `<h2>${escapeHtml(s.h)}</h2>\n${s.ps.map((p) => `<p>${escapeHtml(p)}</p>`).join('\n')}`).join('\n')}</article>
 <a class="back" href="/">&larr; Kembali ke Beranda</a>`;
 
@@ -72,17 +72,17 @@ export default async function handler(req, res) {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>${escapeHtml(TITLE)} — Meramu.co</title>
+<title>${escapeHtml(TITLE)} — Meramu</title>
 <meta name="description" content="${escapeHtml(DESCRIPTION)}" />
 <link rel="canonical" href="${escapeHtml(canonical)}" />
 <meta name="robots" content="max-image-preview:large" />
-<meta property="og:title" content="${escapeHtml(TITLE)} — Meramu.co" />
+<meta property="og:title" content="${escapeHtml(TITLE)} — Meramu" />
 <meta property="og:description" content="${escapeHtml(DESCRIPTION)}" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="${escapeHtml(canonical)}" />
 <meta property="og:image" content="https://meramu.site/og-image.png" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="${escapeHtml(TITLE)} — Meramu.co" />
+<meta name="twitter:title" content="${escapeHtml(TITLE)} — Meramu" />
 <meta name="twitter:description" content="${escapeHtml(DESCRIPTION)}" />
 <meta name="twitter:image" content="https://meramu.site/og-image.png" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script>
@@ -118,9 +118,9 @@ export default async function handler(req, res) {
 </head>
 <body>
 <div class="accent"></div>
-<header><div class="head"><div class="badge">M</div><div class="brand">MERAMU.CO<small>OFFICIAL PORTAL</small></div><nav><a href="/">Beranda</a><a href="https://instagram.com/meramudotco">Instagram</a></nav></div></header>
+<header><div class="head"><div class="badge">M</div><div class="brand">MERAMU<small>Gagasan, kultur, cerita — diramu jadi satu.</small></div><nav><a href="/">Beranda</a><a href="https://instagram.com/meramudotco">Instagram</a></nav></div></header>
 <main>${body}</main>
-<footer>MERAMU.CO — Portal Berita<br /><a href="/">Beranda</a> • <a href="/tentang">Tentang</a> • <a href="/privasi">Privasi</a> • <a href="/kontak">Kontak</a></footer>
+<footer>MERAMU — Portal Berita<br /><a href="/">Beranda</a> • <a href="/tentang">Tentang</a> • <a href="/privasi">Privasi</a> • <a href="/kontak">Kontak</a></footer>
 </body>
 </html>`;
 

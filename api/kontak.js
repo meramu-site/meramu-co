@@ -17,16 +17,16 @@ function escapeHtml(s) {
 }
 
 const TITLE = 'Kontak Redaksi';
-const DESCRIPTION = 'Hubungi Redaksi Meramu.co lewat Instagram dan Threads @meramudotco.';
+const DESCRIPTION = 'Hubungi Redaksi Meramu lewat Instagram dan Threads @meramudotco.';
 
 export default async function handler(req, res) {
   const canonical = `${SITE_URL}/kontak`;
   const body = `<a class="back" style="margin:0 0 20px" href="/">&larr; Beranda</a>
 <div style="margin-top:20px"><span class="chip">Kontak</span></div>
 <h1>${escapeHtml(TITLE)}</h1>
-<div class="meta"><b>Meramu.co</b><span>•</span><span>Redaksi</span></div>
+<div class="meta"><b>Meramu</b><span>•</span><span>Redaksi</span></div>
 <article>
-<p>Punya kabar untuk diliput, koreksi untuk artikel yang sudah tayang, atau saran buat Meramu.co? Hubungi redaksi lewat kanal berikut. Kami membaca semua pesan yang masuk.</p>
+<p>Punya kabar untuk diliput, koreksi untuk artikel yang sudah tayang, atau saran buat Meramu? Hubungi redaksi lewat kanal berikut. Kami membaca semua pesan yang masuk.</p>
 </article>
 <div class="social">
 <a href="https://instagram.com/meramudotco" target="_blank" rel="noreferrer">Instagram @meramudotco</a>
@@ -43,17 +43,17 @@ export default async function handler(req, res) {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>${escapeHtml(TITLE)} — Meramu.co</title>
+<title>${escapeHtml(TITLE)} — Meramu</title>
 <meta name="description" content="${escapeHtml(DESCRIPTION)}" />
 <link rel="canonical" href="${escapeHtml(canonical)}" />
 <meta name="robots" content="max-image-preview:large" />
-<meta property="og:title" content="${escapeHtml(TITLE)} — Meramu.co" />
+<meta property="og:title" content="${escapeHtml(TITLE)} — Meramu" />
 <meta property="og:description" content="${escapeHtml(DESCRIPTION)}" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="${escapeHtml(canonical)}" />
 <meta property="og:image" content="https://meramu.site/og-image.png" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="${escapeHtml(TITLE)} — Meramu.co" />
+<meta name="twitter:title" content="${escapeHtml(TITLE)} — Meramu" />
 <meta name="twitter:description" content="${escapeHtml(DESCRIPTION)}" />
 <meta name="twitter:image" content="https://meramu.site/og-image.png" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script>
@@ -90,9 +90,9 @@ export default async function handler(req, res) {
 </head>
 <body>
 <div class="accent"></div>
-<header><div class="head"><div class="badge">M</div><div class="brand">MERAMU.CO<small>OFFICIAL PORTAL</small></div><nav><a href="/">Beranda</a><a href="https://instagram.com/meramudotco">Instagram</a></nav></div></header>
+<header><div class="head"><div class="badge">M</div><div class="brand">MERAMU<small>Gagasan, kultur, cerita — diramu jadi satu.</small></div><nav><a href="/">Beranda</a><a href="https://instagram.com/meramudotco">Instagram</a></nav></div></header>
 <main>${body}</main>
-<footer>MERAMU.CO — Portal Berita<br /><a href="/">Beranda</a> • <a href="/tentang">Tentang</a> • <a href="/privasi">Privasi</a> • <a href="/kontak">Kontak</a></footer>
+<footer>MERAMU — Portal Berita<br /><a href="/">Beranda</a> • <a href="/tentang">Tentang</a> • <a href="/privasi">Privasi</a> • <a href="/kontak">Kontak</a></footer>
 </body>
 </html>`;
 

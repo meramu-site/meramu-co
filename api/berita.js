@@ -100,17 +100,17 @@ function pageShell({ title, description, canonical, ogImage, body, status = 200,
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>${escapeHtml(title)} — Meramu.co</title>
+<title>${escapeHtml(title)} — Meramu</title>
 <meta name="description" content="${escapeHtml(description)}" />
 <link rel="canonical" href="${escapeHtml(canonical)}" />
 <meta name="robots" content="max-image-preview:large" />
-<meta property="og:title" content="${escapeHtml(title)} — Meramu.co" />
+<meta property="og:title" content="${escapeHtml(title)} — Meramu" />
 <meta property="og:description" content="${escapeHtml(description)}" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="${escapeHtml(canonical)}" />
 <meta property="og:image" content="${escapeHtml(shareImage)}" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="${escapeHtml(title)} — Meramu.co" />
+<meta name="twitter:title" content="${escapeHtml(title)} — Meramu" />
 <meta name="twitter:description" content="${escapeHtml(description)}" />
 <meta name="twitter:image" content="${escapeHtml(shareImage)}" />
 ${jsonLd ? `<script type="application/ld+json">${jsonLd}</script>` : ''}
@@ -153,9 +153,9 @@ ${jsonLd ? `<script type="application/ld+json">${jsonLd}</script>` : ''}
 </head>
 <body>
 <div class="accent"></div>
-<header><div class="head"><div class="badge">M</div><div class="brand">MERAMU.CO<small>OFFICIAL PORTAL</small></div><nav><a href="/">Beranda</a><a href="https://instagram.com/meramudotco">Instagram</a></nav></div></header>
+<header><div class="head"><div class="badge">M</div><div class="brand">MERAMU<small>Gagasan, kultur, cerita — diramu jadi satu.</small></div><nav><a href="/">Beranda</a><a href="https://instagram.com/meramudotco">Instagram</a></nav></div></header>
 <main>${body}</main>
-<footer>MERAMU.CO — Portal Berita<br /><a href="/">Beranda</a> • <a href="/tentang">Tentang</a> • <a href="/privasi">Privasi</a> • <a href="/kontak">Kontak</a></footer>
+<footer>MERAMU — Portal Berita<br /><a href="/">Beranda</a> • <a href="/tentang">Tentang</a> • <a href="/privasi">Privasi</a> • <a href="/kontak">Kontak</a></footer>
 </body>
 </html>`;
   return { html, status };
@@ -167,7 +167,7 @@ export default async function handler(req, res) {
   if (!id || !/^[A-Za-z0-9_-]+$/.test(id)) {
     const { html } = pageShell({
       title: 'Berita tidak ditemukan',
-      description: 'Artikel yang kamu cari tidak ada di Meramu.co.',
+      description: 'Artikel yang kamu cari tidak ada di Meramu.',
       canonical: `${SITE_URL}/`,
       ogImage: '',
       body: `<h1>Berita tidak ditemukan</h1><p class="lead">Alamat ini tidak mengarah ke artikel mana pun.</p><a class="back" href="/">&larr; Kembali ke Beranda</a>`,
@@ -200,7 +200,7 @@ export default async function handler(req, res) {
   } catch {
     const { html } = pageShell({
       title: 'Berita tidak ditemukan',
-      description: 'Artikel yang kamu cari tidak ada di Meramu.co.',
+      description: 'Artikel yang kamu cari tidak ada di Meramu.',
       canonical: `${SITE_URL}/`,
       ogImage: '',
       body: `<h1>Berita tidak ditemukan</h1><p class="lead">Artikel ini mungkin sudah dihapus atau alamatnya salah.</p><a class="back" href="/">&larr; Kembali ke Beranda</a>`,
@@ -233,7 +233,7 @@ export default async function handler(req, res) {
     author: { '@type': 'Organization', name: author, url: SITE_URL },
     publisher: {
       '@type': 'Organization',
-      name: 'Meramu.co',
+      name: 'Meramu',
       url: SITE_URL,
       logo: { '@type': 'ImageObject', url: `${SITE_URL}/favicon.svg` },
     },

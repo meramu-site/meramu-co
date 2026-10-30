@@ -82,7 +82,7 @@ export default async function handler(req, res) {
     ? new Date(Math.max(...docs.map((d) => msField(d.fields, 'createdAt')))).toUTCString()
     : new Date().toUTCString();
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0">\n  <channel>\n    <title>Meramu.co — Portal Berita</title>\n    <link>${SITE_URL}/</link>\n    <description>Baca berita secukupnya, lanjut kerja lagi.</description>\n    <language>id-ID</language>\n    <lastBuildDate>${lastBuild}</lastBuildDate>\n${items}\n  </channel>\n</rss>\n`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0">\n  <channel>\n    <title>Meramu — Portal Berita</title>\n    <link>${SITE_URL}/</link>\n    <description>Baca berita secukupnya, lanjut kerja lagi.</description>\n    <language>id-ID</language>\n    <lastBuildDate>${lastBuild}</lastBuildDate>\n${items}\n  </channel>\n</rss>\n`;
   res.setHeader('Content-Type', 'application/rss+xml; charset=utf-8');
   res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
   return res.status(200).send(xml);
