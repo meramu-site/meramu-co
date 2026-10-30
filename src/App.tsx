@@ -380,6 +380,7 @@ export default function App() {
     imageCaption: '',
     isFeatured: false,
     isTrending: false,
+    isViral: false,
     content: ''
   });
 
@@ -512,6 +513,10 @@ export default function App() {
     return trending.length > 0 ? trending.slice(0, 4) : articles.slice(0, 4);
   }, [articles]);
 
+  // Lagi Viral strip: redaksi-curated via CMS isViral flag, max 5
+  const viralArticles = useMemo(() => articles.filter((a) => a.isViral).slice(0, 5), [articles]);
+  const viralScrollRef = useRef(null);
+
   const currentArticle = useMemo(() => {
     return articles.find((a) => a.id === selectedArticleId) || null;
   }, [articles, selectedArticleId]);
@@ -605,6 +610,7 @@ export default function App() {
       imageCaption: article.imageCaption || '',
       isFeatured: Boolean(article.isFeatured),
       isTrending: Boolean(article.isTrending),
+      isViral: Boolean(article.isViral),
       content: article.content || ''
     });
     setAdminTab('editor');
@@ -1064,6 +1070,38 @@ export default function App() {
           /* VIEW 1: PUBLIC READER HOME                 */
           /* ========================================== */
           <div className="space-y-12">
+            {/* LAGI VIRAL STRIP (only when redaksi has flagged items) */}
+            {viralArticles.length > 0 && (
+              <section className="flex items-stretch rounded-2xl border border-neutral-200/80 overflow-hidden bg-white shadow-2xs dark:bg-neutral-900 dark:border-white/10">
+                <div
+                  style={{ backgroundColor: brandSettings.accentColor }}
+                  className="flex shrink-0 items-center px-4 py-3 text-sm font-extrabold text-white"
+                >
+                  Lagi Viral
+                </div>
+                <div ref={viralScrollRef} className="flex flex-1 items-center gap-6 overflow-x-auto px-4 py-3 whitespace-nowrap">
+                  {viralArticles.map((a) => (
+                    <a
+                      key={a.id}
+                      href={`/berita/${a.id}`}
+                      className="text-sm font-semibold text-neutral-800 hover:underline dark:text-neutral-100"
+                    >
+                      {a.title}
+                    </a>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  aria-label="Geser daftar Lagi Viral"
+                  onClick={() => viralScrollRef.current?.scrollBy({ left: 300, behavior: 'smooth' })}
+                  style={{ backgroundColor: brandSettings.accentColor }}
+                  className="flex w-10 shrink-0 items-center justify-center text-xl font-bold text-white hover:opacity-95 cursor-pointer"
+                >
+                  ›
+                </button>
+              </section>
+            )}
+
             {/* Search / Category Filter Status Banner */}
             {(selectedCategory !== 'Semua' || searchQuery.trim() !== '') && (
               <div className="flex items-center justify-between bg-white px-5 py-3.5 rounded-2xl border border-neutral-200/80 shadow-2xs dark:bg-neutral-900 dark:border-white/10">
@@ -1901,6 +1939,18 @@ export default function App() {
                       />
                       <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
                         Masukkan ke Daftar "Pilihan Redaksi"
+                      </span>
+                    </label>
+
+                    <label className="flex items-center gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.isViral}
+                        onChange={(e) => setFormData({ ...formData, isViral: e.target.checked })}
+                        className="w-4 h-4 rounded text-neutral-900 focus:ring-0 dark:text-neutral-100"
+                      />
+                      <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                        Tandai "Lagi Viral" (maks 5, tampil di strip atas homepage)
                       </span>
                     </label>
                   </div>
