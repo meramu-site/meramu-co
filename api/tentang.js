@@ -39,6 +39,11 @@ export default async function handler(req, res) {
 <span>•</span>
 <a href="https://www.threads.net/@meramudotco" target="_blank" rel="noreferrer">Threads @meramudotco</a>
 </div>
+<div class="social">
+<a href="/privasi">Kebijakan Privasi</a>
+<span>•</span>
+<a href="/kontak">Kontak Redaksi</a>
+</div>
 <a class="back" href="/">&larr; Kembali ke Beranda</a>`;
 
   const html = `<!DOCTYPE html>
@@ -96,7 +101,7 @@ export default async function handler(req, res) {
 <div class="accent"></div>
 <header><div class="head"><div class="badge">M</div><div class="brand">MERAMU.CO<small>OFFICIAL PORTAL</small></div><nav><a href="/">Beranda</a><a href="https://instagram.com/meramudotco">Instagram</a></nav></div></header>
 <main>${body}</main>
-<footer>MERAMU.CO — Portal Berita<br /><a href="/">Kembali ke Beranda</a></footer>
+<footer>MERAMU.CO — Portal Berita<br /><a href="/">Beranda</a> • <a href="/tentang">Tentang</a> • <a href="/privasi">Privasi</a> • <a href="/kontak">Kontak</a></footer>
 </body>
 </html>`;
 

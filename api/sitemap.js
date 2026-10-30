@@ -102,6 +102,8 @@ export default async function handler(req, res) {
   entries.push(urlEntry(`${SITE_URL}/`, newestMs ? dayInJakarta(newestMs) : today, 'daily', '1.0'));
   entries.push(urlEntry(`${SITE_URL}/home`, newestMs ? dayInJakarta(newestMs) : today, 'daily', '0.9'));
   entries.push(urlEntry(`${SITE_URL}/tentang`, '2026-10-30', 'monthly', '0.8'));
+  entries.push(urlEntry(`${SITE_URL}/privasi`, '2026-10-30', 'monthly', '0.5'));
+  entries.push(urlEntry(`${SITE_URL}/kontak`, '2026-10-30', 'monthly', '0.5'));
 
   // Category pages: lastmod = newest article date in that category.
   const byCategory = {};
