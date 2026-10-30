@@ -171,7 +171,7 @@ export default async function handler(req, res) {
   }
 
   const items = docs
-    .filter((d) => strField(d.fields, 'category') === category)
+    .filter((d) => strField(d.fields, 'category') === category || strField(d.fields, 'secondaryCategory') === category)
     .sort((a, b) => msField(b.fields, 'createdAt') - msField(a.fields, 'createdAt'));
 
   const cards = items.map((d) => {

@@ -215,6 +215,7 @@ export default async function handler(req, res) {
   const excerpt = strField(f, 'excerpt');
   const content = strField(f, 'content');
   const category = strField(f, 'category');
+  const secondaryCategory = strField(f, 'secondaryCategory');
   const author = strField(f, 'author') || 'Redaksi Meramu';
   const readTime = strField(f, 'readTime');
   const imageUrl = strField(f, 'imageUrl');
@@ -224,6 +225,7 @@ export default async function handler(req, res) {
   const dateStr = formatDate(createdMs);
   const canonical = `${SITE_URL}/berita/${encodeURIComponent(id)}`;
   const categorySlug = CATEGORY_SLUGS[category] || '';
+  const secondarySlug = CATEGORY_SLUGS[secondaryCategory] || '';
 
   const ld = {
     '@context': 'https://schema.org',
@@ -249,6 +251,7 @@ export default async function handler(req, res) {
   const metaBits = [author, dateStr, readTime].filter(Boolean).map(escapeHtml);
   const body = `<a class="back" style="margin:0 0 20px" href="/">&larr; Beranda</a>
 ${category ? `<div style="margin-top:20px">${categorySlug ? `<a class="chip" style="text-decoration:none" href="/kategori/${categorySlug}">${escapeHtml(category)}</a>` : `<span class="chip">${escapeHtml(category)}</span>`}</div>` : ''}
+${secondaryCategory ? `<div style="margin-top:8px">${secondarySlug ? `<a class="chip" style="text-decoration:none" href="/kategori/${secondarySlug}">${escapeHtml(secondaryCategory)}</a>` : `<span class="chip">${escapeHtml(secondaryCategory)}</span>`}</div>` : ''}
 <h1>${escapeHtml(title)}</h1>
 <div class="meta">${metaBits.map((b, i) => (i === 0 ? `<b>${b}</b>` : `<span>•</span><span>${b}</span>`)).join('')}</div>
 ${imageUrl ? `<figure><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}" />${imageCaption ? `<figcaption>${escapeHtml(imageCaption)}</figcaption>` : ''}</figure>` : ''}
