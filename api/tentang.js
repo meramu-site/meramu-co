@@ -35,9 +35,9 @@ export default async function handler(req, res) {
 <div class="meta"><b>Meramu</b><span>•</span><span>Lahir 28 Oktober 2026</span></div>
 <article>${PARAGRAPHS.map((p) => `<p>${escapeHtml(p)}</p>`).join('\n')}</article>
 <div class="social">
-<a href="https://instagram.com/meramudotco" target="_blank" rel="noreferrer">Instagram @meramudotco</a>
+<a href="https://instagram.com/meramufeed" target="_blank" rel="noreferrer">Instagram @meramufeed</a>
 <span>•</span>
-<a href="https://www.threads.net/@meramudotco" target="_blank" rel="noreferrer">Threads @meramudotco</a>
+<a href="https://www.threads.net/@meramufeed" target="_blank" rel="noreferrer">Threads @meramufeed</a>
 </div>
 <div class="social">
 <a href="/privasi">Kebijakan Privasi</a>
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
 <meta name="twitter:title" content="${escapeHtml(title)} — Meramu" />
 <meta name="twitter:description" content="${escapeHtml(description)}" />
 <meta name="twitter:image" content="https://meramu.site/og-image.png" />
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Meramu","url":"https://meramu.site","logo":"https://meramu.site/favicon.svg","description":"Baca berita secukupnya, lanjut kerja lagi.","foundingDate":"2026-10-28","sameAs":["https://instagram.com/meramudotco","https://www.threads.net/@meramudotco"]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Meramu","url":"https://meramu.site","logo":"https://meramu.site/favicon.svg","description":"Baca berita secukupnya, lanjut kerja lagi.","foundingDate":"2026-10-28","sameAs":["https://instagram.com/meramufeed","https://www.threads.net/@meramufeed"]}</script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_ID}');</script>
 <script>(function(){try{if(localStorage.getItem('meramu-theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}})();</script>
@@ -99,7 +99,7 @@ export default async function handler(req, res) {
 </head>
 <body>
 <div class="accent"></div>
-<header><div class="head"><div class="badge">M</div><div class="brand">MERAMU<small>Gagasan, kultur, cerita — diramu jadi satu.</small></div><nav><a href="/">Beranda</a><a href="https://instagram.com/meramudotco">Instagram</a></nav></div></header>
+<header><div class="head"><div class="badge">M</div><div class="brand">MERAMU<small>Gagasan, kultur, cerita — diramu jadi satu.</small></div><nav><a href="/">Beranda</a><a href="https://instagram.com/meramufeed">Instagram</a></nav></div></header>
 <main>${body}</main>
 <footer>MERAMU — Portal Berita<br /><a href="/">Beranda</a> • <a href="/tentang">Tentang</a> • <a href="/privasi">Privasi</a> • <a href="/kontak">Kontak</a></footer>
 </body>
