@@ -76,7 +76,8 @@ const CATEGORIES = [
   'Semua',
   'Pop Culture',
   'Ekonomi Kreatif',
-  'Musik & Komedi',
+  'Musik',
+  'Entertainment',
   'Lifestyle',
   'Tech',
   'Berita Umum',
@@ -89,7 +90,8 @@ const CATEGORIES = [
 const CATEGORY_SLUGS = {
   'Pop Culture': 'pop-culture',
   'Ekonomi Kreatif': 'ekonomi-kreatif',
-  'Musik & Komedi': 'musik-komedi',
+  'Musik': 'musik',
+  'Entertainment': 'entertainment',
   'Lifestyle': 'lifestyle',
   'Tech': 'tech',
   'Berita Umum': 'berita-umum',
@@ -159,7 +161,8 @@ const UI_STRINGS = {
 const CATEGORY_LABELS_EN = {
   'Semua': 'All',
   'Ekonomi Kreatif': 'Creative Economy',
-  'Musik & Komedi': 'Music & Comedy',
+  'Musik': 'Music',
+  'Entertainment': 'Entertainment',
   'Berita Umum': 'General News',
   'Sports': 'Sports',
   'Esports': 'Esports',
@@ -1820,7 +1823,7 @@ export default function App() {
                       required
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      placeholder="Contoh: Geliat Skena Musik & Komedi Independen di Tahun Ini..."
+                      placeholder="Contoh: Geliat Skena Musik Independen di Tahun Ini..."
                       className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-neutral-900 focus:outline-none text-base font-bold dark:border-white/10 dark:focus:border-neutral-100"
                     />
                   </div>
