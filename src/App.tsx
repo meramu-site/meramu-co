@@ -513,9 +513,27 @@ export default function App() {
     return trending.length > 0 ? trending.slice(0, 4) : articles.slice(0, 4);
   }, [articles]);
 
-  // Lagi Viral strip: redaksi-curated via CMS isViral flag, max 5
+  // Lagi Viral: redaksi-curated via CMS isViral flag, max 5.
+  // Auto-advance: satu judul tampil, tiap 4 detik geser naik ke judul berikut, looping.
   const viralArticles = useMemo(() => articles.filter((a) => a.isViral).slice(0, 5), [articles]);
-  const viralScrollRef = useRef(null);
+  const [viralIndex, setViralIndex] = useState(0);
+  const [viralNoAnim, setViralNoAnim] = useState(false);
+  const [viralPaused, setViralPaused] = useState(false);
+  useEffect(() => { setViralIndex(0); }, [viralArticles.length]);
+  useEffect(() => {
+    if (viralArticles.length <= 1 || viralPaused) return undefined;
+    const id = setInterval(() => setViralIndex((i) => i + 1), 4000);
+    return () => clearInterval(id);
+  }, [viralArticles.length, viralPaused]);
+  useEffect(() => {
+    if (viralIndex !== viralArticles.length || viralArticles.length === 0) return undefined;
+    const t = setTimeout(() => {
+      setViralNoAnim(true);
+      setViralIndex(0);
+      requestAnimationFrame(() => requestAnimationFrame(() => setViralNoAnim(false)));
+    }, 600);
+    return () => clearTimeout(t);
+  }, [viralIndex, viralArticles.length]);
 
   const currentArticle = useMemo(() => {
     return articles.find((a) => a.id === selectedArticleId) || null;
@@ -1070,38 +1088,6 @@ export default function App() {
           /* VIEW 1: PUBLIC READER HOME                 */
           /* ========================================== */
           <div className="space-y-12">
-            {/* LAGI VIRAL STRIP (only when redaksi has flagged items) */}
-            {viralArticles.length > 0 && (
-              <section className="flex items-stretch rounded-2xl border border-neutral-200/80 overflow-hidden bg-white shadow-2xs dark:bg-neutral-900 dark:border-white/10">
-                <div
-                  style={{ backgroundColor: brandSettings.accentColor }}
-                  className="flex shrink-0 items-center px-4 py-3 text-sm font-extrabold text-white"
-                >
-                  Lagi Viral
-                </div>
-                <div ref={viralScrollRef} className="flex flex-1 items-center gap-6 overflow-x-auto px-4 py-3 whitespace-nowrap">
-                  {viralArticles.map((a) => (
-                    <a
-                      key={a.id}
-                      href={`/berita/${a.id}`}
-                      className="text-sm font-semibold text-neutral-800 hover:underline dark:text-neutral-100"
-                    >
-                      {a.title}
-                    </a>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  aria-label="Geser daftar Lagi Viral"
-                  onClick={() => viralScrollRef.current?.scrollBy({ left: 300, behavior: 'smooth' })}
-                  style={{ backgroundColor: brandSettings.accentColor }}
-                  className="flex w-10 shrink-0 items-center justify-center text-xl font-bold text-white hover:opacity-95 cursor-pointer"
-                >
-                  ›
-                </button>
-              </section>
-            )}
-
             {/* Search / Category Filter Status Banner */}
             {(selectedCategory !== 'Semua' || searchQuery.trim() !== '') && (
               <div className="flex items-center justify-between bg-white px-5 py-3.5 rounded-2xl border border-neutral-200/80 shadow-2xs dark:bg-neutral-900 dark:border-white/10">
@@ -1173,8 +1159,46 @@ export default function App() {
                   </div>
                 </a>
 
-                {/* Pilihan Redaksi / Trending Sidebar (4 cols) */}
-                <div className="lg:col-span-4 bg-white rounded-2xl border border-neutral-200/80 p-6 shadow-2xs dark:bg-neutral-900 dark:border-white/10">
+                {/* Right column: Lagi Viral (auto) directly above Pilihan Redaksi, same width */}
+                <div className="lg:col-span-4 space-y-4">
+                  {viralArticles.length > 0 && (
+                    <section
+                      className="bg-white rounded-2xl border border-neutral-200/80 p-4 shadow-2xs dark:bg-neutral-900 dark:border-white/10"
+                      onMouseEnter={() => setViralPaused(true)}
+                      onMouseLeave={() => setViralPaused(false)}
+                    >
+                      <div className="flex items-center justify-between pb-1">
+                        <span
+                          style={{ color: brandSettings.accentColor }}
+                          className="text-xs font-extrabold uppercase tracking-wider"
+                        >
+                          Lagi Viral
+                        </span>
+                        <span className="text-[11px] font-semibold text-neutral-400">
+                          {Math.min(viralIndex + 1, viralArticles.length)} / {viralArticles.length}
+                        </span>
+                      </div>
+                      <div className="h-16 overflow-hidden">
+                        <div
+                          style={{
+                            transform: `translateY(-${viralIndex * 4}rem)`,
+                            transition: viralNoAnim ? 'none' : 'transform 0.5s ease',
+                          }}
+                        >
+                          {[...viralArticles, viralArticles[0]].map((a, i) => (
+                            <a
+                              key={`${a.id}-${i}`}
+                              href={`/berita/${a.id}`}
+                              className="flex h-16 items-center text-sm font-bold leading-snug text-neutral-900 hover:underline line-clamp-2 dark:text-neutral-100"
+                            >
+                              {a.title}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    </section>
+                  )}
+                  <div className="bg-white rounded-2xl border border-neutral-200/80 p-6 shadow-2xs dark:bg-neutral-900 dark:border-white/10">
                   <div className="flex items-center gap-2 pb-4 mb-5 border-b border-neutral-100 dark:border-white/10">
                     <TrendingUp
                       style={{ color: brandSettings.accentColor }}
@@ -1263,6 +1287,7 @@ export default function App() {
                       />
                     </a>
                   </div>
+                </div>
                 </div>
               </section>
             )}
@@ -1950,7 +1975,7 @@ export default function App() {
                         className="w-4 h-4 rounded text-neutral-900 focus:ring-0 dark:text-neutral-100"
                       />
                       <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                        Tandai "Lagi Viral" (maks 5, tampil di strip atas homepage)
+                        Tandai "Lagi Viral" (maks 5, tampil di atas Pilihan Redaksi)
                       </span>
                     </label>
                   </div>
