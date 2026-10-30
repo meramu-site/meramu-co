@@ -135,6 +135,13 @@ ${jsonLd ? `<script type="application/ld+json">${jsonLd}</script>` : ''}
   article h2{font-size:21px;margin:26px 0 10px;color:#171717}
   article blockquote{margin:18px 0;padding:10px 18px;border-left:4px solid ${ACCENT};background:#fafafa;border-radius:0 12px 12px 0;font-style:italic;font-size:18px;color:#404040}
   .back{display:inline-block;margin-top:32px;font-weight:700;text-decoration:none}
+  .related{margin-top:40px;border-top:1px solid #e5e5e5;padding-top:24px}
+  .related h2{font-size:20px;margin:0 0 4px;color:#171717}
+  .rel{display:flex;gap:14px;text-decoration:none;color:inherit;padding:12px 0;border-bottom:1px solid #f5f5f5;align-items:flex-start}
+  .rel:last-child{border-bottom:0}
+  .rel img{width:96px;height:64px;object-fit:cover;border-radius:10px;flex:none;background:#f5f5f5}
+  .rel-text b{display:block;font-size:15px;line-height:1.4;color:#171717}
+  .rel-text span{display:block;font-size:12px;color:#737373;margin-top:4px}
   footer{border-top:1px solid #e5e5e5;padding:24px;text-align:center;font-size:13px;color:#737373}
   @media(max-width:640px){h1{font-size:26px} article p{font-size:16px}}
   html.dark body{background:#09090b;color:#f4f4f5}
@@ -149,6 +156,11 @@ ${jsonLd ? `<script type="application/ld+json">${jsonLd}</script>` : ''}
   html.dark article h2{color:#f4f4f5}
   html.dark article blockquote{background:#27272a;color:#d4d4d8}
   html.dark figure img{background:#27272a}
+  html.dark .related{border-top-color:rgba(255,255,255,.1)}
+  html.dark .related h2{color:#f4f4f5}
+  html.dark .rel{border-bottom-color:rgba(255,255,255,.1)}
+  html.dark .rel-text b{color:#f4f4f5}
+  html.dark .rel-text span{color:#a3a3a3}
   html.dark footer{border-top-color:rgba(255,255,255,.1);color:#a3a3a3}
 </style>
 </head>
@@ -227,6 +239,34 @@ export default async function handler(req, res) {
   const categorySlug = CATEGORY_SLUGS[category] || '';
   const secondarySlug = CATEGORY_SLUGS[secondaryCategory] || '';
 
+  // Related articles ("Baca Juga"): same-category first (newest first),
+  // backfilled with the newest other articles so the block is never empty
+  // (several categories still have only one article). A failed list fetch
+  // simply omits the section; the article itself still renders.
+  let related = [];
+  try {
+    const listUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/artifacts/${APP_ID}/public/data/articles?pageSize=100&key=${apiKey}`;
+    const lr = await fetch(listUrl);
+    if (lr.ok) {
+      const lj = await lr.json();
+      const all = (lj.documents || []).map((d) => {
+        const ff = d.fields || {};
+        return {
+          id: String(d.name || '').split('/').pop(),
+          title: strField(ff, 'title'),
+          category: strField(ff, 'category'),
+          imageUrl: strField(ff, 'imageUrl'),
+          createdMs: msField(ff, 'createdAt'),
+        };
+      }).filter((a) => a.id && a.id !== id && a.title);
+      const same = all.filter((a) => a.category === category).sort((a, b) => b.createdMs - a.createdMs);
+      const rest = all.filter((a) => a.category !== category).sort((a, b) => b.createdMs - a.createdMs);
+      related = [...same, ...rest].slice(0, 3);
+    }
+  } catch {
+    related = [];
+  }
+
   const ld = {
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
@@ -257,6 +297,7 @@ ${secondaryCategory ? `<div style="margin-top:8px">${secondarySlug ? `<a class="
 ${imageUrl ? `<figure><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}" />${imageCaption ? `<figcaption>${escapeHtml(imageCaption)}</figcaption>` : ''}</figure>` : ''}
 ${excerpt ? `<p class="lead">${escapeHtml(excerpt)}</p>` : ''}
 <article>${renderContent(content)}</article>
+${related.length ? `<section class="related"><h2>Baca Juga</h2>${related.map((r) => `<a class="rel" href="/berita/${escapeHtml(r.id)}">${r.imageUrl ? `<img src="${escapeHtml(r.imageUrl)}" alt="" />` : ''}<div class="rel-text"><b>${escapeHtml(r.title)}</b>${r.createdMs ? `<span>${formatDate(r.createdMs)}</span>` : ''}</div></a>`).join('')}</section>` : ''}
 <a class="back" href="/">&larr; Kembali ke Beranda</a>`;
 
   const { html } = pageShell({
