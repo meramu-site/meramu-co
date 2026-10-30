@@ -1163,21 +1163,22 @@ export default function App() {
                 <div className="lg:col-span-4 space-y-4">
                   {viralArticles.length > 0 && (
                     <section
-                      className="bg-white rounded-2xl border border-neutral-200/80 p-4 shadow-2xs dark:bg-neutral-900 dark:border-white/10"
+                      className="bg-white rounded-2xl border border-neutral-200/80 overflow-hidden shadow-2xs dark:bg-neutral-900 dark:border-white/10"
                       onMouseEnter={() => setViralPaused(true)}
                       onMouseLeave={() => setViralPaused(false)}
                     >
-                      <div className="flex items-center justify-between pb-1">
-                        <span
-                          style={{ color: brandSettings.accentColor }}
-                          className="text-xs font-extrabold uppercase tracking-wider"
-                        >
+                      <div
+                        style={{ backgroundColor: brandSettings.accentColor }}
+                        className="flex items-center justify-between px-4 py-2.5"
+                      >
+                        <span className="text-xs font-extrabold uppercase tracking-wider text-white">
                           Lagi Viral
                         </span>
-                        <span className="text-[11px] font-semibold text-neutral-400">
+                        <span className="text-[11px] font-semibold text-white/80">
                           {Math.min(viralIndex + 1, viralArticles.length)} / {viralArticles.length}
                         </span>
                       </div>
+                      <div className="px-4 py-3">
                       <div className="h-16 overflow-hidden">
                         <div
                           style={{
@@ -1196,6 +1197,7 @@ export default function App() {
                           ))}
                         </div>
                       </div>
+                      </div>
                     </section>
                   )}
                   <div className="bg-white rounded-2xl border border-neutral-200/80 p-6 shadow-2xs dark:bg-neutral-900 dark:border-white/10">
@@ -1204,7 +1206,10 @@ export default function App() {
                       style={{ color: brandSettings.accentColor }}
                       className="w-5 h-5"
                     />
-                    <h2 className="text-base font-extrabold uppercase tracking-wider text-neutral-900 dark:text-neutral-100">
+                    <h2
+                      style={{ color: brandSettings.accentColor }}
+                      className="text-base font-extrabold uppercase tracking-wider"
+                    >
                       {t.editorsPicks}
                     </h2>
                   </div>
