@@ -32,7 +32,8 @@ import {
   Palette, 
   Star, 
   Eye, 
-  ChevronRight, 
+  ChevronRight,
+  ChevronDown, 
   BookOpen,
   Image as ImageIcon,
   X,
@@ -44,6 +45,8 @@ import {
   Moon,
   Sun
 } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 // ==========================================
 // FIREBASE INITIALIZATION
@@ -445,6 +448,16 @@ export default function App() {
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
   // Hamburger menu (top-right corner): the whole site nav in one place.
   const [menuOpen, setMenuOpen] = useState(false);
+  // Rubrik section inside the menu card: collapsed by default, like a
+  // dropdown row (reference: berkatpetani.com "Our Brands" row).
+  const [rubrikOpen, setRubrikOpen] = useState(false);
+  // Lock background scroll while the floating menu card is open.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [menuOpen]);
   const [toastMessage, setToastMessage] = useState(null);
 
   // Admin CMS State
@@ -1029,86 +1042,124 @@ export default function App() {
           </div>
         )}
 
-        {/* Hamburger menu panel (reader views only; Dapur Redaksi lives here) */}
+        {/* Hamburger menu: floating rounded-rectangle card over a dimmed backdrop
+            (reference: berkatpetani.com menu). Reader views only; Dapur Redaksi lives here. */}
         {activeView !== 'admin' && menuOpen && (
-          <div className="border-t border-neutral-100 bg-white max-h-[70vh] overflow-y-auto dark:border-white/10 dark:bg-neutral-900">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="fixed inset-0 z-50">
+            <button
+              type="button"
+              aria-label="Tutup menu"
+              onClick={() => setMenuOpen(false)}
+              className="absolute inset-0 bg-black/50 cursor-default"
+            />
+            <div className="relative px-4 pt-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold tracking-widest text-neutral-400 uppercase">Menu</span>
+                <MeramuLogo brandSettings={brandSettings} size="sm" />
                 <button
                   type="button"
                   aria-label="Tutup menu"
                   onClick={() => setMenuOpen(false)}
-                  className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 cursor-pointer"
+                  className="w-11 h-11 rounded-full border-2 border-white/80 text-white flex items-center justify-center hover:bg-white/10 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              <nav className="mt-3 grid gap-1 sm:grid-cols-2">
-                <a href="/" className="block py-2 px-3 rounded-lg text-[15px] font-semibold text-neutral-800 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-800">{t.menuHome}</a>
-                <a href="/cari" className="block py-2 px-3 rounded-lg text-[15px] font-semibold text-neutral-800 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-800">{t.menuSearch}</a>
-                <a href="/tentang" className="block py-2 px-3 rounded-lg text-[15px] font-semibold text-neutral-800 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-800">{t.menuAbout}</a>
-              </nav>
-              <div className="mt-4 text-xs font-bold tracking-widest text-neutral-400 uppercase">{t.menuCategories}</div>
-              <nav className="mt-2 grid gap-1 sm:grid-cols-2">
-                {CATEGORIES.filter((c) => c !== 'Semua').map((category) => (
-                  <a
-                    key={category}
-                    href={categoryHref(category)}
-                    className="block py-2 px-3 rounded-lg text-[15px] font-semibold text-neutral-800 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-800"
-                  >
-                    {catLabel(category)}
-                  </a>
-                ))}
-              </nav>
-              <div className="mt-4 text-xs font-bold tracking-widest text-neutral-400 uppercase">{t.menuContact}</div>
-              <nav className="mt-2 grid gap-1 sm:grid-cols-2">
-                <a
-                  href={`https://instagram.com/${brandSettings.instagram.replace('@', '')}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ color: brandSettings.accentColor }}
-                  className="flex items-center gap-1.5 py-2 px-3 rounded-lg text-[15px] font-bold hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                >
-                  <InstagramIcon className="w-4 h-4" />
-                  <span>Instagram @{brandSettings.instagram.replace('@', '')}</span>
-                </a>
-                <a
-                  href="https://www.threads.net/@meramudotco"
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ color: brandSettings.accentColor }}
-                  className="flex items-center gap-1.5 py-2 px-3 rounded-lg text-[15px] font-bold hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                >
-                  <AtSign className="w-4 h-4" />
-                  <span>Threads @meramudotco</span>
-                </a>
-              </nav>
-              <div className="mt-4 pt-4 border-t border-neutral-100 flex flex-wrap items-center gap-x-4 gap-y-3 dark:border-white/10">
-                <div className="flex items-center rounded-full border border-neutral-200 overflow-hidden dark:border-white/10">
-                  <button
-                    type="button"
-                    onClick={() => { switchLang('id'); setMenuOpen(false); }}
-                    style={lang === 'id' ? { backgroundColor: brandSettings.accentColor, color: '#ffffff' } : {}}
-                    className="px-2.5 py-1 text-[11px] font-bold cursor-pointer text-neutral-600 dark:text-neutral-400"
-                  >
-                    ID
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { switchLang('en'); setMenuOpen(false); }}
-                    style={lang === 'en' ? { backgroundColor: brandSettings.accentColor, color: '#ffffff' } : {}}
-                    className="px-2.5 py-1 text-[11px] font-bold cursor-pointer text-neutral-600 dark:text-neutral-400"
-                  >
-                    EN
-                  </button>
+              <div className="mt-4 rounded-[28px] bg-white shadow-2xl overflow-hidden max-h-[calc(100vh-110px)] overflow-y-auto dark:bg-neutral-900">
+                <div className="px-6">
+                  <div className="flex items-center justify-between py-4 border-b border-neutral-200/70 dark:border-white/10">
+                    <span className="text-[17px] font-semibold text-neutral-800 dark:text-neutral-100">Bahasa</span>
+                    <div className="flex items-center rounded-full border border-neutral-200 overflow-hidden dark:border-white/10">
+                      <button
+                        type="button"
+                        onClick={() => { switchLang('id'); setMenuOpen(false); }}
+                        style={lang === 'id' ? { backgroundColor: brandSettings.accentColor, color: '#ffffff' } : {}}
+                        className="px-3 py-1.5 text-xs font-bold cursor-pointer text-neutral-600 dark:text-neutral-400"
+                      >
+                        ID
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { switchLang('en'); setMenuOpen(false); }}
+                        style={lang === 'en' ? { backgroundColor: brandSettings.accentColor, color: '#ffffff' } : {}}
+                        className="px-3 py-1.5 text-xs font-bold cursor-pointer text-neutral-600 dark:text-neutral-400"
+                      >
+                        EN
+                      </button>
+                    </div>
+                  </div>
+                  <nav className="divide-y divide-neutral-200/70 dark:divide-white/10">
+                    <a href="/" className="block py-4 text-[17px] font-semibold text-neutral-800 dark:text-neutral-100">{t.menuHome}</a>
+                    <a href="/cari" className="block py-4 text-[17px] font-semibold text-neutral-800 dark:text-neutral-100">{t.menuSearch}</a>
+                    <a href="/tentang" className="block py-4 text-[17px] font-semibold text-neutral-800 dark:text-neutral-100">{t.menuAbout}</a>
+                    <div>
+                      <button
+                        type="button"
+                        aria-expanded={rubrikOpen}
+                        onClick={() => setRubrikOpen((o) => !o)}
+                        className="w-full flex items-center justify-between py-4 text-[17px] font-semibold text-neutral-800 cursor-pointer dark:text-neutral-100"
+                      >
+                        <span>{t.menuCategories}</span>
+                        <ChevronDown className={`w-5 h-5 transition-transform ${rubrikOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                      {rubrikOpen && (
+                        <div className="pb-3 pl-3">
+                          {CATEGORIES.filter((c) => c !== 'Semua').map((category) => (
+                            <a
+                              key={category}
+                              href={categoryHref(category)}
+                              className="block py-2.5 text-[15px] font-semibold text-neutral-600 dark:text-neutral-300"
+                            >
+                              {catLabel(category)}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="py-4">
+                      <div className="text-xs font-bold tracking-widest text-neutral-400 uppercase">{t.menuContact}</div>
+                      <div className="mt-2 flex flex-col gap-1">
+                        <a
+                          href={`https://instagram.com/${brandSettings.instagram.replace('@', '')}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1.5 py-2 text-[15px] font-bold hover:opacity-80"
+                          style={{ color: brandSettings.accentColor }}
+                        >
+                          <InstagramIcon className="w-4 h-4" />
+                          <span>Instagram @{brandSettings.instagram.replace('@', '')}</span>
+                        </a>
+                        <a
+                          href="https://www.threads.net/@meramudotco"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1.5 py-2 text-[15px] font-bold hover:opacity-80"
+                          style={{ color: brandSettings.accentColor }}
+                        >
+                          <AtSign className="w-4 h-4" />
+                          <span>Threads @meramudotco</span>
+                        </a>
+                      </div>
+                    </div>
+                  </nav>
+                  <div className="py-5 border-t border-neutral-200/70 dark:border-white/10">
+                    <a
+                      href="/kontak"
+                      onClick={() => setMenuOpen(false)}
+                      className="inline-flex px-6 py-3 rounded-full border-2 font-bold text-[15px] hover:opacity-80"
+                      style={{ borderColor: brandSettings.accentColor, color: brandSettings.accentColor }}
+                    >
+                      Kontak Redaksi
+                    </a>
+                    <div className="mt-4">
+                      <a
+                        href="/dapur-redaksi"
+                        className="text-sm font-semibold text-neutral-500 hover:text-neutral-900 dark:text-neutral-400"
+                      >
+                        {t.newsroom}
+                      </a>
+                    </div>
+                  </div>
                 </div>
-                <a
-                  href="/dapur-redaksi"
-                  className="text-sm font-semibold text-neutral-500 hover:text-neutral-900 dark:text-neutral-400"
-                >
-                  {t.newsroom}
-                </a>
               </div>
             </div>
           </div>
@@ -2191,6 +2242,8 @@ export default function App() {
           </div>
         </div>
       </footer>
+      <Analytics />
+      <SpeedInsights />
     </div>
   );
 }
