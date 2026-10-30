@@ -189,7 +189,7 @@ const DEFAULT_BRAND = {
   siteName: 'MERAMU',
   tagline: 'Meramu gagasan, kultur pop, dan cerita kreatif terkini.',
   domain: 'meramu.site',
-  instagram: 'meramudotco',
+  instagram: 'meramufeed',
   accentColor: '#0D1B8C',
   logoStyle: 'badge', // 'badge' | 'minimal'
   logoUrl: ''
@@ -822,14 +822,14 @@ export default function App() {
             </div>
             <div className="flex items-center gap-4">
               <a
-                href="https://www.threads.net/@meramudotco"
+                href="https://www.threads.net/@meramufeed"
                 target="_blank"
                 rel="noreferrer"
                 style={{ color: brandSettings.accentColor }}
                 className="hidden sm:flex items-center gap-1.5 hover:opacity-80 transition-opacity font-bold"
               >
                 <AtSign className="w-3.5 h-3.5" />
-                <span>@meramudotco</span>
+                <span>@meramufeed</span>
               </a>
               {activeView === 'admin' && (
                 <>
@@ -1037,14 +1037,14 @@ export default function App() {
                           <span>Instagram @{brandSettings.instagram.replace('@', '')}</span>
                         </a>
                         <a
-                          href="https://www.threads.net/@meramudotco"
+                          href="https://www.threads.net/@meramufeed"
                           target="_blank"
                           rel="noreferrer"
                           className="flex items-center gap-1.5 py-2 text-[15px] font-bold hover:opacity-80"
                           style={{ color: brandSettings.accentColor }}
                         >
                           <AtSign className="w-4 h-4" />
-                          <span>Threads @meramudotco</span>
+                          <span>Threads @meramufeed</span>
                         </a>
                       </div>
                     </div>
@@ -1622,7 +1622,7 @@ export default function App() {
                   </h1>
                 </div>
                 <p className="text-sm text-neutral-500 mt-1 dark:text-neutral-400">
-                  Kelola artikel berita, pilih headline utama, dan sesuaikan warna identitas serta logo @meramudotco.
+                  Kelola artikel berita, pilih headline utama, dan sesuaikan warna identitas serta logo @meramufeed.
                 </p>
               </div>
 
@@ -2017,7 +2017,7 @@ export default function App() {
               >
                 <div>
                   <h2 className="text-lg font-extrabold text-neutral-900 dark:text-neutral-100">
-                    Pengaturan Identitas Visual & Logo (@meramudotco)
+                    Pengaturan Identitas Visual & Logo (@meramufeed)
                   </h2>
                   <p className="text-xs text-neutral-500 mt-1 dark:text-neutral-400">
                     Logo dan warna otomatis menggunakan Meramu Royal Blue (#0D1B8C) sesuai identitas resmi kamu.
