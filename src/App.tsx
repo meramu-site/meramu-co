@@ -123,7 +123,7 @@ const UI_STRINGS = {
     menuHome: 'Beranda',
     menuSearch: 'Cari Berita',
     menuCategories: 'Rubrik',
-    menuAbout: 'Tentang Meramu.co',
+    menuAbout: 'Tentang Meramu',
     menuContact: 'Kontak',
     justNow: 'Baru saja',
     minRead: 'Menit Baca',
@@ -148,7 +148,7 @@ const UI_STRINGS = {
     menuHome: 'Home',
     menuSearch: 'Search News',
     menuCategories: 'Categories',
-    menuAbout: 'About Meramu.co',
+    menuAbout: 'About Meramu',
     menuContact: 'Contact',
     justNow: 'Just now',
     minRead: 'Min Read',
@@ -283,7 +283,7 @@ Gaya hidup 'slow morning' ini menjadi respons alami terhadap kelelahan bekerja d
 ];
 
 const DEFAULT_BRAND = {
-  siteName: 'MERAMU.CO',
+  siteName: 'MERAMU',
   tagline: 'Meramu gagasan, kultur pop, dan cerita kreatif terkini.',
   domain: 'meramu.site',
   instagram: 'meramudotco',
@@ -292,8 +292,13 @@ const DEFAULT_BRAND = {
   logoUrl: ''
 };
 
+// Header motto (Kompasiana-style tagline under the wordmark, chosen by the
+// user 2026-10-30). Hardcoded by design: it is a brand line, not CMS content
+// — change it here, not in Dapur Redaksi.
+const HEADER_TAGLINE = 'Gagasan, kultur, cerita — diramu jadi satu.';
+
 // ==========================================
-// OFFICIAL MERAMU.CO LOGO COMPONENT
+// MERAMU LOGO COMPONENT (wordmark + motto)
 // ==========================================
 // Instagram brand glyph in lucide's outline style (lucide-react v1
 // removed brand icons, so the two IG buttons use this local component).
@@ -341,58 +346,40 @@ function MeramuLogo({ brandSettings, size = 'md' }) {
         />
         <div>
           <span
-            style={{
-              color: bgColor,
-              fontFamily: "'Inter', 'Helvetica Neue', 'Arial Black', sans-serif"
-            }}
-            className="text-2xl sm:text-3xl font-black tracking-wider uppercase block leading-none"
+            style={{ ['--brand-color' as string]: bgColor }}
+            className="text-2xl sm:text-3xl font-black tracking-wider uppercase block leading-none text-[color:var(--brand-color)] dark:text-white"
           >
             {brandSettings.siteName}
           </span>
           <span className="text-[10px] uppercase tracking-widest text-neutral-400 font-semibold block mt-0.5">
-            Digital Media & Culture
+            {HEADER_TAGLINE}
           </span>
         </div>
       </div>
     );
   }
 
-  // Default: Official Royal Blue Box Badge Logo matching uploaded image
+  // Default: Kompasiana-style wordmark + motto (no badge box)
   return (
-    <div className="flex items-center gap-3">
-      <div
-        style={{ backgroundColor: bgColor }}
+    <div className="flex flex-col justify-center">
+      <span
+        style={{
+          ['--brand-color' as string]: bgColor,
+          fontFamily: "'Inter', 'Helvetica Neue', 'Arial Black', sans-serif"
+        }}
         className={`${
-          size === 'sm'
-            ? 'px-3 py-1.5'
-            : 'px-4 sm:px-5 py-2 sm:py-2.5'
-        } inline-flex items-center justify-center shadow-xs transition-transform group-hover:scale-[1.02] select-none`}
+          size === 'sm' ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl'
+        } font-black tracking-wider uppercase leading-none text-[color:var(--brand-color)] dark:text-white`}
       >
-        <span
-          style={{
-            fontFamily: "'Inter', 'Helvetica Neue', 'Arial Black', sans-serif",
-            letterSpacing: '0.06em'
-          }}
-          className={`${
-            size === 'sm' ? 'text-base sm:text-lg' : 'text-lg sm:text-2xl'
-          } font-black text-white uppercase leading-none`}
-        >
-          {brandSettings.siteName}
-        </span>
-      </div>
-      {size !== 'sm' && (
-        <div className="hidden md:flex flex-col justify-center self-stretch border-l border-neutral-200 pl-3 dark:border-white/10">
-          <span
-            style={{ color: bgColor }}
-            className="text-lg sm:text-xl font-extrabold uppercase tracking-widest leading-tight"
-          >
-            Official Portal
-          </span>
-          <span className="text-sm sm:text-base text-neutral-400 font-medium leading-tight mt-0.5">
-            {brandSettings.domain}
-          </span>
-        </div>
-      )}
+        {brandSettings.siteName}
+      </span>
+      <span
+        className={`${
+          size === 'sm' ? 'text-[10px]' : 'text-[11px] sm:text-xs'
+        } text-neutral-500 dark:text-neutral-400 font-medium leading-tight mt-1`}
+      >
+        {HEADER_TAGLINE}
+      </span>
     </div>
   );
 }
@@ -2145,7 +2132,7 @@ export default function App() {
                     onChange={(e) =>
                       setBrandSettings({ ...brandSettings, logoUrl: e.target.value })
                     }
-                    placeholder="Kosongkan untuk memakai Logo Box Biru Resmi MERAMU.CO di atas"
+                    placeholder="Kosongkan untuk memakai Logo Resmi MERAMU di atas"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 text-sm dark:border-white/10"
                   />
                 </div>
