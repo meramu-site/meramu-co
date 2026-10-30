@@ -1357,8 +1357,8 @@ export default function App() {
                           </p>
                         </div>
                         <div
-                          style={{ color: brandSettings.accentColor }}
-                          className="mt-5 pt-3.5 border-t border-neutral-100 flex items-center justify-between text-xs dark:border-white/10"
+                          style={{ backgroundColor: brandSettings.accentColor }}
+                          className="-mx-5 -mb-5 mt-5 px-5 py-3.5 flex items-center justify-between text-xs text-white"
                         >
                           <span className="font-medium">{article.author}</span>
                           <div className="flex items-center gap-2">
