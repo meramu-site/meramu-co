@@ -9,6 +9,20 @@ const APP_ID = 'meramu-site-app';
 const SITE_URL = 'https://meramu.site';
 const ACCENT = '#0D1B8C';
 const GA_ID = 'G-J3BTYYC4X8';
+const DEFAULT_OG = `${SITE_URL}/og-image.png`;
+
+// Mirrors App.tsx CATEGORY_SLUGS, for the chip -> category page link.
+const CATEGORY_SLUGS = {
+  'Pop Culture': 'pop-culture',
+  'Ekonomi Kreatif': 'ekonomi-kreatif',
+  'Musik & Komedi': 'musik-komedi',
+  'Lifestyle': 'lifestyle',
+  'Tech': 'tech',
+  'Berita Umum': 'berita-umum',
+  'Sports': 'sports',
+  'Esports': 'esports',
+  'Politik': 'politik',
+};
 
 function escapeHtml(s) {
   return String(s ?? '')
@@ -79,7 +93,8 @@ function renderContent(raw) {
     .join('\n');
 }
 
-function pageShell({ title, description, canonical, ogImage, body, status = 200 }) {
+function pageShell({ title, description, canonical, ogImage, body, status = 200, jsonLd = '' }) {
+  const shareImage = ogImage || DEFAULT_OG;
   const html = `<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -88,11 +103,17 @@ function pageShell({ title, description, canonical, ogImage, body, status = 200 
 <title>${escapeHtml(title)} — Meramu.co</title>
 <meta name="description" content="${escapeHtml(description)}" />
 <link rel="canonical" href="${escapeHtml(canonical)}" />
+<meta name="robots" content="max-image-preview:large" />
 <meta property="og:title" content="${escapeHtml(title)} — Meramu.co" />
 <meta property="og:description" content="${escapeHtml(description)}" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="${escapeHtml(canonical)}" />
-${ogImage ? `<meta property="og:image" content="${escapeHtml(ogImage)}" />` : ''}
+<meta property="og:image" content="${escapeHtml(shareImage)}" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="${escapeHtml(title)} — Meramu.co" />
+<meta name="twitter:description" content="${escapeHtml(description)}" />
+<meta name="twitter:image" content="${escapeHtml(shareImage)}" />
+${jsonLd ? `<script type="application/ld+json">${jsonLd}</script>` : ''}
 <script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_ID}');</script>
 <script>(function(){try{if(localStorage.getItem('meramu-theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}})();</script>
@@ -197,12 +218,36 @@ export default async function handler(req, res) {
   const readTime = strField(f, 'readTime');
   const imageUrl = strField(f, 'imageUrl');
   const imageCaption = strField(f, 'imageCaption');
-  const dateStr = formatDate(msField(f, 'createdAt'));
+  const createdMs = msField(f, 'createdAt');
+  const updatedMs = msField(f, 'updatedAt') || createdMs;
+  const dateStr = formatDate(createdMs);
   const canonical = `${SITE_URL}/berita/${encodeURIComponent(id)}`;
+  const categorySlug = CATEGORY_SLUGS[category] || '';
+
+  const ld = {
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    headline: title,
+    description: excerpt || title,
+    image: imageUrl ? [imageUrl] : [DEFAULT_OG],
+    author: { '@type': 'Organization', name: author, url: SITE_URL },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Meramu.co',
+      url: SITE_URL,
+      logo: { '@type': 'ImageObject', url: `${SITE_URL}/favicon.svg` },
+    },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': canonical },
+    inLanguage: 'id-ID',
+  };
+  if (category) ld.articleSection = category;
+  if (createdMs) ld.datePublished = new Date(createdMs).toISOString();
+  if (updatedMs) ld.dateModified = new Date(updatedMs).toISOString();
+  const jsonLd = JSON.stringify(ld).replace(/</g, '\\u003c');
 
   const metaBits = [author, dateStr, readTime].filter(Boolean).map(escapeHtml);
   const body = `<a class="back" style="margin:0 0 20px" href="/">&larr; Beranda</a>
-${category ? `<div style="margin-top:20px"><span class="chip">${escapeHtml(category)}</span></div>` : ''}
+${category ? `<div style="margin-top:20px">${categorySlug ? `<a class="chip" style="text-decoration:none" href="/kategori/${categorySlug}">${escapeHtml(category)}</a>` : `<span class="chip">${escapeHtml(category)}</span>`}</div>` : ''}
 <h1>${escapeHtml(title)}</h1>
 <div class="meta">${metaBits.map((b, i) => (i === 0 ? `<b>${b}</b>` : `<span>•</span><span>${b}</span>`)).join('')}</div>
 ${imageUrl ? `<figure><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}" />${imageCaption ? `<figcaption>${escapeHtml(imageCaption)}</figcaption>` : ''}</figure>` : ''}
@@ -216,6 +261,7 @@ ${excerpt ? `<p class="lead">${escapeHtml(excerpt)}</p>` : ''}
     canonical,
     ogImage: imageUrl,
     body,
+    jsonLd,
   });
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');

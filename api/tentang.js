@@ -49,10 +49,17 @@ export default async function handler(req, res) {
 <title>${escapeHtml(title)} — Meramu.co</title>
 <meta name="description" content="${escapeHtml(description)}" />
 <link rel="canonical" href="${escapeHtml(canonical)}" />
+<meta name="robots" content="max-image-preview:large" />
 <meta property="og:title" content="${escapeHtml(title)} — Meramu.co" />
 <meta property="og:description" content="${escapeHtml(description)}" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="${escapeHtml(canonical)}" />
+<meta property="og:image" content="https://meramu.site/og-image.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="${escapeHtml(title)} — Meramu.co" />
+<meta name="twitter:description" content="${escapeHtml(description)}" />
+<meta name="twitter:image" content="https://meramu.site/og-image.png" />
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Meramu.co","url":"https://meramu.site","logo":"https://meramu.site/favicon.svg","description":"Baca berita secukupnya, lanjut kerja lagi.","foundingDate":"2026-10-28","sameAs":["https://instagram.com/meramudotco","https://www.threads.net/@meramudotco"]}</script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_ID}');</script>
 <script>(function(){try{if(localStorage.getItem('meramu-theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}})();</script>
