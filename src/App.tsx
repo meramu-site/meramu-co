@@ -1356,8 +1356,11 @@ export default function App() {
                             {article.excerpt}
                           </p>
                         </div>
-                        <div className="mt-5 pt-3.5 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-400 dark:border-white/10">
-                          <span className="font-medium text-neutral-700 dark:text-neutral-300">{article.author}</span>
+                        <div
+                          style={{ color: brandSettings.accentColor }}
+                          className="mt-5 pt-3.5 border-t border-neutral-100 flex items-center justify-between text-xs dark:border-white/10"
+                        >
+                          <span className="font-medium">{article.author}</span>
                           <div className="flex items-center gap-2">
                             <span>{formatDate(article.createdAt)}</span>
                             <span>•</span>
