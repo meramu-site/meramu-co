@@ -377,6 +377,7 @@ export default function App() {
     title: '',
     excerpt: '',
     category: 'Pop Culture',
+    secondaryCategory: '',
     author: 'Redaksi Meramu',
     readTime: '4 Menit Baca',
     imageUrl: '',
@@ -487,7 +488,7 @@ export default function App() {
   // Derived Data for Public View
   const filteredArticles = useMemo(() => {
     return articles.filter((art) => {
-      const matchesCategory = selectedCategory === 'Semua' || art.category === selectedCategory;
+      const matchesCategory = selectedCategory === 'Semua' || art.category === selectedCategory || art.secondaryCategory === selectedCategory;
       const matchesSearch =
         !searchQuery.trim() ||
         art.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -608,6 +609,7 @@ export default function App() {
       title: '',
       excerpt: '',
       category: 'Pop Culture',
+      secondaryCategory: '',
       author: 'Redaksi Meramu',
       readTime: '4 Menit Baca',
       imageUrl: UNSPLASH_PRESETS[0].url,
@@ -625,6 +627,7 @@ export default function App() {
       title: article.title || '',
       excerpt: article.excerpt || '',
       category: article.category || 'Pop Culture',
+      secondaryCategory: article.secondaryCategory || '',
       author: article.author || 'Redaksi Meramu',
       readTime: article.readTime || '4 Menit Baca',
       imageUrl: article.imageUrl || '',
@@ -1877,6 +1880,24 @@ export default function App() {
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 focus:border-neutral-900 focus:outline-none text-sm font-semibold bg-white dark:border-white/10 dark:focus:border-neutral-100 dark:bg-neutral-900"
                     >
+                      {CATEGORIES.filter((c) => c !== 'Semua').map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2 dark:text-neutral-300">
+                      Kategori kedua (opsional)
+                    </label>
+                    <select
+                      value={formData.secondaryCategory}
+                      onChange={(e) => setFormData({ ...formData, secondaryCategory: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 focus:border-neutral-900 focus:outline-none text-sm font-semibold bg-white dark:border-white/10 dark:focus:border-neutral-100 dark:bg-neutral-900"
+                    >
+                      <option value="">— Tidak ada —</option>
                       {CATEGORIES.filter((c) => c !== 'Semua').map((cat) => (
                         <option key={cat} value={cat}>
                           {cat}
