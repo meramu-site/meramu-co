@@ -298,7 +298,7 @@ const DEFAULT_BRAND = {
 const HEADER_TAGLINE = 'Gagasan, kultur, cerita — diramu jadi satu.';
 
 // ==========================================
-// MERAMU LOGO COMPONENT (wordmark + motto)
+// MERAMU LOGO COMPONENT (blue box + motto)
 // ==========================================
 // Instagram brand glyph in lucide's outline style (lucide-react v1
 // removed brand icons, so the two IG buttons use this local component).
@@ -359,20 +359,30 @@ function MeramuLogo({ brandSettings, size = 'md' }) {
     );
   }
 
-  // Default: Kompasiana-style wordmark + motto (no badge box)
+  // Default: blue box + motto (white text on accent rectangle, like the
+  // original logo, with the Kompasiana-style motto underneath)
   return (
-    <div className="flex flex-col justify-center">
-      <span
-        style={{
-          ['--brand-color' as string]: bgColor,
-          fontFamily: "'Inter', 'Helvetica Neue', 'Arial Black', sans-serif"
-        }}
+    <div className="flex flex-col justify-start">
+      <div
+        style={{ backgroundColor: bgColor }}
         className={`${
-          size === 'sm' ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl'
-        } font-black tracking-wider uppercase leading-none text-[color:var(--brand-color)] dark:text-white`}
+          size === 'sm'
+            ? 'px-3 py-1.5'
+            : 'px-4 sm:px-5 py-2 sm:py-2.5'
+        } inline-flex items-center justify-center shadow-xs transition-transform group-hover:scale-[1.02] select-none self-start`}
       >
-        {brandSettings.siteName}
-      </span>
+        <span
+          style={{
+            fontFamily: "'Inter', 'Helvetica Neue', 'Arial Black', sans-serif",
+            letterSpacing: '0.06em'
+          }}
+          className={`${
+            size === 'sm' ? 'text-base sm:text-lg' : 'text-lg sm:text-2xl'
+          } font-black text-white uppercase leading-none`}
+        >
+          {brandSettings.siteName}
+        </span>
+      </div>
       <span
         className={`${
           size === 'sm' ? 'text-[10px]' : 'text-[11px] sm:text-xs'
@@ -2132,7 +2142,7 @@ export default function App() {
                     onChange={(e) =>
                       setBrandSettings({ ...brandSettings, logoUrl: e.target.value })
                     }
-                    placeholder="Kosongkan untuk memakai Logo Resmi MERAMU di atas"
+                    placeholder="Kosongkan untuk memakai Logo Box Biru Resmi MERAMU di atas"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 text-sm dark:border-white/10"
                   />
                 </div>
