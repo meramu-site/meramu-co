@@ -2180,6 +2180,12 @@ export default function App() {
             ))}
           </div>
 
+          <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-neutral-600 dark:text-neutral-400">
+            <a href="/tentang" className="hover:text-[#0D1B8C] dark:hover:text-white transition-colors">Tentang</a>
+            <a href="/privasi" className="hover:text-[#0D1B8C] dark:hover:text-white transition-colors">Privasi</a>
+            <a href="/kontak" className="hover:text-[#0D1B8C] dark:hover:text-white transition-colors">Kontak</a>
+          </div>
+
           <div className="text-xs text-neutral-400">
             © {new Date().getFullYear()} {brandSettings.siteName}. All rights reserved.
           </div>
