@@ -1,6 +1,6 @@
 // Vercel Serverless Function: static Contact page.
 // /kontak is rewritten (vercel.json) to /api/kontak.
-// Contact routes use only public handles (@meramudotco). No email
+// Contact routes use only public handles (@meramufeed). No email
 // address is published here — if the user later approves one, add it.
 
 const SITE_URL = 'https://meramu.site';
@@ -17,7 +17,7 @@ function escapeHtml(s) {
 }
 
 const TITLE = 'Kontak Redaksi';
-const DESCRIPTION = 'Hubungi Redaksi Meramu lewat Instagram dan Threads @meramudotco.';
+const DESCRIPTION = 'Hubungi Redaksi Meramu lewat Instagram dan Threads @meramufeed.';
 
 export default async function handler(req, res) {
   const canonical = `${SITE_URL}/kontak`;
@@ -29,9 +29,9 @@ export default async function handler(req, res) {
 <p>Punya kabar untuk diliput, koreksi untuk artikel yang sudah tayang, atau saran buat Meramu? Hubungi redaksi lewat kanal berikut. Kami membaca semua pesan yang masuk.</p>
 </article>
 <div class="social">
-<a href="https://instagram.com/meramudotco" target="_blank" rel="noreferrer">Instagram @meramudotco</a>
+<a href="https://instagram.com/meramufeed" target="_blank" rel="noreferrer">Instagram @meramufeed</a>
 <span>•</span>
-<a href="https://www.threads.net/@meramudotco" target="_blank" rel="noreferrer">Threads @meramudotco</a>
+<a href="https://www.threads.net/@meramufeed" target="_blank" rel="noreferrer">Threads @meramufeed</a>
 </div>
 <article>
 <p>Untuk koreksi berita, sertakan link artikel dan bagian yang perlu dikoreksi supaya bisa kami periksa dan perbaiki.</p>
@@ -90,7 +90,7 @@ export default async function handler(req, res) {
 </head>
 <body>
 <div class="accent"></div>
-<header><div class="head"><div class="badge">M</div><div class="brand">MERAMU<small>Gagasan, kultur, cerita — diramu jadi satu.</small></div><nav><a href="/">Beranda</a><a href="https://instagram.com/meramudotco">Instagram</a></nav></div></header>
+<header><div class="head"><div class="badge">M</div><div class="brand">MERAMU<small>Gagasan, kultur, cerita — diramu jadi satu.</small></div><nav><a href="/">Beranda</a><a href="https://instagram.com/meramufeed">Instagram</a></nav></div></header>
 <main>${body}</main>
 <footer>MERAMU — Portal Berita<br /><a href="/">Beranda</a> • <a href="/tentang">Tentang</a> • <a href="/privasi">Privasi</a> • <a href="/kontak">Kontak</a></footer>
 </body>
