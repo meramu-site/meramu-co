@@ -117,6 +117,8 @@ const UI_STRINGS = {
     section: 'Rubrik:',
     articlesAvailable: 'Artikel Tersedia',
     showAllNews: 'Tampilkan Semua Berita',
+    prevPage: 'Sebelumnya',
+    nextPage: 'Selanjutnya',
     noResults: 'Belum ada berita yang cocok dengan filter atau pencarian ini.',
     follow: 'Ikuti',
     followSub: 'Update visual harian di Instagram',
@@ -142,6 +144,8 @@ const UI_STRINGS = {
     section: 'Section:',
     articlesAvailable: 'Articles Available',
     showAllNews: 'Show All News',
+    prevPage: 'Previous',
+    nextPage: 'Next',
     noResults: 'No news matches this filter or search.',
     follow: 'Follow',
     followSub: 'Daily visual updates on Instagram',
@@ -511,6 +515,24 @@ export default function App() {
     }
     return filteredArticles;
   }, [filteredArticles, featuredArticle, selectedCategory, searchQuery]);
+
+  // Homepage grid pagination: 6 articles per page, numbered pages.
+  const GRID_PAGE_SIZE = 6;
+  const [gridPage, setGridPage] = useState(1);
+  const totalGridPages = Math.max(1, Math.ceil(gridArticles.length / GRID_PAGE_SIZE));
+  const safeGridPage = Math.min(gridPage, totalGridPages);
+  const pagedGridArticles = gridArticles.slice(
+    (safeGridPage - 1) * GRID_PAGE_SIZE,
+    safeGridPage * GRID_PAGE_SIZE
+  );
+  const goToGridPage = (p) => {
+    setGridPage(p);
+    document.getElementById('terbaru-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  // Back to page 1 whenever the tab or the search query changes.
+  useEffect(() => {
+    setGridPage(1);
+  }, [selectedCategory, searchQuery]);
 
   const trendingArticles = useMemo(() => {
     const trending = articles.filter((a) => a.isTrending);
@@ -1304,7 +1326,7 @@ export default function App() {
             )}
 
             {/* LATEST NEWS GRID SECTION */}
-            <section>
+            <section id="terbaru-grid">
               <div className="flex items-center justify-between mb-6 pb-3 border-b border-neutral-200 dark:border-white/10">
                 <div className="flex items-center gap-2.5">
                   <span
@@ -1336,8 +1358,9 @@ export default function App() {
                   </button>
                 </div>
               ) : (
+                <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {gridArticles.map((article) => (
+                  {pagedGridArticles.map((article) => (
                     <a
                       key={article.id}
                       href={`/berita/${article.id}`}
@@ -1377,6 +1400,35 @@ export default function App() {
                     </a>
                   ))}
                 </div>
+                {totalGridPages > 1 && (
+                  <div className="mt-8 flex items-center justify-center gap-2">
+                    <button
+                      disabled={safeGridPage === 1}
+                      onClick={() => goToGridPage(safeGridPage - 1)}
+                      className="px-3 py-2 rounded-full border border-neutral-200 text-xs font-semibold text-neutral-700 disabled:opacity-40 dark:border-white/10 dark:text-neutral-300"
+                    >
+                      {t.prevPage}
+                    </button>
+                    {Array.from({ length: totalGridPages }, (_, i) => i + 1).map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => goToGridPage(p)}
+                        style={p === safeGridPage ? { backgroundColor: brandSettings.accentColor } : undefined}
+                        className={`w-9 h-9 rounded-full text-xs font-bold ${p === safeGridPage ? 'text-white' : 'border border-neutral-200 text-neutral-700 dark:border-white/10 dark:text-neutral-300'}`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                    <button
+                      disabled={safeGridPage === totalGridPages}
+                      onClick={() => goToGridPage(safeGridPage + 1)}
+                      className="px-3 py-2 rounded-full border border-neutral-200 text-xs font-semibold text-neutral-700 disabled:opacity-40 dark:border-white/10 dark:text-neutral-300"
+                    >
+                      {t.nextPage}
+                    </button>
+                  </div>
+                )}
+                </>
               )}
             </section>
           </div>
