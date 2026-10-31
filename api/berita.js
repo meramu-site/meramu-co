@@ -413,19 +413,44 @@ ${jsonLd ? `<script type="application/ld+json">${jsonLd}</script>` : ''}
   .meramu-theme-btn .theme-icon-sun{display:none}
   html.dark .meramu-theme-btn .theme-icon-sun{display:inline-flex}
   html.dark .meramu-theme-btn .theme-icon-moon{display:none}
-  .meramu-mmenu{display:none;border-top:1px solid #e5e5e5;padding:4px 16px 12px}
-  .meramu-mmenu.open{display:block}
+  .meramu-mmenu{
+    position: fixed; top: 78px; right: 16px; left: 16px;
+    max-height: min(70vh, 520px); overflow: auto; overscroll-behavior: contain;
+    background:#fff; border:1px solid #e5e5e5; border-radius:18px;
+    box-shadow: 0 12px 40px -12px rgba(0,0,0,.28);
+    padding: 8px 16px; z-index: 60;
+    transform-origin: calc(100% - 20px) -6px;
+    transform: scale(.94) translateY(-8px);
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: transform .2s cubic-bezier(.16,1,.3,1), opacity .16s ease;
+    will-change: transform, opacity;
+  }
+  .meramu-mmenu.open{ transform: none; opacity: 1; visibility: visible; pointer-events: auto; }
+  /* Close runs 140ms (done criteria) while open runs 200ms: the base
+     transition above is the open timing; this higher-specificity rule
+     applies only when closed, so closing uses the faster timing. */
+  .meramu-mmenu:not(.open){ transition: transform .14s cubic-bezier(.16,1,.3,1), opacity .14s ease; }
+  .scrim{ position: fixed; inset: 0; background: rgba(15,15,20,.28);
+    opacity: 0; visibility: hidden; z-index: 55;
+    transition: opacity .18s ease; }
+  .scrim.open{ opacity: 1; visibility: visible; }
+  .meramu-menu-btn{ position: relative; }
+  .meramu-menu-btn::after{ content:""; position:absolute; inset:-4px; }
   .meramu-mmenu a{display:block;padding:11px 0;text-decoration:none;color:#171717;font-weight:600;font-size:15px;border-bottom:1px solid #f5f5f5}
   .meramu-mmenu a:last-child{border-bottom:0}
   html.dark .meramu-theme-btn,html.dark .meramu-menu-btn{background:#18181b;border-color:rgba(255,255,255,.15);color:#f4f4f5}
-  html.dark .meramu-mmenu{border-top-color:rgba(255,255,255,.1)}
+  html.dark .meramu-mmenu{ background:#18181b; border-color: rgba(255,255,255,.15); }
   html.dark .meramu-mmenu a{color:#f4f4f5;border-bottom-color:rgba(255,255,255,.1)}
+  html.dark .scrim{ background: rgba(0,0,0,.5); }
+  @media (prefers-reduced-motion: reduce){
+    .meramu-mmenu, .scrim{ transition: none; }
+  }
   @media(max-width:640px){.head nav{display:none}.head-actions{margin-left:auto}}
 </style>
 </head>
 <body>
 <div class="accent"></div>
-<header><div class="head"><div class="badge">M</div><div class="brand">MERAMU<small>Gagasan, kultur, cerita — diramu jadi satu.</small></div><nav><a href="/">Beranda</a><a href="https://instagram.com/meramufeed">Instagram</a></nav><div class="head-actions"><button type="button" class="meramu-theme-btn" aria-label="Mode gelap"><span class="theme-icon-moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span><span class="theme-icon-sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></span></button><button type="button" class="meramu-menu-btn" aria-label="Menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button></div></div><nav class="meramu-mmenu"><a href="/">Beranda</a><a href="/kategori/pop-culture">Pop Culture</a><a href="/kategori/ekonomi-kreatif">Ekonomi Kreatif</a><a href="/kategori/musik">Musik</a><a href="/kategori/entertainment">Entertainment</a><a href="/kategori/lifestyle">Lifestyle</a><a href="/kategori/tech">Tech</a><a href="/kategori/berita-umum">Berita Umum</a><a href="/kategori/sports">Sports</a><a href="/kategori/esports">Esports</a><a href="/kategori/politik">Politik</a><a href="https://instagram.com/meramufeed">Instagram</a><a href="https://www.threads.net/@meramufeed">Threads</a></nav></header><script>(function(){var themeBtn=document.querySelector('.meramu-theme-btn');var menuBtn=document.querySelector('.meramu-menu-btn');var menu=document.querySelector('.meramu-mmenu');function syncTheme(){if(!themeBtn)return;var dark=document.documentElement.classList.contains('dark');themeBtn.setAttribute('aria-label',dark?'Mode terang':'Mode gelap');}syncTheme();if(themeBtn){themeBtn.addEventListener('click',function(){var dark=document.documentElement.classList.toggle('dark');try{localStorage.setItem('meramu-theme',dark?'dark':'light');}catch(e){}syncTheme();});}if(menuBtn&&menu){menuBtn.addEventListener('click',function(){var open=menu.classList.toggle('open');menuBtn.setAttribute('aria-expanded',open?'true':'false');});menu.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){menu.classList.remove('open');menuBtn.setAttribute('aria-expanded','false');});});}})();</script>
+<header><div class="head"><div class="badge">M</div><div class="brand">MERAMU<small>Gagasan, kultur, cerita — diramu jadi satu.</small></div><nav><a href="/">Beranda</a><a href="https://instagram.com/meramufeed">Instagram</a></nav><div class="head-actions"><button type="button" class="meramu-theme-btn" aria-label="Mode gelap"><span class="theme-icon-moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span><span class="theme-icon-sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></span></button><button type="button" class="meramu-menu-btn" aria-label="Menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button></div></div><nav class="meramu-mmenu"><a href="/">Beranda</a><a href="/kategori/pop-culture">Pop Culture</a><a href="/kategori/ekonomi-kreatif">Ekonomi Kreatif</a><a href="/kategori/musik">Musik</a><a href="/kategori/entertainment">Entertainment</a><a href="/kategori/lifestyle">Lifestyle</a><a href="/kategori/tech">Tech</a><a href="/kategori/berita-umum">Berita Umum</a><a href="/kategori/sports">Sports</a><a href="/kategori/esports">Esports</a><a href="/kategori/politik">Politik</a><a href="https://instagram.com/meramufeed">Instagram</a><a href="https://www.threads.net/@meramufeed">Threads</a></nav></header><div class="scrim" aria-hidden="true"></div><script>(function(){var themeBtn=document.querySelector('.meramu-theme-btn');var menuBtn=document.querySelector('.meramu-menu-btn');var menu=document.querySelector('.meramu-mmenu');function syncTheme(){if(!themeBtn)return;var dark=document.documentElement.classList.contains('dark');themeBtn.setAttribute('aria-label',dark?'Mode terang':'Mode gelap');}syncTheme();if(themeBtn){themeBtn.addEventListener('click',function(){var dark=document.documentElement.classList.toggle('dark');try{localStorage.setItem('meramu-theme',dark?'dark':'light');}catch(e){}syncTheme();});}if(menuBtn&&menu){var scrim=document.querySelector('.scrim');function setMenu(open){menu.classList.toggle('open',open);if(scrim)scrim.classList.toggle('open',open);menuBtn.setAttribute('aria-expanded',open?'true':'false');menu.inert=!open;menu.setAttribute('aria-hidden',open?'false':'true');if(scrim)scrim.setAttribute('aria-hidden',open?'false':'true');}menu.inert=true;menu.setAttribute('aria-hidden','true');menuBtn.addEventListener('click',function(){setMenu(!menu.classList.contains('open'));});if(scrim){scrim.addEventListener('click',function(){setMenu(false);});}menu.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){setMenu(false);});});document.addEventListener('keydown',function(e){if(e.key==='Escape')setMenu(false);});}})();</script>
 <main>${body}</main>
 <footer>MERAMU — Portal Berita<br /><a href="/">Beranda</a> • <a href="/tentang">Tentang</a> • <a href="/privasi">Privasi</a> • <a href="/kontak">Kontak</a></footer>
 </body>
