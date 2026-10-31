@@ -315,7 +315,6 @@ export default function AdminPanel(props) {
                     value={adminEmail}
                     onChange={(e) => setAdminEmail(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:border-white/10"
-                    placeholder="admin@meramu.site"
                   />
                 </div>
                 <div>
