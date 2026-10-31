@@ -244,7 +244,9 @@ const wikimediaSizeCache = new Map();
 // Self-hosted /img/ covers are the exception to the null case above: their
 // dimensions are known statically (measured from the generated -1200.webp
 // variants; all variants of one cover share the same aspect), so the figure
-// keeps its reservation with no API call.
+// keeps fallback dimensions with no API call. (Since the Oct 2026 16:9
+// standardization, the box itself is fixed 16:9 by CSS; these dims are only
+// a fallback if the stylesheet fails to load.)
 const IMG_DIMS = {
   'bahlil-lahadalia-at-the-indonesia-naik-kelas-book-launching-21-november-2025-30': { w: 1200, h: 801 },
   'battery-pack-of-an-ev': { w: 1200, h: 1600 },
@@ -362,7 +364,7 @@ ${jsonLd ? `<script type="application/ld+json">${jsonLd}</script>` : ''}
   .chip{display:inline-block;background:${ACCENT};color:#fff;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 12px;border-radius:999px}
   h1{font-size:30px;line-height:1.2;letter-spacing:-.02em;margin:16px 0 12px}
   .meta{font-size:13px;color:#737373;display:flex;gap:8px;flex-wrap:wrap;padding-bottom:20px;border-bottom:1px solid #f5f5f5}
-  .meta b{color:#171717} figure{margin:24px 0} figure img{width:100%;height:auto;border-radius:16px;display:block;background:#f5f5f5}
+  .meta b{color:#171717} figure{margin:24px 0} figure img{width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:16px;display:block;background:#f5f5f5}
   figcaption{font-size:12px;color:#737373;margin-top:8px} .lead{font-size:18px;line-height:1.7;color:#404040}
   article p{font-size:17px;line-height:1.8;color:#404040;margin:14px 0}
   article h2{font-size:21px;margin:26px 0 10px;color:#171717}
@@ -627,11 +629,12 @@ async function renderArticlePage({ doc, id, slug, related, res }) {
     // is narrower, FilePath returns the original itself, so this never upscales.
     const figureThumb = imageUrl ? wikimediaThumb(imageUrl, 800) : '';
     const figureDims = await figureDimsPromise;
-    // width/height attrs + inline aspect-ratio reserve the figure's true box
-    // before the image loads, so nothing below it shifts. No crop: the box
-    // ratio equals the original file's ratio, so the image fills it exactly.
+    // Standard figure box (SOP, Oct 2026): fixed 16:9 for every article, so
+    // figures are uniform. The CSS rule (aspect-ratio:16/9 + object-fit:cover)
+    // governs the box and center-crops any non-16:9 photo (mandatory crop);
+    // the width/height attrs below are a fallback only and never set the box.
     const figureAttrs = figureDims
-      ? ` width="${figureDims.w}" height="${figureDims.h}" style="aspect-ratio:${figureDims.w} / ${figureDims.h}"`
+      ? ` width="${figureDims.w}" height="${figureDims.h}"`
       : '';
     const body = `<a class="back" style="margin:0 0 20px" href="/">&larr; Beranda</a>
   ${category ? `<div style="margin-top:20px">${categorySlug ? `<a class="chip" style="text-decoration:none" href="/kategori/${categorySlug}">${escapeHtml(category)}</a>` : `<span class="chip">${escapeHtml(category)}</span>`}</div>` : ''}
