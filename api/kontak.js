@@ -65,7 +65,7 @@ export default async function handler(req, res) {
   header{border-bottom:1px solid #e5e5e5} .head{max-width:768px;margin:0 auto;padding:16px;display:flex;align-items:center;gap:12px}
   .brand-link{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit}
   .badge{width:36px;height:36px;border-radius:10px;background:${ACCENT};color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}
-  .brand{font-weight:900;letter-spacing:.02em} .brand small{display:block;font-size:10px;letter-spacing:.18em;color:#737373}
+  .brand{font-weight:900;letter-spacing:.02em;color:#0D1B8C} .brand small{display:block;font-size:10px;letter-spacing:normal;color:#000}
   .head nav{margin-left:auto;display:flex;gap:16px;font-size:14px} .head nav a{color:#171717;text-decoration:none;font-weight:600}
   main{max-width:768px;margin:0 auto;padding:28px 20px 56px}
   .chip{display:inline-block;background:${ACCENT};color:#fff;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 12px;border-radius:999px}
@@ -80,7 +80,7 @@ export default async function handler(req, res) {
   @media(max-width:640px){h1{font-size:26px} article p{font-size:16px}}
   html.dark body{background:#09090b;color:#f4f4f5}
   html.dark header{border-bottom-color:rgba(255,255,255,.1)}
-  html.dark .brand small{color:#a3a3a3}
+  html.dark .brand{color:#8EA2FF}html.dark .brand small{color:#f4f4f5}
   html.dark .head nav a{color:#f4f4f5}
   html.dark .meta{color:#a3a3a3;border-bottom-color:rgba(255,255,255,.1)}
   html.dark .meta b{color:#f4f4f5}
