@@ -163,7 +163,7 @@ export default function AdminPanel(props) {
       imageUrl: UNSPLASH_PRESETS[0].url,
       imageCaption: '',
       isFeatured: false,
-      isTrending: true,
+      isTrending: false,
       content: ''
     });
     setAdminTab('editor');
