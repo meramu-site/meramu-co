@@ -256,6 +256,7 @@ const IMG_DIMS = {
   'camp-nou-fc-barcelona-barcelona': { w: 1200, h: 900 },
   'columbia-city-cinema-main-hall': { w: 1200, h: 900 },
   'fatimah-azzahra-orasi': { w: 1170, h: 785 },
+  'ice-bsd-venue': { w: 1080, h: 608 },
   'indonesiagelap-protests-1': { w: 1200, h: 900 },
   'jakarta-international-stadium-from-toll-road': { w: 1200, h: 703 },
   'jakarta-skyline-part-2': { w: 1200, h: 596 },
