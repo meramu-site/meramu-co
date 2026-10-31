@@ -207,6 +207,20 @@ const DEFAULT_BRAND = {
 // — change it here, not in Dapur Redaksi.
 const HEADER_TAGLINE = 'Gagasan, kultur, cerita — diramu jadi satu.';
 
+// Resize Wikimedia images via Special:FilePath (PageSpeed fix, Oct 2026).
+// Same helper as api/berita.js, api/kategori.js and api/cari.js (duplicated
+// on purpose so a serverless file never breaks on a bundling miss). See
+// api/berita.js for the full explanation: FilePath widths are verified
+// working, direct /thumb/ widths are not.
+function wikimediaThumb(url: string, width: number): string {
+  if (!url || typeof url !== 'string') return url;
+  const up = url.match(/^https:\/\/upload\.wikimedia\.org\/wikipedia\/commons\/(?!thumb\/)[^/]+\/[^/]+\/(.+)$/);
+  if (up) return `https://commons.wikimedia.org/wiki/Special:FilePath/${up[1]}?width=${width}`;
+  const fp = url.match(/^https:\/\/commons\.wikimedia\.org\/wiki\/Special:FilePath\/([^?#]+)(\?.*)?$/);
+  if (fp) return `https://commons.wikimedia.org/wiki/Special:FilePath/${fp[1]}${fp[2] ? '&' : '?'}width=${width}`;
+  return url;
+}
+
 // ==========================================
 // MERAMU LOGO COMPONENT (blue box + motto)
 // ==========================================
@@ -1150,7 +1164,13 @@ export default function App() {
                 >
                   <div className="relative aspect-16/9 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
                     <img
-                      src={featuredArticle.imageUrl}
+                      src={wikimediaThumb(featuredArticle.imageUrl, 1200)}
+                      srcSet={`${wikimediaThumb(featuredArticle.imageUrl, 800)} 800w, ${wikimediaThumb(featuredArticle.imageUrl, 1200)} 1200w`}
+                      sizes="(max-width: 1024px) 100vw, 840px"
+                      width="1200"
+                      height="675"
+                      fetchPriority="high"
+                      decoding="async"
                       alt={featuredArticle.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
@@ -1270,8 +1290,12 @@ export default function App() {
                         </div>
                         {item.imageUrl ? (
                           <img
-                            src={item.imageUrl}
+                            src={wikimediaThumb(item.imageUrl, 320)}
                             alt={item.title}
+                            width="80"
+                            height="80"
+                            loading="lazy"
+                            decoding="async"
                             className="w-20 h-20 rounded-xl object-cover shrink-0"
                           />
                         ) : (
@@ -1368,7 +1392,13 @@ export default function App() {
                     >
                       <div className="relative aspect-16/10 w-full bg-neutral-100 overflow-hidden dark:bg-neutral-800">
                         <img
-                          src={article.imageUrl}
+                          src={wikimediaThumb(article.imageUrl, 800)}
+                          srcSet={`${wikimediaThumb(article.imageUrl, 400)} 400w, ${wikimediaThumb(article.imageUrl, 800)} 800w`}
+                          sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 380px"
+                          width="800"
+                          height="500"
+                          loading="lazy"
+                          decoding="async"
                           alt={article.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
@@ -1523,8 +1553,11 @@ export default function App() {
                 <figure className="my-8">
                   <div className="rounded-2xl overflow-hidden bg-neutral-100 aspect-16/9 dark:bg-neutral-800">
                     <img
-                      src={currentArticle.imageUrl}
+                      src={wikimediaThumb(currentArticle.imageUrl, 800)}
                       alt={currentArticle.title}
+                      width="800"
+                      height="450"
+                      decoding="async"
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -1576,8 +1609,12 @@ export default function App() {
                     >
                       <div className="aspect-16/10 rounded-xl overflow-hidden bg-neutral-100 mb-3 dark:bg-neutral-800">
                         <img
-                          src={rel.imageUrl}
+                          src={wikimediaThumb(rel.imageUrl, 640)}
                           alt={rel.title}
+                          width="640"
+                          height="400"
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                         />
                       </div>
