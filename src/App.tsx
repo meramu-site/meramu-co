@@ -1121,9 +1121,47 @@ export default function App() {
       {/* ========================================== */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {isLoading ? (
-          <div className="py-24 flex flex-col items-center justify-center gap-3 text-neutral-400">
-            <div className="w-8 h-8 border-2 border-neutral-900 dark:border-neutral-100 border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm font-medium">{t.loading}</p>
+          // CLS fix (Oct 2026): the old spinner block was ~200px tall, so the
+          // footer jumped from near the viewport top to the bottom of the
+          // fully loaded homepage. This skeleton mirrors the homepage
+          // structure (hero + sidebar + 6-card grid) so the footer starts
+          // near its final position. Only the loading view changes; the
+          // loaded page is untouched.
+          <div role="status" aria-label={t.loading} className="space-y-12 animate-pulse">
+            <span className="sr-only">{t.loading}</span>
+            <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              <div className="lg:col-span-8 bg-white rounded-2xl border border-neutral-200/80 overflow-hidden dark:bg-neutral-900 dark:border-white/10">
+                <div className="aspect-16/9 w-full bg-neutral-100 dark:bg-neutral-800" />
+                <div className="p-5 space-y-3">
+                  <div className="h-4 w-2/3 rounded bg-neutral-100 dark:bg-neutral-800" />
+                  <div className="h-4 w-1/2 rounded bg-neutral-100 dark:bg-neutral-800" />
+                  <div className="h-3 w-1/3 rounded bg-neutral-100 dark:bg-neutral-800" />
+                </div>
+              </div>
+              <div className="lg:col-span-4 space-y-4">
+                <div className="h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800" />
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="flex gap-4 items-start py-4 border-b border-neutral-100 last:border-0 dark:border-white/10">
+                    <div className="w-20 h-20 rounded-xl bg-neutral-100 shrink-0 dark:bg-neutral-800" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 w-3/4 rounded bg-neutral-100 dark:bg-neutral-800" />
+                      <div className="h-3 w-1/2 rounded bg-neutral-100 dark:bg-neutral-800" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="bg-white rounded-2xl border border-neutral-200/80 overflow-hidden dark:bg-neutral-900 dark:border-white/10">
+                  <div className="aspect-16/10 w-full bg-neutral-100 dark:bg-neutral-800" />
+                  <div className="p-5 space-y-3">
+                    <div className="h-4 w-11/12 rounded bg-neutral-100 dark:bg-neutral-800" />
+                    <div className="h-4 w-2/3 rounded bg-neutral-100 dark:bg-neutral-800" />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         ) : activeView === 'home' ? (
           /* ========================================== */
