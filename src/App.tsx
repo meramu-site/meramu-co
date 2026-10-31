@@ -191,16 +191,54 @@ const HEADER_TAGLINE = 'Gagasan, kultur, cerita — diramu jadi satu.';
 // wikipedia/id/.../Stadion_Kanjuruhan_Malang2.png, 1.8 MB) slipped through
 // RAW; it now maps to <lang>.wikipedia.org FilePath (verified 200 + 132 KB
 // at width=320 for the id file).
-function wikimediaThumb(url: string, width: number): string {
+// Fallback URL for an image: the FilePath JPEG/PNG for Wikimedia files,
+// the original URL for same-origin local files. For pass-through URLs
+// (already-thumb, other CDNs) this equals the input, so no fallback is added.
+function wikimediaFilePath(url: string, width: number): string {
   if (!url || typeof url !== 'string') return url;
   const up = url.match(/^https:\/\/upload\.wikimedia\.org\/wikipedia\/([^/]+)\/(?!thumb\/)[^/]+\/[^/]+\/(.+)$/);
   if (up) {
     const host = up[1] === 'commons' ? 'commons.wikimedia.org' : `${up[1]}.wikipedia.org`;
     return `https://${host}/wiki/Special:FilePath/${up[2]}?width=${width}`;
   }
-  const fp = url.match(/^https:\/\/commons\.wikimedia\.org\/wiki\/Special:FilePath\/([^?#]+)(\?.*)?$/);
-  if (fp) return `https://commons.wikimedia.org/wiki/Special:FilePath/${fp[1]}${fp[2] ? '&' : '?'}width=${width}`;
+  const fp = url.match(/^https:\/\/(commons\.wikimedia\.org|[a-z-]+\.wikipedia\.org)\/wiki\/Special:FilePath\/([^?#]+)/);
+  if (fp) return `https://${fp[1]}/wiki/Special:FilePath/${fp[2]}?width=${width}`;
   return url;
+}
+
+// Resize + WebP via images.weserv.nl (PageSpeed fix, Oct 2026). Verified
+// live: direct Wikimedia uploads and meramu.site files convert (e.g.
+// 329KB JPEG -> 121KB WebP); FilePath inputs need ?width= inside the
+// proxied URL (a plain FilePath without width 404s on weserv).
+// Already-thumb URLs and other CDNs pass through unchanged. No quality
+// param: w + output=webp only. NOTE: intentionally duplicated in
+// api/*.js (no shared import, so a serverless file can never break
+// because of a bundling miss). Keep the copies in sync.
+function wikimediaThumb(url: string, width: number): string {
+  if (!url || typeof url !== 'string') return url;
+  const up = url.match(/^https:\/\/(upload\.wikimedia\.org\/wikipedia\/([^/]+)\/(?!thumb\/)[^/]+\/[^/]+\/[^?#]+)/);
+  if (up) return `https://images.weserv.nl/?url=${up[1]}&w=${width}&output=webp`;
+  const fp = url.match(/^https:\/\/(commons\.wikimedia\.org|[a-z-]+\.wikipedia\.org)\/wiki\/Special:FilePath\/([^?#]+)/);
+  if (fp) return `https://images.weserv.nl/?url=${fp[1]}/wiki/Special:FilePath/${fp[2]}?width=${width}&w=${width}&output=webp`;
+  const local = url.match(/^https:\/\/meramu\.site\/([^?#]+)/);
+  if (local) return `https://images.weserv.nl/?url=meramu.site/${local[1]}&w=${width}&output=webp`;
+  return url;
+}
+
+// React onError fallback for a weserv <img>. The dataset flag guards
+// against re-firing if the fallback itself fails (React listeners are
+// not removed by setting onerror=null, unlike inline handlers).
+function weservFallback(url: string, width: number, hasSrcset: boolean) {
+  const t = wikimediaThumb(url, width);
+  const f = wikimediaFilePath(url, width);
+  if (t === f) return undefined;
+  return (e: { currentTarget: HTMLImageElement }) => {
+    const img = e.currentTarget;
+    if (img.dataset.fb) return;
+    img.dataset.fb = '1';
+    if (hasSrcset) img.removeAttribute('srcset');
+    img.src = f;
+  };
 }
 
 // Article slugs (SEO URLs, Oct 2026). Logic MUST stay identical to
@@ -1016,6 +1054,7 @@ export default function App() {
                     <img
                       src={wikimediaThumb(featuredArticle.imageUrl, 1200)}
                       srcSet={`${wikimediaThumb(featuredArticle.imageUrl, 800)} 800w, ${wikimediaThumb(featuredArticle.imageUrl, 1200)} 1200w`}
+                      onError={weservFallback(featuredArticle.imageUrl, 1200, true)}
                       sizes="(max-width: 1024px) 100vw, 840px"
                       width="1200"
                       height="675"
@@ -1141,6 +1180,7 @@ export default function App() {
                         {item.imageUrl ? (
                           <img
                             src={wikimediaThumb(item.imageUrl, 320)}
+                            onError={weservFallback(item.imageUrl, 320, false)}
                             alt={item.title}
                             width="80"
                             height="80"
@@ -1244,6 +1284,7 @@ export default function App() {
                         <img
                           src={wikimediaThumb(article.imageUrl, 800)}
                           srcSet={`${wikimediaThumb(article.imageUrl, 400)} 400w, ${wikimediaThumb(article.imageUrl, 800)} 800w`}
+                          onError={weservFallback(article.imageUrl, 800, true)}
                           sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 380px"
                           width="800"
                           height="500"
@@ -1404,6 +1445,9 @@ export default function App() {
                   <div className="rounded-2xl overflow-hidden bg-neutral-100 aspect-16/9 dark:bg-neutral-800">
                     <img
                       src={wikimediaThumb(currentArticle.imageUrl, 800)}
+                      srcSet={`${wikimediaThumb(currentArticle.imageUrl, 500)} 500w, ${wikimediaThumb(currentArticle.imageUrl, 800)} 800w`}
+                      sizes="(max-width: 640px) calc(100vw - 32px), (max-width: 1024px) calc(100vw - 48px), 768px"
+                      onError={weservFallback(currentArticle.imageUrl, 800, true)}
                       alt={currentArticle.title}
                       width="800"
                       height="450"
@@ -1460,6 +1504,9 @@ export default function App() {
                       <div className="aspect-16/10 rounded-xl overflow-hidden bg-neutral-100 mb-3 dark:bg-neutral-800">
                         <img
                           src={wikimediaThumb(rel.imageUrl, 640)}
+                          srcSet={`${wikimediaThumb(rel.imageUrl, 400)} 400w, ${wikimediaThumb(rel.imageUrl, 640)} 640w`}
+                          sizes="(max-width: 640px) calc(100vw - 32px), 245px"
+                          onError={weservFallback(rel.imageUrl, 640, true)}
                           alt={rel.title}
                           width="640"
                           height="400"
