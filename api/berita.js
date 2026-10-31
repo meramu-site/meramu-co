@@ -94,7 +94,30 @@ function renderContent(raw) {
     .join('\n');
 }
 
-function pageShell({ title, description, canonical, ogImage, body, status = 200, jsonLd = '' }) {
+// Resize Wikimedia images via Special:FilePath (PageSpeed fix, Oct 2026).
+// Editors paste full-resolution Wikimedia originals as covers, and the site
+// served them raw even as 96px thumbnails (one 13 MB PNG, several ~4 MB
+// JPGs). Rewriting to Special:FilePath?width=<w> redirects to a
+// Wikimedia-generated thumbnail of the SAME file (verified HTTP 200 +
+// byte sizes, Oct 2026). Direct /thumb/ URLs are NOT constructed here:
+// on-demand widths 400 on some files, only FilePath widths work reliably.
+// - upload.wikimedia.org/wikipedia/commons/<a>/<ab>/<file> -> FilePath form
+// - commons.wikimedia.org/wiki/Special:FilePath/<file> -> append width
+// - anything else (local /meramu.site files, already-thumbed URLs, Unsplash,
+//   other hosts) -> returned unchanged.
+// NOTE: this helper is intentionally duplicated in api/kategori.js,
+// api/cari.js and src/App.tsx (no shared import, so a serverless file can
+// never break because of a bundling miss). Keep the copies in sync.
+function wikimediaThumb(url, width) {
+  if (!url || typeof url !== 'string') return url;
+  const up = url.match(/^https:\/\/upload\.wikimedia\.org\/wikipedia\/commons\/(?!thumb\/)[^/]+\/[^/]+\/(.+)$/);
+  if (up) return `https://commons.wikimedia.org/wiki/Special:FilePath/${up[1]}?width=${width}`;
+  const fp = url.match(/^https:\/\/commons\.wikimedia\.org\/wiki\/Special:FilePath\/([^?#]+)(\?.*)?$/);
+  if (fp) return `https://commons.wikimedia.org/wiki/Special:FilePath/${fp[1]}${fp[2] ? '&' : '?'}width=${width}`;
+  return url;
+}
+
+function pageShell({ title, description, canonical, ogImage, body, status = 200, jsonLd = '', preloadImage = '' }) {
   const shareImage = ogImage || DEFAULT_OG;
   const html = `<!DOCTYPE html>
 <html lang="id">
@@ -104,6 +127,7 @@ function pageShell({ title, description, canonical, ogImage, body, status = 200,
 <title>${escapeHtml(title)} — Meramu</title>
 <meta name="description" content="${escapeHtml(description)}" />
 <link rel="canonical" href="${escapeHtml(canonical)}" />
+${preloadImage ? `<link rel="preload" as="image" href="${escapeHtml(preloadImage)}" fetchpriority="high" />` : ''}
 <meta name="robots" content="max-image-preview:large" />
 <meta property="og:title" content="${escapeHtml(title)} — Meramu" />
 <meta property="og:description" content="${escapeHtml(description)}" />
@@ -333,16 +357,19 @@ function meramuShareIG(btn){
   }
 }
 </script>`;
+  // Figure thumbnail (max 768px container): 800w covers 1x; if the original
+  // is narrower, FilePath returns the original itself, so this never upscales.
+  const figureThumb = imageUrl ? wikimediaThumb(imageUrl, 800) : '';
   const body = `<a class="back" style="margin:0 0 20px" href="/">&larr; Beranda</a>
 ${category ? `<div style="margin-top:20px">${categorySlug ? `<a class="chip" style="text-decoration:none" href="/kategori/${categorySlug}">${escapeHtml(category)}</a>` : `<span class="chip">${escapeHtml(category)}</span>`}</div>` : ''}
 ${secondaryCategory ? `<div style="margin-top:8px">${secondarySlug ? `<a class="chip" style="text-decoration:none" href="/kategori/${secondarySlug}">${escapeHtml(secondaryCategory)}</a>` : `<span class="chip">${escapeHtml(secondaryCategory)}</span>`}</div>` : ''}
 <h1>${escapeHtml(title)}</h1>
 <div class="meta">${metaBits.map((b, i) => (i === 0 ? `<b>${b}</b>` : `<span>•</span><span>${b}</span>`)).join('')}</div>
-${imageUrl ? `<figure><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}" />${imageCaption ? `<figcaption>${escapeHtml(imageCaption)}</figcaption>` : ''}</figure>` : ''}
+${figureThumb ? `<figure><img src="${escapeHtml(figureThumb)}" alt="${escapeHtml(title)}" fetchpriority="high" decoding="async" />${imageCaption ? `<figcaption>${escapeHtml(imageCaption)}</figcaption>` : ''}</figure>` : ''}
 ${excerpt ? `<p class="lead">${escapeHtml(excerpt)}</p>` : ''}
 <article>${renderContent(content)}</article>
 ${shareSection}
-${related.length ? `<section class="related"><h2>Baca Juga</h2>${related.map((r) => `<a class="rel" href="/berita/${escapeHtml(r.id)}">${r.imageUrl ? `<img src="${escapeHtml(r.imageUrl)}" alt="" />` : ''}<div class="rel-text"><b>${escapeHtml(r.title)}</b>${r.createdMs ? `<span>${formatDate(r.createdMs)}</span>` : ''}</div></a>`).join('')}</section>` : ''}
+${related.length ? `<section class="related"><h2>Baca Juga</h2>${related.map((r) => `<a class="rel" href="/berita/${escapeHtml(r.id)}">${r.imageUrl ? `<img src="${escapeHtml(wikimediaThumb(r.imageUrl, 320))}" alt="" width="96" height="64" loading="lazy" decoding="async" />` : ''}<div class="rel-text"><b>${escapeHtml(r.title)}</b>${r.createdMs ? `<span>${formatDate(r.createdMs)}</span>` : ''}</div></a>`).join('')}</section>` : ''}
 <a class="back" href="/">&larr; Kembali ke Beranda</a>`;
 
   const { html } = pageShell({
@@ -352,6 +379,7 @@ ${related.length ? `<section class="related"><h2>Baca Juga</h2>${related.map((r)
     ogImage: imageUrl,
     body,
     jsonLd,
+    preloadImage: figureThumb,
   });
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');

@@ -67,6 +67,20 @@ function formatDate(ms) {
   }
 }
 
+// Resize Wikimedia images via Special:FilePath (PageSpeed fix, Oct 2026).
+// Same helper as api/berita.js, api/cari.js and src/App.tsx (duplicated on
+// purpose so a serverless file never breaks on a bundling miss). See
+// api/berita.js for the full explanation: FilePath widths are verified
+// working, direct /thumb/ widths are not.
+function wikimediaThumb(url, width) {
+  if (!url || typeof url !== 'string') return url;
+  const up = url.match(/^https:\/\/upload\.wikimedia\.org\/wikipedia\/commons\/(?!thumb\/)[^/]+\/[^/]+\/(.+)$/);
+  if (up) return `https://commons.wikimedia.org/wiki/Special:FilePath/${up[1]}?width=${width}`;
+  const fp = url.match(/^https:\/\/commons\.wikimedia\.org\/wiki\/Special:FilePath\/([^?#]+)(\?.*)?$/);
+  if (fp) return `https://commons.wikimedia.org/wiki/Special:FilePath/${fp[1]}${fp[2] ? '&' : '?'}width=${width}`;
+  return url;
+}
+
 function shell({ title, description, canonical, body }) {
   return `<!DOCTYPE html>
 <html lang="id">
@@ -184,7 +198,7 @@ export default async function handler(req, res) {
     const readTime = strField(f, 'readTime');
     const meta = [author, dateStr, readTime].filter(Boolean).join(' • ');
     const thumb = imageUrl
-      ? `<img src="${escapeHtml(imageUrl)}" alt="" />`
+      ? `<img src="${escapeHtml(wikimediaThumb(imageUrl, 320))}" alt="" width="96" height="96" loading="lazy" decoding="async" />`
       : `<div class="ph">M</div>`;
     return `<a class="card" href="/berita/${encodeURIComponent(d.id)}">${thumb}<div><h2>${escapeHtml(title)}</h2>${excerpt ? `<p>${escapeHtml(excerpt)}</p>` : ''}<div class="meta">${escapeHtml(meta)}</div></div></a>`;
   }).join('\n');
