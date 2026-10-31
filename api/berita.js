@@ -710,7 +710,7 @@ async function renderArticlePage({ doc, id, slug, related, res }) {
   ${excerpt ? `<p class="lead">${escapeHtml(excerpt)}</p>` : ''}
   <article>${renderContent(content)}</article>
   ${shareSection}
-  ${related.length ? `<section class="related"><h2>Baca Juga</h2>${related.map((r) => `<a class="rel" href="/berita/${escapeHtml(r.slug || r.id)}">${r.imageUrl ? `<img src="${escapeHtml(wikimediaThumb(r.imageUrl, 320))}"${imgFallback(r.imageUrl, 320, false)} alt="" width="96" height="64" loading="lazy" decoding="async" />` : ''}<div class="rel-text"><b>${escapeHtml(r.title)}</b>${r.createdMs ? `<span>${formatDate(r.createdMs)}</span>` : ''}</div></a>`).join('')}</section>` : ''}
+  ${related.length ? `<section class="related"><h2>Baca Juga</h2>${related.map((r) => `<a class="rel" href="/berita/${escapeHtml(r.slug || r.id)}">${r.imageUrl ? `<img src="${escapeHtml(wikimediaThumb(r.imageUrl, 320))}"${imgFallback(r.imageUrl, 320, false)} alt="${escapeHtml(r.title)}" width="96" height="64" loading="lazy" decoding="async" />` : ''}<div class="rel-text"><b>${escapeHtml(r.title)}</b>${r.createdMs ? `<span>${formatDate(r.createdMs)}</span>` : ''}</div></a>`).join('')}</section>` : ''}
   <a class="back" href="/">&larr; Kembali ke Beranda</a>`;
 
     const { html } = pageShell({
