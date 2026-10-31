@@ -135,6 +135,14 @@ ${jsonLd ? `<script type="application/ld+json">${jsonLd}</script>` : ''}
   article h2{font-size:21px;margin:26px 0 10px;color:#171717}
   article blockquote{margin:18px 0;padding:10px 18px;border-left:4px solid ${ACCENT};background:#fafafa;border-radius:0 12px 12px 0;font-style:italic;font-size:18px;color:#404040}
   .back{display:inline-block;margin-top:32px;font-weight:700;text-decoration:none}
+  .share{margin-top:36px;border-top:1px solid #e5e5e5;padding-top:24px}
+  .share-label{font-size:13px;font-weight:700;color:#737373;margin-bottom:12px}
+  .share-row{display:flex;gap:10px;flex-wrap:wrap}
+  .share-btn{display:inline-block;padding:10px 18px;border-radius:999px;font-size:14px;font-weight:700;text-decoration:none;color:#fff;border:0;cursor:pointer;font-family:inherit}
+  .share-btn.wa{background:#25D366}
+  .share-btn.th{background:#000}
+  .share-btn.ig{background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)}
+  .share-btn.link{background:${ACCENT}}
   .related{margin-top:40px;border-top:1px solid #e5e5e5;padding-top:24px}
   .related h2{font-size:20px;margin:0 0 4px;color:#171717}
   .rel{display:flex;gap:14px;text-decoration:none;color:inherit;padding:12px 0;border-bottom:1px solid #f5f5f5;align-items:flex-start}
@@ -157,6 +165,8 @@ ${jsonLd ? `<script type="application/ld+json">${jsonLd}</script>` : ''}
   html.dark article blockquote{background:#27272a;color:#d4d4d8}
   html.dark figure img{background:#27272a}
   html.dark .related{border-top-color:rgba(255,255,255,.1)}
+  html.dark .share{border-top-color:rgba(255,255,255,.1)}
+  html.dark .share-label{color:#a3a3a3}
   html.dark .related h2{color:#f4f4f5}
   html.dark .rel{border-bottom-color:rgba(255,255,255,.1)}
   html.dark .rel-text b{color:#f4f4f5}
@@ -289,6 +299,40 @@ export default async function handler(req, res) {
   const jsonLd = JSON.stringify(ld).replace(/</g, '\\u003c');
 
   const metaBits = [author, dateStr, readTime].filter(Boolean).map(escapeHtml);
+  // Share row (bottom of the article): WhatsApp + Threads open their share
+  // intents with the article title + URL. Instagram has no web share intent,
+  // so its button uses the device's native share sheet (navigator.share) and
+  // falls back to copying the link. "Salin Link" copies the article URL.
+  const shareText = encodeURIComponent(`${title} ${canonical}`);
+  const waHref = `https://wa.me/?text=${shareText}`;
+  const threadsHref = `https://www.threads.net/intent/post?text=${shareText}`;
+  const shareSection = `<section class="share"><div class="share-label">Bagikan artikel ini</div><div class="share-row"><a class="share-btn wa" href="${waHref}" target="_blank" rel="noopener">WhatsApp</a><a class="share-btn th" href="${threadsHref}" target="_blank" rel="noopener">Threads</a><button class="share-btn ig" type="button" data-title="${escapeHtml(title)}" data-url="${escapeHtml(canonical)}" onclick="meramuShareIG(this)">Instagram</button><button class="share-btn link" type="button" id="meramu-copy-btn" data-url="${escapeHtml(canonical)}" onclick="meramuCopyLink(this)">Salin Link</button></div></section><script>
+function meramuCopyLink(btn){
+  var url = btn.getAttribute('data-url');
+  var done = function(){ var old = btn.textContent; btn.textContent = 'Link tersalin!'; setTimeout(function(){ btn.textContent = old; }, 2000); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(done).catch(function(){ meramuCopyFallback(url, done); });
+  } else { meramuCopyFallback(url, done); }
+}
+function meramuCopyFallback(url, done){
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+  } catch (e) {}
+  done();
+}
+function meramuShareIG(btn){
+  var url = btn.getAttribute('data-url');
+  var title = btn.getAttribute('data-title');
+  if (navigator.share) {
+    navigator.share({ title: title, url: url }).catch(function(){});
+  } else {
+    meramuCopyLink(document.getElementById('meramu-copy-btn'));
+  }
+}
+</script>`;
   const body = `<a class="back" style="margin:0 0 20px" href="/">&larr; Beranda</a>
 ${category ? `<div style="margin-top:20px">${categorySlug ? `<a class="chip" style="text-decoration:none" href="/kategori/${categorySlug}">${escapeHtml(category)}</a>` : `<span class="chip">${escapeHtml(category)}</span>`}</div>` : ''}
 ${secondaryCategory ? `<div style="margin-top:8px">${secondarySlug ? `<a class="chip" style="text-decoration:none" href="/kategori/${secondarySlug}">${escapeHtml(secondaryCategory)}</a>` : `<span class="chip">${escapeHtml(secondaryCategory)}</span>`}</div>` : ''}
@@ -297,6 +341,7 @@ ${secondaryCategory ? `<div style="margin-top:8px">${secondarySlug ? `<a class="
 ${imageUrl ? `<figure><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}" />${imageCaption ? `<figcaption>${escapeHtml(imageCaption)}</figcaption>` : ''}</figure>` : ''}
 ${excerpt ? `<p class="lead">${escapeHtml(excerpt)}</p>` : ''}
 <article>${renderContent(content)}</article>
+${shareSection}
 ${related.length ? `<section class="related"><h2>Baca Juga</h2>${related.map((r) => `<a class="rel" href="/berita/${escapeHtml(r.id)}">${r.imageUrl ? `<img src="${escapeHtml(r.imageUrl)}" alt="" />` : ''}<div class="rel-text"><b>${escapeHtml(r.title)}</b>${r.createdMs ? `<span>${formatDate(r.createdMs)}</span>` : ''}</div></a>`).join('')}</section>` : ''}
 <a class="back" href="/">&larr; Kembali ke Beranda</a>`;
 
