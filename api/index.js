@@ -280,7 +280,7 @@ ${heroImage ? `<link rel="preload" as="image" href="${escapeHtml(heroImage)}"${h
   .trend .tt small{font-size:11px;color:#a3a3a3}
   .trend img,.trend .ph{width:80px;height:80px;border-radius:12px;object-fit:cover;flex:none;background:#f5f5f5}
   .trend .ph{display:flex;align-items:center;justify-content:center;background:${accent};color:#fff;font-weight:900;font-size:20px}
-  .ig-cta{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:16px;border:1px solid ${accent};background:${accent};text-decoration:none;color:#fff}
+  .trend a.ig-cta{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:16px;border:1px solid ${accent};background:${accent};text-decoration:none;color:#fff}
   .ig-cta b{display:block;font-size:12px;font-weight:800;color:#fff}
   .ig-cta span{display:block;font-size:11px;color:rgba(255,255,255,.85)}
   .grid-head{display:flex;align-items:center;justify-content:space-between;margin:48px 0 20px;padding-bottom:12px;border-bottom:1px solid #e5e5e5}
