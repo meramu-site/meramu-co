@@ -8,9 +8,17 @@ Writes into ../public/img/ (relative to this script):
     <base>-500.webp, <base>-800.webp, <base>-1200.webp  (WebP, quality 80)
     <base>-1200.jpg                                      (JPEG, quality 82, og:image)
 
+SOP (Oct 2026): every cover is 16:9, mandatory crop. The input is
+center-cropped to 16:9 FIRST (portrait/square sources lose top/bottom,
+wide sources lose sides), then resized. The -1200 variant is therefore
+1200x675 (or the cropped width if smaller). Ratio 16:9 is the standard;
+1920px files are not generated because no template requests more than
+1200w and the article figure container is at most 768px wide, so 1920
+would only add weight with no visible difference.
+
 Rules:
-- Width is capped at the original width: never upscale. If the original is
-  640px wide, the -800 and -1200 files contain the 640px render.
+- Width is capped at the (cropped) original width: never upscale. If the
+  cropped image is 1080px wide, the -1200 files contain the 1080px render.
 - WebP keeps alpha when present; JPEG composites alpha onto white.
 - SVG input is rejected: rasterize first (e.g. via a Wikimedia
   FilePath?width= PNG render) and pass the PNG instead.
@@ -73,6 +81,19 @@ def main():
         raise SystemExit('ERROR: SVG input is not supported; pass a PNG render instead.')
     ow, oh = im.size
     print(f'original: {im.format} {ow}x{oh}')
+    # SOP: mandatory 16:9 center-crop before any resize, so file and figure
+    # box agree (figure CSS is aspect-ratio:16/9 + object-fit:cover).
+    if ow * 9 != oh * 16:
+        if ow / oh > 16 / 9:
+            nw = round(oh * 16 / 9)
+            x0 = (ow - nw) // 2
+            im = im.crop((x0, 0, x0 + nw, oh))
+        else:
+            nh = round(ow * 9 / 16)
+            y0 = (oh - nh) // 2
+            im = im.crop((0, y0, ow, y0 + nh))
+        ow, oh = im.size
+        print(f'cropped to 16:9: {ow}x{oh}')
     os.makedirs(OUTDIR, exist_ok=True)
 
     # WebP variants (keep alpha when present; normalize palette/CMYK).
