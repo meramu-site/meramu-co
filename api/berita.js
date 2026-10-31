@@ -117,6 +117,64 @@ function wikimediaThumb(url, width) {
   return url;
 }
 
+// True dimensions of a Wikimedia image, for CLS-free figure rendering
+// (PageSpeed fix, Oct 2026). The serverless article figure previously had
+// no width/height or aspect-ratio, so its box was 0px tall until the image
+// loaded and everything below it (lead, body, share, related) shifted down.
+// This resolves the ORIGINAL file's dimensions via the hosting wiki's API
+// (action=query, prop=imageinfo, iiprop=size) and the figure then reserves
+// that exact ratio: no crop, no distortion, no invented numbers.
+// Non-Wikimedia URLs, already-thumbed URLs and any failure (network,
+// timeout, unknown file) return null and keep the previous unreserved
+// behavior; the page still renders. Results are cached per warm instance;
+// a file revision's dimensions do not change, so the cache needs no TTL.
+const wikimediaSizeCache = new Map();
+function wikimediaImageSizeUrl(url) {
+  if (!url || typeof url !== 'string') return null;
+  try {
+    const up = url.match(/^https:\/\/upload\.wikimedia\.org\/wikipedia\/([^/]+)\/(?!thumb\/)[^/]+\/[^/]+\/(.+)$/);
+    if (up) {
+      const wiki = up[1] === 'commons' ? 'commons.wikimedia.org' : `${up[1]}.wikipedia.org`;
+      return { api: `https://${wiki}/w/api.php`, file: decodeURIComponent(up[2]) };
+    }
+    const fp = url.match(/^https:\/\/commons\.wikimedia\.org\/wiki\/Special:FilePath\/([^?#]+)/);
+    if (fp) return { api: 'https://commons.wikimedia.org/w/api.php', file: decodeURIComponent(fp[1]) };
+  } catch {
+    return null;
+  }
+  return null;
+}
+async function wikimediaImageSize(url) {
+  const parsed = wikimediaImageSizeUrl(url);
+  if (!parsed) return null;
+  const key = `${parsed.api}|${parsed.file}`;
+  if (wikimediaSizeCache.has(key)) return wikimediaSizeCache.get(key);
+  let dims = null;
+  try {
+    const title = parsed.file.replace(/ /g, '_');
+    const apiUrl = `${parsed.api}?action=query&prop=imageinfo&iiprop=size&format=json&formatversion=2&titles=File:${encodeURIComponent(title)}`;
+    const r = await fetch(apiUrl, {
+      headers: { 'User-Agent': 'Meramu/1.0 (https://meramu.site)' },
+      // Generous for a normally ~100-400ms API, but bounded: on timeout the
+      // page still renders, just without the reservation. The fetch runs in
+      // parallel with the related-articles fetch, so it normally adds zero
+      // latency (it is awaited only after that fetch completes).
+      signal: AbortSignal.timeout(2000),
+    });
+    if (r.ok) {
+      const j = await r.json();
+      const info = j?.query?.pages?.[0]?.imageinfo?.[0];
+      if (info && Number.isFinite(info.width) && Number.isFinite(info.height) && info.width > 0 && info.height > 0) {
+        dims = { w: info.width, h: info.height };
+      }
+    }
+  } catch {
+    dims = null;
+  }
+  wikimediaSizeCache.set(key, dims);
+  return dims;
+}
+
 function pageShell({ title, description, canonical, ogImage, body, status = 200, jsonLd = '', preloadImage = '' }) {
   const shareImage = ogImage || DEFAULT_OG;
   const html = `<!DOCTYPE html>
@@ -266,6 +324,9 @@ export default async function handler(req, res) {
   const readTime = strField(f, 'readTime');
   const imageUrl = strField(f, 'imageUrl');
   const imageCaption = strField(f, 'imageCaption');
+  // True figure dimensions (for CLS-free rendering) are fetched in parallel
+  // with the related-articles list below; awaited at figure build time.
+  const figureDimsPromise = imageUrl ? wikimediaImageSize(imageUrl) : Promise.resolve(null);
   const createdMs = msField(f, 'createdAt');
   const updatedMs = msField(f, 'updatedAt') || createdMs;
   const dateStr = formatDate(createdMs);
@@ -360,12 +421,19 @@ function meramuShareIG(btn){
   // Figure thumbnail (max 768px container): 800w covers 1x; if the original
   // is narrower, FilePath returns the original itself, so this never upscales.
   const figureThumb = imageUrl ? wikimediaThumb(imageUrl, 800) : '';
+  const figureDims = await figureDimsPromise;
+  // width/height attrs + inline aspect-ratio reserve the figure's true box
+  // before the image loads, so nothing below it shifts. No crop: the box
+  // ratio equals the original file's ratio, so the image fills it exactly.
+  const figureAttrs = figureDims
+    ? ` width="${figureDims.w}" height="${figureDims.h}" style="aspect-ratio:${figureDims.w} / ${figureDims.h}"`
+    : '';
   const body = `<a class="back" style="margin:0 0 20px" href="/">&larr; Beranda</a>
 ${category ? `<div style="margin-top:20px">${categorySlug ? `<a class="chip" style="text-decoration:none" href="/kategori/${categorySlug}">${escapeHtml(category)}</a>` : `<span class="chip">${escapeHtml(category)}</span>`}</div>` : ''}
 ${secondaryCategory ? `<div style="margin-top:8px">${secondarySlug ? `<a class="chip" style="text-decoration:none" href="/kategori/${secondarySlug}">${escapeHtml(secondaryCategory)}</a>` : `<span class="chip">${escapeHtml(secondaryCategory)}</span>`}</div>` : ''}
 <h1>${escapeHtml(title)}</h1>
 <div class="meta">${metaBits.map((b, i) => (i === 0 ? `<b>${b}</b>` : `<span>•</span><span>${b}</span>`)).join('')}</div>
-${figureThumb ? `<figure><img src="${escapeHtml(figureThumb)}" alt="${escapeHtml(title)}" fetchpriority="high" decoding="async" />${imageCaption ? `<figcaption>${escapeHtml(imageCaption)}</figcaption>` : ''}</figure>` : ''}
+${figureThumb ? `<figure><img src="${escapeHtml(figureThumb)}" alt="${escapeHtml(title)}"${figureAttrs} fetchpriority="high" decoding="async" />${imageCaption ? `<figcaption>${escapeHtml(imageCaption)}</figcaption>` : ''}</figure>` : ''}
 ${excerpt ? `<p class="lead">${escapeHtml(excerpt)}</p>` : ''}
 <article>${renderContent(content)}</article>
 ${shareSection}
