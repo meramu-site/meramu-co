@@ -77,6 +77,14 @@ function formatDate(ms) {
 // (already-thumb, other CDNs) this equals the input, so no fallback is added.
 function wikimediaFilePath(url, width) {
   if (!url || typeof url !== 'string') return url;
+  // Self-hosted /img/ fallback (migration, Nov 2026): the JPEG sibling
+  // of the same base, used as the onerror fallback for /img/ images.
+  // Absolute in, absolute out; relative in, relative out.
+  const selfImg = url.match(/^(https:\/\/meramu\.site)?\/img\/([a-z0-9-]+)\.webp$/);
+  if (selfImg) {
+    const base = selfImg[2].replace(/-(500|800|1200)$/, '');
+    return `${selfImg[1] || ''}/img/${base}-1200.jpg`;
+  }
   const up = url.match(/^https:\/\/upload\.wikimedia\.org\/wikipedia\/([^/]+)\/(?!thumb\/)[^/]+\/[^/]+\/(.+)$/);
   if (up) {
     const host = up[1] === 'commons' ? 'commons.wikimedia.org' : `${up[1]}.wikipedia.org`;
@@ -98,6 +106,18 @@ function wikimediaFilePath(url, width) {
 // miss). Keep the copies in sync.
 function wikimediaThumb(url, width) {
   if (!url || typeof url !== 'string') return url;
+  // Self-hosted /img/ variants (migration, Nov 2026): the stored form is
+  // https://meramu.site/img/<base>.webp (or relative /img/<base>.webp).
+  // Map the requested width to the nearest generated size; a trailing
+  // size suffix on the input is stripped first so sized URLs re-map.
+  // This branch MUST stay above the same-origin rule below, or /img/
+  // URLs would still go through weserv.
+  const selfImg = url.match(/^(https:\/\/meramu\.site)?\/img\/([a-z0-9-]+)\.webp$/);
+  if (selfImg) {
+    const base = selfImg[2].replace(/-(500|800|1200)$/, '');
+    const w = width <= 500 ? 500 : width <= 800 ? 800 : 1200;
+    return `${selfImg[1] || ''}/img/${base}-${w}.webp`;
+  }
   const up = url.match(/^https:\/\/(upload\.wikimedia\.org\/wikipedia\/([^/]+)\/(?!thumb\/)[^/]+\/[^/]+\/[^?#]+)/);
   if (up) return `https://images.weserv.nl/?url=${up[1]}&w=${width}&output=webp`;
   const fp = url.match(/^https:\/\/(commons\.wikimedia\.org|[a-z-]+\.wikipedia\.org)\/wiki\/Special:FilePath\/([^?#]+)/);
