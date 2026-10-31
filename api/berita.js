@@ -1,8 +1,11 @@
 // Vercel Serverless Function: every article is its own real page.
-// /berita/<id> is rewritten (vercel.json) to /api/berita?id=<id>.
+// /berita/<slug> is rewritten (vercel.json) to /api/berita?id=<slug>.
+// Old /berita/<id> URLs 301-redirect to the slug URL (see handler below),
+// so links shared before the slug migration keep working.
 // The article is read live from the same public Firestore collection the
 // portal CMS writes to, so a newly published article gets its own page
-// immediately, with no site rebuild.
+// immediately, with no site rebuild. No slug is ever written to Firestore:
+// resolution is purely code (list fetch + slugify + collision rule).
 
 const PROJECT_ID = 'meramu-site';
 const APP_ID = 'meramu-site-app';
@@ -101,20 +104,60 @@ function renderContent(raw) {
 // Wikimedia-generated thumbnail of the SAME file (verified HTTP 200 +
 // byte sizes, Oct 2026). Direct /thumb/ URLs are NOT constructed here:
 // on-demand widths 400 on some files, only FilePath widths work reliably.
-// - upload.wikimedia.org/wikipedia/commons/<a>/<ab>/<file> -> FilePath form
+// - upload.wikimedia.org/wikipedia/<lang>/<a>/<ab>/<file> -> per-host
+//   FilePath form (commons -> commons.wikimedia.org, any other language
+//   -> <lang>.wikipedia.org). The old regex only matched commons, so a
+//   language-wiki file (e.g. wikipedia/id/.../Stadion_Kanjuruhan_Malang2.png,
+//   1.8 MB) slipped through RAW; id FilePath width=320 is verified 200 +
+//   132,145 bytes (Oct 2026).
 // - commons.wikimedia.org/wiki/Special:FilePath/<file> -> append width
-// - anything else (local /meramu.site files, already-thumbed URLs, Unsplash,
-//   other hosts) -> returned unchanged.
+// - anything else (local /meramu.site files, already-thumbed URLs such as
+//   thumb.wikimedia.org/.../500px-..., Unsplash, other hosts) -> unchanged.
 // NOTE: this helper is intentionally duplicated in api/kategori.js,
-// api/cari.js and src/App.tsx (no shared import, so a serverless file can
-// never break because of a bundling miss). Keep the copies in sync.
+// api/cari.js, api/index.js and src/App.tsx (no shared import, so a
+// serverless file can never break because of a bundling miss). Keep the
+// copies in sync.
 function wikimediaThumb(url, width) {
   if (!url || typeof url !== 'string') return url;
-  const up = url.match(/^https:\/\/upload\.wikimedia\.org\/wikipedia\/commons\/(?!thumb\/)[^/]+\/[^/]+\/(.+)$/);
-  if (up) return `https://commons.wikimedia.org/wiki/Special:FilePath/${up[1]}?width=${width}`;
+  const up = url.match(/^https:\/\/upload\.wikimedia\.org\/wikipedia\/([^/]+)\/(?!thumb\/)[^/]+\/[^/]+\/(.+)$/);
+  if (up) {
+    const host = up[1] === 'commons' ? 'commons.wikimedia.org' : `${up[1]}.wikipedia.org`;
+    return `https://${host}/wiki/Special:FilePath/${up[2]}?width=${width}`;
+  }
   const fp = url.match(/^https:\/\/commons\.wikimedia\.org\/wiki\/Special:FilePath\/([^?#]+)(\?.*)?$/);
   if (fp) return `https://commons.wikimedia.org/wiki/Special:FilePath/${fp[1]}${fp[2] ? '&' : '?'}width=${width}`;
   return url;
+}
+
+// Article slugs (SEO URLs, Oct 2026). slugifyTitle + assignSlugs MUST stay
+// identical in api/berita.js, api/kategori.js, api/cari.js, api/feed.js,
+// api/sitemap.js, api/index.js and src/App.tsx (no shared import, same
+// reason as wikimediaThumb above). Rules: lowercase; apostrophes/quotes
+// dropped; em/en dashes -> hyphen; any other run of non-[a-z0-9] -> one
+// hyphen; edge hyphens trimmed; empty -> 'artikel'. Collision: within one
+// base slug, sort by createdAt asc then id asc; the first keeps the bare
+// slug, the rest get -2, -3, ... CreatedAt is set once at publish (the CMS
+// never edits it), so assignments are stable. A slug can never equal a
+// Firestore id: ids contain uppercase letters, slugs do not (verified
+// against the live 33-article archive, Oct 2026: zero collisions, zero
+// slug==id matches, no 'artikel' fallback used).
+function slugifyTitle(title) {
+  const s = String(title || '').toLowerCase().replace(/[''']/g, '').replace(/[\u2013\u2014]/g, '-').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return s || 'artikel';
+}
+function assignSlugs(docs) {
+  const groups = new Map();
+  for (const d of docs) {
+    const base = slugifyTitle(d.title);
+    if (!groups.has(base)) groups.set(base, []);
+    groups.get(base).push(d);
+  }
+  const out = new Map();
+  for (const [base, list] of groups) {
+    list.sort((a, b) => (a.createdMs - b.createdMs) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    list.forEach((d, i) => out.set(d.id, i === 0 ? base : `${base}-${i + 1}`));
+  }
+  return out;
 }
 
 // True dimensions of a Wikimedia image, for CLS-free figure rendering
@@ -267,9 +310,9 @@ ${jsonLd ? `<script type="application/ld+json">${jsonLd}</script>` : ''}
 }
 
 export default async function handler(req, res) {
-  const id = String(req.query.id || '').trim();
+  const param = String(req.query.id || '').trim();
 
-  if (!id || !/^[A-Za-z0-9_-]+$/.test(id)) {
+  if (!param || !/^[A-Za-z0-9_-]+$/.test(param)) {
     const { html } = pageShell({
       title: 'Berita tidak ditemukan',
       description: 'Artikel yang kamu cari tidak ada di Meramu.',
@@ -286,7 +329,7 @@ export default async function handler(req, res) {
     const { html } = pageShell({
       title: 'Berita belum bisa dibuka',
       description: 'Terjadi kendala konfigurasi di server.',
-      canonical: `${SITE_URL}/berita/${encodeURIComponent(id)}`,
+      canonical: `${SITE_URL}/berita/${encodeURIComponent(param)}`,
       ogImage: '',
       body: `<h1>Berita belum bisa dibuka</h1><p class="lead">Terjadi kendala konfigurasi di server. Coba lagi nanti.</p><a class="back" href="/">&larr; Kembali ke Beranda</a>`,
     });
@@ -294,11 +337,76 @@ export default async function handler(req, res) {
     return res.status(500).send(html);
   }
 
-  const docPath = `artifacts/${APP_ID}/public/data/articles/${encodeURIComponent(id)}`;
-  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${docPath}?key=${apiKey}`;
+  // Slug resolution (no Firestore writes): fetch the article list first.
+  // It powers both the id->slug 301 and the slug->article render, plus the
+  // related-articles block, so the happy path costs one list fetch and no
+  // single-doc fetch at all.
+  let listDocs = null;
+  try {
+    const listUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/artifacts/${APP_ID}/public/data/articles?pageSize=100&key=${apiKey}`;
+    const lr = await fetch(listUrl);
+    if (lr.ok) {
+      const lj = await lr.json();
+      listDocs = (lj.documents || []).map((d) => {
+        const ff = d.fields || {};
+        return {
+          id: String(d.name || '').split('/').pop(),
+          fields: ff,
+          title: strField(ff, 'title'),
+          category: strField(ff, 'category'),
+          imageUrl: strField(ff, 'imageUrl'),
+          createdMs: msField(ff, 'createdAt'),
+        };
+      }).filter((a) => a.id && a.title);
+    }
+  } catch {
+    listDocs = null;
+  }
 
+  if (listDocs) {
+    const slugMap = assignSlugs(listDocs);
+    // (a) Exact doc-id match -> 301 to the current slug URL. ID URLs are
+    // the ones shared before the slug migration; they keep working forever
+    // (the 301 itself is edge-cached for 1h, not infinitely, so a future
+    // title edit re-resolves instead of serving a stale permanent redirect).
+    const byId = listDocs.find((a) => a.id === param);
+    if (byId) {
+      const slug = slugMap.get(byId.id);
+      res.setHeader('Location', `/berita/${slug}`);
+      res.setHeader('Cache-Control', 'public, s-maxage=3600');
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.status(301).send(`<!DOCTYPE html><html><head><meta charset="utf-8" /><title>Pindah ke ${slug}</title></head><body><p>Artikel ini pindah ke <a href="/berita/${slug}">/berita/${slug}</a>.</p></body></html>`);
+    }
+    // (b) Assigned-slug match -> 200 with canonical = slug URL.
+    const hit = listDocs.find((a) => slugMap.get(a.id) === param);
+    if (!hit) {
+      const { html } = pageShell({
+        title: 'Berita tidak ditemukan',
+        description: 'Artikel yang kamu cari tidak ada di Meramu.',
+        canonical: `${SITE_URL}/`,
+        ogImage: '',
+        body: `<h1>Berita tidak ditemukan</h1><p class="lead">Artikel ini mungkin sudah dihapus atau alamatnya salah.</p><a class="back" href="/">&larr; Kembali ke Beranda</a>`,
+      });
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.status(404).send(html);
+    }
+    // Related ("Baca Juga"): same-category first (newest first), backfilled
+    // with the newest other articles so the block is never empty (several
+    // categories still have only one article).
+    const others = listDocs.filter((a) => a.id !== hit.id);
+    const same = others.filter((a) => a.category === hit.category).sort((a, b) => b.createdMs - a.createdMs);
+    const rest = others.filter((a) => a.category !== hit.category).sort((a, b) => b.createdMs - a.createdMs);
+    const related = [...same, ...rest].slice(0, 3).map((r) => ({ ...r, slug: slugMap.get(r.id) }));
+    return renderArticlePage({ doc: hit, id: hit.id, slug: slugMap.get(hit.id), related, res });
+  }
+
+  // Fallback: the list fetch failed. Single-doc fetch by param, ID canonical,
+  // exactly as before the slug migration; related is omitted (no list).
+  // This keeps articles reachable during a transient list-fetch failure.
   let doc;
   try {
+    const docPath = `artifacts/${APP_ID}/public/data/articles/${encodeURIComponent(param)}`;
+    const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${docPath}?key=${apiKey}`;
     const r = await fetch(url);
     if (!r.ok) throw new Error(`Firestore ${r.status}`);
     doc = await r.json();
@@ -313,143 +421,118 @@ export default async function handler(req, res) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.status(404).send(html);
   }
+  return renderArticlePage({ doc, id: param, slug: null, related: [], res });
+}
 
-  const f = doc.fields || {};
-  const title = strField(f, 'title') || 'Tanpa judul';
-  const excerpt = strField(f, 'excerpt');
-  const content = strField(f, 'content');
-  const category = strField(f, 'category');
-  const secondaryCategory = strField(f, 'secondaryCategory');
-  const author = strField(f, 'author') || 'Redaksi Meramu';
-  const readTime = strField(f, 'readTime');
-  const imageUrl = strField(f, 'imageUrl');
-  const imageCaption = strField(f, 'imageCaption');
-  // True figure dimensions (for CLS-free rendering) are fetched in parallel
-  // with the related-articles list below; awaited at figure build time.
-  const figureDimsPromise = imageUrl ? wikimediaImageSize(imageUrl) : Promise.resolve(null);
-  const createdMs = msField(f, 'createdAt');
-  const updatedMs = msField(f, 'updatedAt') || createdMs;
-  const dateStr = formatDate(createdMs);
-  const canonical = `${SITE_URL}/berita/${encodeURIComponent(id)}`;
-  const categorySlug = CATEGORY_SLUGS[category] || '';
-  const secondarySlug = CATEGORY_SLUGS[secondaryCategory] || '';
+async function renderArticlePage({ doc, id, slug, related, res }) {
+    const f = doc.fields || {};
+    const title = strField(f, 'title') || 'Tanpa judul';
+    const excerpt = strField(f, 'excerpt');
+    const content = strField(f, 'content');
+    const category = strField(f, 'category');
+    const secondaryCategory = strField(f, 'secondaryCategory');
+    const author = strField(f, 'author') || 'Redaksi Meramu';
+    const readTime = strField(f, 'readTime');
+    const imageUrl = strField(f, 'imageUrl');
+    const imageCaption = strField(f, 'imageCaption');
+    // True figure dimensions (for CLS-free rendering); awaited at figure
+    // build time.
+    const figureDimsPromise = imageUrl ? wikimediaImageSize(imageUrl) : Promise.resolve(null);
+    const createdMs = msField(f, 'createdAt');
+    const updatedMs = msField(f, 'updatedAt') || createdMs;
+    const dateStr = formatDate(createdMs);
+    const canonical = slug ? `${SITE_URL}/berita/${slug}` : `${SITE_URL}/berita/${encodeURIComponent(id)}`;
+    const categorySlug = CATEGORY_SLUGS[category] || '';
+    const secondarySlug = CATEGORY_SLUGS[secondaryCategory] || '';
 
-  // Related articles ("Baca Juga"): same-category first (newest first),
-  // backfilled with the newest other articles so the block is never empty
-  // (several categories still have only one article). A failed list fetch
-  // simply omits the section; the article itself still renders.
-  let related = [];
-  try {
-    const listUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/artifacts/${APP_ID}/public/data/articles?pageSize=100&key=${apiKey}`;
-    const lr = await fetch(listUrl);
-    if (lr.ok) {
-      const lj = await lr.json();
-      const all = (lj.documents || []).map((d) => {
-        const ff = d.fields || {};
-        return {
-          id: String(d.name || '').split('/').pop(),
-          title: strField(ff, 'title'),
-          category: strField(ff, 'category'),
-          imageUrl: strField(ff, 'imageUrl'),
-          createdMs: msField(ff, 'createdAt'),
-        };
-      }).filter((a) => a.id && a.id !== id && a.title);
-      const same = all.filter((a) => a.category === category).sort((a, b) => b.createdMs - a.createdMs);
-      const rest = all.filter((a) => a.category !== category).sort((a, b) => b.createdMs - a.createdMs);
-      related = [...same, ...rest].slice(0, 3);
+    const ld = {
+      '@context': 'https://schema.org',
+      '@type': 'NewsArticle',
+      headline: title,
+      description: excerpt || title,
+      image: imageUrl ? [imageUrl] : [DEFAULT_OG],
+      author: { '@type': 'Organization', name: author, url: SITE_URL },
+      publisher: {
+        '@type': 'Organization',
+        name: 'Meramu',
+        url: SITE_URL,
+        logo: { '@type': 'ImageObject', url: `${SITE_URL}/favicon.svg` },
+      },
+      mainEntityOfPage: { '@type': 'WebPage', '@id': canonical },
+      inLanguage: 'id-ID',
+    };
+    if (category) ld.articleSection = category;
+    if (createdMs) ld.datePublished = new Date(createdMs).toISOString();
+    if (updatedMs) ld.dateModified = new Date(updatedMs).toISOString();
+    const jsonLd = JSON.stringify(ld).replace(/</g, '\\u003c');
+
+    const metaBits = [author, dateStr, readTime].filter(Boolean).map(escapeHtml);
+    // Share row (bottom of the article): WhatsApp + Threads open their share
+    // intents with the article title + URL. Instagram has no web share intent,
+    // so its button uses the device's native share sheet (navigator.share) and
+    // falls back to copying the link. "Salin Link" copies the article URL.
+    const shareText = encodeURIComponent(`${title} ${canonical}`);
+    const waHref = `https://wa.me/?text=${shareText}`;
+    const threadsHref = `https://www.threads.net/intent/post?text=${shareText}`;
+    const shareSection = `<section class="share"><div class="share-label">Bagikan artikel ini</div><div class="share-row"><a class="share-btn wa" href="${waHref}" target="_blank" rel="noopener">WhatsApp</a><a class="share-btn th" href="${threadsHref}" target="_blank" rel="noopener">Threads</a><button class="share-btn ig" type="button" data-title="${escapeHtml(title)}" data-url="${escapeHtml(canonical)}" onclick="meramuShareIG(this)">Instagram</button><button class="share-btn link" type="button" id="meramu-copy-btn" data-url="${escapeHtml(canonical)}" onclick="meramuCopyLink(this)">Salin Link</button></div></section><script>
+  function meramuCopyLink(btn){
+    var url = btn.getAttribute('data-url');
+    var done = function(){ var old = btn.textContent; btn.textContent = 'Link tersalin!'; setTimeout(function(){ btn.textContent = old; }, 2000); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done).catch(function(){ meramuCopyFallback(url, done); });
+    } else { meramuCopyFallback(url, done); }
+  }
+  function meramuCopyFallback(url, done){
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+    } catch (e) {}
+    done();
+  }
+  function meramuShareIG(btn){
+    var url = btn.getAttribute('data-url');
+    var title = btn.getAttribute('data-title');
+    if (navigator.share) {
+      navigator.share({ title: title, url: url }).catch(function(){});
+    } else {
+      meramuCopyLink(document.getElementById('meramu-copy-btn'));
     }
-  } catch {
-    related = [];
   }
+  </script>`;
+    // Figure thumbnail (max 768px container): 800w covers 1x; if the original
+    // is narrower, FilePath returns the original itself, so this never upscales.
+    const figureThumb = imageUrl ? wikimediaThumb(imageUrl, 800) : '';
+    const figureDims = await figureDimsPromise;
+    // width/height attrs + inline aspect-ratio reserve the figure's true box
+    // before the image loads, so nothing below it shifts. No crop: the box
+    // ratio equals the original file's ratio, so the image fills it exactly.
+    const figureAttrs = figureDims
+      ? ` width="${figureDims.w}" height="${figureDims.h}" style="aspect-ratio:${figureDims.w} / ${figureDims.h}"`
+      : '';
+    const body = `<a class="back" style="margin:0 0 20px" href="/">&larr; Beranda</a>
+  ${category ? `<div style="margin-top:20px">${categorySlug ? `<a class="chip" style="text-decoration:none" href="/kategori/${categorySlug}">${escapeHtml(category)}</a>` : `<span class="chip">${escapeHtml(category)}</span>`}</div>` : ''}
+  ${secondaryCategory ? `<div style="margin-top:8px">${secondarySlug ? `<a class="chip" style="text-decoration:none" href="/kategori/${secondarySlug}">${escapeHtml(secondaryCategory)}</a>` : `<span class="chip">${escapeHtml(secondaryCategory)}</span>`}</div>` : ''}
+  <h1>${escapeHtml(title)}</h1>
+  <div class="meta">${metaBits.map((b, i) => (i === 0 ? `<b>${b}</b>` : `<span>•</span><span>${b}</span>`)).join('')}</div>
+  ${figureThumb ? `<figure><img src="${escapeHtml(figureThumb)}" alt="${escapeHtml(title)}"${figureAttrs} fetchpriority="high" decoding="async" />${imageCaption ? `<figcaption>${escapeHtml(imageCaption)}</figcaption>` : ''}</figure>` : ''}
+  ${excerpt ? `<p class="lead">${escapeHtml(excerpt)}</p>` : ''}
+  <article>${renderContent(content)}</article>
+  ${shareSection}
+  ${related.length ? `<section class="related"><h2>Baca Juga</h2>${related.map((r) => `<a class="rel" href="/berita/${escapeHtml(r.slug || r.id)}">${r.imageUrl ? `<img src="${escapeHtml(wikimediaThumb(r.imageUrl, 320))}" alt="" width="96" height="64" loading="lazy" decoding="async" />` : ''}<div class="rel-text"><b>${escapeHtml(r.title)}</b>${r.createdMs ? `<span>${formatDate(r.createdMs)}</span>` : ''}</div></a>`).join('')}</section>` : ''}
+  <a class="back" href="/">&larr; Kembali ke Beranda</a>`;
 
-  const ld = {
-    '@context': 'https://schema.org',
-    '@type': 'NewsArticle',
-    headline: title,
-    description: excerpt || title,
-    image: imageUrl ? [imageUrl] : [DEFAULT_OG],
-    author: { '@type': 'Organization', name: author, url: SITE_URL },
-    publisher: {
-      '@type': 'Organization',
-      name: 'Meramu',
-      url: SITE_URL,
-      logo: { '@type': 'ImageObject', url: `${SITE_URL}/favicon.svg` },
-    },
-    mainEntityOfPage: { '@type': 'WebPage', '@id': canonical },
-    inLanguage: 'id-ID',
-  };
-  if (category) ld.articleSection = category;
-  if (createdMs) ld.datePublished = new Date(createdMs).toISOString();
-  if (updatedMs) ld.dateModified = new Date(updatedMs).toISOString();
-  const jsonLd = JSON.stringify(ld).replace(/</g, '\\u003c');
-
-  const metaBits = [author, dateStr, readTime].filter(Boolean).map(escapeHtml);
-  // Share row (bottom of the article): WhatsApp + Threads open their share
-  // intents with the article title + URL. Instagram has no web share intent,
-  // so its button uses the device's native share sheet (navigator.share) and
-  // falls back to copying the link. "Salin Link" copies the article URL.
-  const shareText = encodeURIComponent(`${title} ${canonical}`);
-  const waHref = `https://wa.me/?text=${shareText}`;
-  const threadsHref = `https://www.threads.net/intent/post?text=${shareText}`;
-  const shareSection = `<section class="share"><div class="share-label">Bagikan artikel ini</div><div class="share-row"><a class="share-btn wa" href="${waHref}" target="_blank" rel="noopener">WhatsApp</a><a class="share-btn th" href="${threadsHref}" target="_blank" rel="noopener">Threads</a><button class="share-btn ig" type="button" data-title="${escapeHtml(title)}" data-url="${escapeHtml(canonical)}" onclick="meramuShareIG(this)">Instagram</button><button class="share-btn link" type="button" id="meramu-copy-btn" data-url="${escapeHtml(canonical)}" onclick="meramuCopyLink(this)">Salin Link</button></div></section><script>
-function meramuCopyLink(btn){
-  var url = btn.getAttribute('data-url');
-  var done = function(){ var old = btn.textContent; btn.textContent = 'Link tersalin!'; setTimeout(function(){ btn.textContent = old; }, 2000); };
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(url).then(done).catch(function(){ meramuCopyFallback(url, done); });
-  } else { meramuCopyFallback(url, done); }
-}
-function meramuCopyFallback(url, done){
-  try {
-    var ta = document.createElement('textarea');
-    ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); document.body.removeChild(ta);
-  } catch (e) {}
-  done();
-}
-function meramuShareIG(btn){
-  var url = btn.getAttribute('data-url');
-  var title = btn.getAttribute('data-title');
-  if (navigator.share) {
-    navigator.share({ title: title, url: url }).catch(function(){});
-  } else {
-    meramuCopyLink(document.getElementById('meramu-copy-btn'));
-  }
-}
-</script>`;
-  // Figure thumbnail (max 768px container): 800w covers 1x; if the original
-  // is narrower, FilePath returns the original itself, so this never upscales.
-  const figureThumb = imageUrl ? wikimediaThumb(imageUrl, 800) : '';
-  const figureDims = await figureDimsPromise;
-  // width/height attrs + inline aspect-ratio reserve the figure's true box
-  // before the image loads, so nothing below it shifts. No crop: the box
-  // ratio equals the original file's ratio, so the image fills it exactly.
-  const figureAttrs = figureDims
-    ? ` width="${figureDims.w}" height="${figureDims.h}" style="aspect-ratio:${figureDims.w} / ${figureDims.h}"`
-    : '';
-  const body = `<a class="back" style="margin:0 0 20px" href="/">&larr; Beranda</a>
-${category ? `<div style="margin-top:20px">${categorySlug ? `<a class="chip" style="text-decoration:none" href="/kategori/${categorySlug}">${escapeHtml(category)}</a>` : `<span class="chip">${escapeHtml(category)}</span>`}</div>` : ''}
-${secondaryCategory ? `<div style="margin-top:8px">${secondarySlug ? `<a class="chip" style="text-decoration:none" href="/kategori/${secondarySlug}">${escapeHtml(secondaryCategory)}</a>` : `<span class="chip">${escapeHtml(secondaryCategory)}</span>`}</div>` : ''}
-<h1>${escapeHtml(title)}</h1>
-<div class="meta">${metaBits.map((b, i) => (i === 0 ? `<b>${b}</b>` : `<span>•</span><span>${b}</span>`)).join('')}</div>
-${figureThumb ? `<figure><img src="${escapeHtml(figureThumb)}" alt="${escapeHtml(title)}"${figureAttrs} fetchpriority="high" decoding="async" />${imageCaption ? `<figcaption>${escapeHtml(imageCaption)}</figcaption>` : ''}</figure>` : ''}
-${excerpt ? `<p class="lead">${escapeHtml(excerpt)}</p>` : ''}
-<article>${renderContent(content)}</article>
-${shareSection}
-${related.length ? `<section class="related"><h2>Baca Juga</h2>${related.map((r) => `<a class="rel" href="/berita/${escapeHtml(r.id)}">${r.imageUrl ? `<img src="${escapeHtml(wikimediaThumb(r.imageUrl, 320))}" alt="" width="96" height="64" loading="lazy" decoding="async" />` : ''}<div class="rel-text"><b>${escapeHtml(r.title)}</b>${r.createdMs ? `<span>${formatDate(r.createdMs)}</span>` : ''}</div></a>`).join('')}</section>` : ''}
-<a class="back" href="/">&larr; Kembali ke Beranda</a>`;
-
-  const { html } = pageShell({
-    title,
-    description: excerpt || title,
-    canonical,
-    ogImage: imageUrl,
-    body,
-    jsonLd,
-    preloadImage: figureThumb,
-  });
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
-  return res.status(200).send(html);
+    const { html } = pageShell({
+      title,
+      description: excerpt || title,
+      canonical,
+      ogImage: imageUrl,
+      body,
+      jsonLd,
+      preloadImage: figureThumb,
+    });
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+    return res.status(200).send(html);
 }

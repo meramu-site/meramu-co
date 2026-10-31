@@ -61,12 +61,40 @@ function formatDate(ms) {
 // working, direct /thumb/ widths are not.
 function wikimediaThumb(url, width) {
   if (!url || typeof url !== 'string') return url;
-  const up = url.match(/^https:\/\/upload\.wikimedia\.org\/wikipedia\/commons\/(?!thumb\/)[^/]+\/[^/]+\/(.+)$/);
-  if (up) return `https://commons.wikimedia.org/wiki/Special:FilePath/${up[1]}?width=${width}`;
+  const up = url.match(/^https:\/\/upload\.wikimedia\.org\/wikipedia\/([^/]+)\/(?!thumb\/)[^/]+\/[^/]+\/(.+)$/);
+  if (up) {
+    const host = up[1] === 'commons' ? 'commons.wikimedia.org' : `${up[1]}.wikipedia.org`;
+    return `https://${host}/wiki/Special:FilePath/${up[2]}?width=${width}`;
+  }
   const fp = url.match(/^https:\/\/commons\.wikimedia\.org\/wiki\/Special:FilePath\/([^?#]+)(\?.*)?$/);
   if (fp) return `https://commons.wikimedia.org/wiki/Special:FilePath/${fp[1]}${fp[2] ? '&' : '?'}width=${width}`;
   return url;
 }
+
+// Article slugs (SEO URLs, Oct 2026). MUST stay identical in api/berita.js,
+// api/kategori.js, api/cari.js, api/feed.js, api/sitemap.js, api/index.js
+// and src/App.tsx (no shared import). See api/berita.js for the full rules:
+// lowercase, apostrophes dropped, dashes collapsed, collision = createdAt
+// asc then id asc, first keeps the bare slug, rest get -2, -3, ...
+function slugifyTitle(title) {
+  const s = String(title || '').toLowerCase().replace(/[''']/g, '').replace(/[\u2013\u2014]/g, '-').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return s || 'artikel';
+}
+function assignSlugs(docs) {
+  const groups = new Map();
+  for (const d of docs) {
+    const base = slugifyTitle(d.title);
+    if (!groups.has(base)) groups.set(base, []);
+    groups.get(base).push(d);
+  }
+  const out = new Map();
+  for (const [base, list] of groups) {
+    list.sort((a, b) => (a.createdMs - b.createdMs) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    list.forEach((d, i) => out.set(d.id, i === 0 ? base : `${base}-${i + 1}`));
+  }
+  return out;
+}
+
 
 function shell({ title, description, canonical, body }) {
   return `<!DOCTYPE html>
@@ -189,6 +217,9 @@ ${searchForm}
     })
     .sort((a, b) => msField(b.fields, 'createdAt') - msField(a.fields, 'createdAt'));
 
+  // Card links use article slugs (Oct 2026); see api/berita.js for rules.
+  const slugMap = assignSlugs(docs.map((d) => ({ id: d.id, title: strField(d.fields, 'title'), createdMs: msField(d.fields, 'createdAt') })));
+
   const cards = items.map((d) => {
     const f = d.fields;
     const title = strField(f, 'title') || 'Tanpa judul';
@@ -201,7 +232,8 @@ ${searchForm}
     const thumb = imageUrl
       ? `<img src="${escapeHtml(wikimediaThumb(imageUrl, 320))}" alt="" width="96" height="96" loading="lazy" decoding="async" />`
       : `<div class="ph">M</div>`;
-    return `<a class="card" href="/berita/${encodeURIComponent(d.id)}">${thumb}<div><h2>${escapeHtml(title)}</h2>${excerpt ? `<p>${escapeHtml(excerpt)}</p>` : ''}<div class="meta">${escapeHtml(meta)}</div></div></a>`;
+    const slug = slugMap.get(d.id) || d.id;
+    return `<a class="card" href="/berita/${slug}">${thumb}<div><h2>${escapeHtml(title)}</h2>${excerpt ? `<p>${escapeHtml(excerpt)}</p>` : ''}<div class="meta">${escapeHtml(meta)}</div></div></a>`;
   }).join('\n');
 
   res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');

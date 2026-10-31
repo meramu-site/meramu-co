@@ -72,8 +72,33 @@ function dayInJakarta(ms) {
   }
 }
 
-function urlEntry(loc, lastmod, changefreq, priority) {
-  return `  <url>\n    <loc>${escapeXml(loc)}</loc>\n${lastmod ? `    <lastmod>${lastmod}</lastmod>\n` : ''}    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
+// Article slugs (SEO URLs, Oct 2026). MUST stay identical in api/berita.js,
+// api/kategori.js, api/cari.js, api/feed.js, api/sitemap.js, api/index.js
+// and src/App.tsx (no shared import). See api/berita.js for the full rules.
+function slugifyTitle(title) {
+  const s = String(title || '').toLowerCase().replace(/[''']/g, '').replace(/[\u2013\u2014]/g, '-').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return s || 'artikel';
+}
+function assignSlugs(docs) {
+  const groups = new Map();
+  for (const d of docs) {
+    const base = slugifyTitle(d.title);
+    if (!groups.has(base)) groups.set(base, []);
+    groups.get(base).push(d);
+  }
+  const out = new Map();
+  for (const [base, list] of groups) {
+    list.sort((a, b) => (a.createdMs - b.createdMs) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    list.forEach((d, i) => out.set(d.id, i === 0 ? base : `${base}-${i + 1}`));
+  }
+  return out;
+}
+
+// changefreq was dropped (Oct 2026): Google ignores it, so emitting it
+// only adds bytes and a false sense of control. lastmod stays per-article
+// from createdAt (Jakarta date); it was never "all today" in this file.
+function urlEntry(loc, lastmod, priority) {
+  return `  <url>\n    <loc>${escapeXml(loc)}</loc>\n${lastmod ? `    <lastmod>${lastmod}</lastmod>\n` : ''}    <priority>${priority}</priority>\n  </url>`;
 }
 
 export default async function handler(req, res) {
@@ -100,11 +125,11 @@ export default async function handler(req, res) {
 
   // Homepage: lastmod = newest article date (or today when empty).
   const newestMs = docs.reduce((m, d) => Math.max(m, msField(d.fields, 'createdAt')), 0);
-  entries.push(urlEntry(`${SITE_URL}/`, newestMs ? dayInJakarta(newestMs) : today, 'daily', '1.0'));
-  entries.push(urlEntry(`${SITE_URL}/home`, newestMs ? dayInJakarta(newestMs) : today, 'daily', '0.9'));
-  entries.push(urlEntry(`${SITE_URL}/tentang`, '2026-10-30', 'monthly', '0.8'));
-  entries.push(urlEntry(`${SITE_URL}/privasi`, '2026-10-30', 'monthly', '0.5'));
-  entries.push(urlEntry(`${SITE_URL}/kontak`, '2026-10-30', 'monthly', '0.5'));
+  entries.push(urlEntry(`${SITE_URL}/`, newestMs ? dayInJakarta(newestMs) : today, '1.0'));
+  entries.push(urlEntry(`${SITE_URL}/home`, newestMs ? dayInJakarta(newestMs) : today, '0.9'));
+  entries.push(urlEntry(`${SITE_URL}/tentang`, '2026-10-30', '0.8'));
+  entries.push(urlEntry(`${SITE_URL}/privasi`, '2026-10-30', '0.5'));
+  entries.push(urlEntry(`${SITE_URL}/kontak`, '2026-10-30', '0.5'));
 
   // Category pages: lastmod = newest article date in that category.
   const byCategory = {};
@@ -127,18 +152,18 @@ export default async function handler(req, res) {
   };
   for (const slug of CATEGORY_SLUGS) {
     const ms = byCategory[slugToCategory[slug]];
-    entries.push(urlEntry(`${SITE_URL}/kategori/${slug}`, ms ? dayInJakarta(ms) : '', 'daily', '0.8'));
+    entries.push(urlEntry(`${SITE_URL}/kategori/${slug}`, ms ? dayInJakarta(ms) : '', '0.8'));
   }
 
-  // Article pages, newest first.
+  // Article pages, newest first, with slug URLs (Oct 2026).
+  const slugMap = assignSlugs(docs.map((d) => ({ id: d.id, title: strField(d.fields, 'title'), createdMs: msField(d.fields, 'createdAt') })));
   docs
     .sort((a, b) => msField(b.fields, 'createdAt') - msField(a.fields, 'createdAt'))
     .forEach((d) => {
       const ms = msField(d.fields, 'createdAt');
       entries.push(urlEntry(
-        `${SITE_URL}/berita/${encodeURIComponent(d.id)}`,
+        `${SITE_URL}/berita/${slugMap.get(d.id) || d.id}`,
         ms ? dayInJakarta(ms) : '',
-        'monthly',
         '0.8',
       ));
     });

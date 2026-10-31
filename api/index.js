@@ -1,0 +1,377 @@
+// Vercel Serverless Function: the homepage as real server-rendered HTML.
+// / is rewritten (vercel.json) to /api/index. The SPA homepage was an
+// empty shell (<div id="root">) until a ~1 MB bundle + a Firestore fetch
+// finished (mobile FCP 5.8s vs 0.8s for server-rendered articles), so
+// crawlers and first-time visitors saw nothing. This page renders the SAME
+// content as the SPA default view (category Semua, no search, page 1):
+// headline hero, Lagi Viral, Pilihan Redaksi, Terbaru grid, category nav,
+// search form. The SPA itself still exists at /home and /dapur-redaksi;
+// in-app SPA navigation is state-based and unaffected.
+// Reads live from the same public Firestore collection the portal CMS
+// writes to (articles + brand settings), so a new publish appears here
+// within the cache window. No Firestore writes. NOTE: fetches up to 100
+// articles per call; add pagination if the portal ever grows past 100
+// published articles.
+
+const PROJECT_ID = 'meramu-site';
+const APP_ID = 'meramu-site-app';
+const SITE_URL = 'https://meramu.site';
+const ACCENT = '#0D1B8C';
+const GA_ID = 'G-J3BTYYC4X8';
+const GRID_PAGE_SIZE = 6;
+
+const CATEGORY_NAV = [
+  ['Semua', '/'],
+  ['Pop Culture', '/kategori/pop-culture'],
+  ['Ekonomi Kreatif', '/kategori/ekonomi-kreatif'],
+  ['Musik', '/kategori/musik'],
+  ['Entertainment', '/kategori/entertainment'],
+  ['Lifestyle', '/kategori/lifestyle'],
+  ['Tech', '/kategori/tech'],
+  ['Berita Umum', '/kategori/berita-umum'],
+  ['Sports', '/kategori/sports'],
+  ['Esports', '/kategori/esports'],
+  ['Politik', '/kategori/politik'],
+];
+
+const DEFAULT_BRAND = {
+  siteName: 'MERAMU',
+  tagline: 'Meramu gagasan, kultur pop, dan cerita kreatif terkini.',
+  domain: 'meramu.site',
+  instagram: 'meramufeed',
+  accentColor: '#0D1B8C',
+};
+
+function escapeHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function strField(fields, name) {
+  const v = fields?.[name];
+  if (!v) return '';
+  if (typeof v.stringValue === 'string') return v.stringValue;
+  return '';
+}
+
+function boolField(fields, name) {
+  const v = fields?.[name];
+  if (!v) return false;
+  if (v.booleanValue === true) return true;
+  if (v.stringValue === 'true') return true;
+  return false;
+}
+
+function msField(fields, name) {
+  const v = fields?.[name];
+  if (!v) return 0;
+  if (v.integerValue !== undefined) {
+    const n = Number(v.integerValue);
+    return Number.isFinite(n) ? n : 0;
+  }
+  if (v.timestampValue) {
+    const t = Date.parse(v.timestampValue);
+    return Number.isFinite(t) ? t : 0;
+  }
+  if (typeof v.stringValue === 'string') {
+    const n = Number(v.stringValue);
+    return Number.isFinite(n) ? n : 0;
+  }
+  return 0;
+}
+
+function formatDate(ms) {
+  if (!ms) return '';
+  try {
+    return new Intl.DateTimeFormat('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'Asia/Jakarta',
+    }).format(new Date(ms));
+  } catch {
+    return '';
+  }
+}
+
+// Same helper as api/berita.js, api/kategori.js, api/cari.js and src/App.tsx
+// (duplicated on purpose so a serverless file never breaks on a bundling
+// miss). See api/berita.js for the full explanation, including the
+// per-language-wiki FilePath fix (Oct 2026).
+function wikimediaThumb(url, width) {
+  if (!url || typeof url !== 'string') return url;
+  const up = url.match(/^https:\/\/upload\.wikimedia\.org\/wikipedia\/([^/]+)\/(?!thumb\/)[^/]+\/[^/]+\/(.+)$/);
+  if (up) {
+    const host = up[1] === 'commons' ? 'commons.wikimedia.org' : `${up[1]}.wikipedia.org`;
+    return `https://${host}/wiki/Special:FilePath/${up[2]}?width=${width}`;
+  }
+  const fp = url.match(/^https:\/\/commons\.wikimedia\.org\/wiki\/Special:FilePath\/([^?#]+)(\?.*)?$/);
+  if (fp) return `https://commons.wikimedia.org/wiki/Special:FilePath/${fp[1]}${fp[2] ? '&' : '?'}width=${width}`;
+  return url;
+}
+
+// Article slugs (SEO URLs, Oct 2026). MUST stay identical in api/berita.js,
+// api/kategori.js, api/cari.js, api/feed.js, api/sitemap.js, api/index.js
+// and src/App.tsx (no shared import). See api/berita.js for the full rules.
+function slugifyTitle(title) {
+  const s = String(title || '').toLowerCase().replace(/[''']/g, '').replace(/[–—]/g, '-').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return s || 'artikel';
+}
+function assignSlugs(docs) {
+  const groups = new Map();
+  for (const d of docs) {
+    const base = slugifyTitle(d.title);
+    if (!groups.has(base)) groups.set(base, []);
+    groups.get(base).push(d);
+  }
+  const out = new Map();
+  for (const [base, list] of groups) {
+    list.sort((a, b) => (a.createdMs - b.createdMs) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    list.forEach((d, i) => out.set(d.id, i === 0 ? base : `${base}-${i + 1}`));
+  }
+  return out;
+}
+
+function shell({ brand, body, heroImage }) {
+  const accent = brand.accentColor || ACCENT;
+  const jsonLd = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        name: 'Meramu',
+        url: SITE_URL,
+        logo: `${SITE_URL}/favicon.svg`,
+        description: 'Baca berita secukupnya, lanjut kerja lagi.',
+        foundingDate: '2026-10-28',
+        sameAs: ['https://instagram.com/meramufeed', 'https://www.threads.net/@meramufeed'],
+      },
+      { '@type': 'WebSite', name: 'Meramu', url: SITE_URL, inLanguage: 'id-ID' },
+    ],
+  }).replace(/</g, '\\u003c');
+  return `<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Meramu — Portal Berita</title>
+<meta name="description" content="MERAMU — portal berita pop culture, ekonomi kreatif, musik, lifestyle, dan tech." />
+<link rel="canonical" href="${SITE_URL}/" />
+${heroImage ? `<link rel="preload" as="image" href="${escapeHtml(heroImage)}" fetchpriority="high" />` : ''}
+<meta name="robots" content="max-image-preview:large" />
+<meta property="og:title" content="Meramu — Portal Berita" />
+<meta property="og:description" content="Baca berita secukupnya, lanjut kerja lagi." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="${SITE_URL}/" />
+<meta property="og:image" content="${SITE_URL}/og-image.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Meramu — Portal Berita" />
+<meta name="twitter:description" content="Baca berita secukupnya, lanjut kerja lagi." />
+<meta name="twitter:image" content="${SITE_URL}/og-image.png" />
+<script type="application/ld+json">${jsonLd}</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_ID}');</script>
+<script>(function(){try{if(localStorage.getItem('meramu-theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}})();</script>
+<style>
+  *{box-sizing:border-box} body{margin:0;font-family:ui-sans-system,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#171717;background:#fff}
+  a{color:${accent}} .accent{height:6px;background:${accent}}
+  header{border-bottom:1px solid #e5e5e5} .head{max-width:1152px;margin:0 auto;padding:16px 20px;display:flex;align-items:center;gap:12px}
+  .badge{width:36px;height:36px;border-radius:10px;background:${accent};color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}
+  .brand{font-weight:900;letter-spacing:.02em} .brand small{display:block;font-size:10px;letter-spacing:.18em;color:#737373}
+  .head nav{margin-left:auto;display:flex;gap:16px;font-size:14px} .head nav a{color:#171717;text-decoration:none;font-weight:600}
+  .catnav{max-width:1152px;margin:0 auto;padding:14px 20px 0;display:flex;gap:8px;flex-wrap:wrap}
+  .catnav a{display:inline-block;padding:7px 14px;border-radius:999px;border:1px solid #e5e5e5;font-size:13px;font-weight:600;text-decoration:none;color:#404040}
+  .catnav a.active{background:#171717;color:#fff;border-color:#171717}
+  form.search{max-width:1152px;margin:0 auto;padding:16px 20px 0;display:flex;gap:8px}
+  form.search input{flex:1;padding:11px 16px;border-radius:999px;border:1px solid #e5e5e5;font-size:15px;outline:none}
+  form.search button{padding:11px 20px;border-radius:999px;border:none;background:${accent};color:#fff;font-weight:700;font-size:14px;cursor:pointer}
+  main{max-width:1152px;margin:0 auto;padding:24px 20px 56px}
+  .hero{display:grid;grid-template-columns:2fr 1fr;gap:24px;align-items:start}
+  .hero-card{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid #e5e5e5;border-radius:16px;overflow:hidden}
+  .hero-img{position:relative;aspect-ratio:16/9;width:100%;overflow:hidden;background:#f5f5f5}
+  .hero-img img{width:100%;height:100%;object-fit:cover;display:block}
+  .hero-badges{position:absolute;top:16px;left:16px;display:flex;gap:8px}
+  .hero-badges span{padding:5px 12px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+  .hero-badges .main{background:${accent};color:#fff}
+  .hero-badges .cat{background:rgba(255,255,255,.95);color:#171717}
+  .hero-body{padding:24px}
+  .hero-body h1{font-size:30px;line-height:1.2;letter-spacing:-.02em;margin:0 0 12px}
+  .hero-body p{font-size:16px;line-height:1.6;color:#525252;margin:0}
+  .hero-meta{margin-top:20px;padding-top:16px;border-top:1px solid #f5f5f5;display:flex;justify-content:space-between;font-size:12px;color:#737373}
+  .hero-meta b{color:#171717}
+  .side{display:flex;flex-direction:column;gap:16px}
+  .box{background:#fff;border:1px solid #e5e5e5;border-radius:16px;overflow:hidden}
+  .box-head{background:${accent};color:#fff;padding:10px 16px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+  .viral-list{padding:12px 16px}
+  .viral-list a{display:block;text-decoration:none;color:#171717;font-size:14px;font-weight:700;line-height:1.4;padding:8px 0;border-bottom:1px solid #f5f5f5}
+  .viral-list a:last-child{border-bottom:0}
+  .trend{padding:20px}
+  .trend h2{font-size:14px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${accent};margin:0 0 16px;padding-bottom:12px;border-bottom:1px solid #f5f5f5}
+  .trend a{display:flex;gap:14px;align-items:flex-start;text-decoration:none;color:inherit;padding:12px 0;border-bottom:1px solid #f5f5f5}
+  .trend a:first-of-type{padding-top:0} .trend a:last-child{border-bottom:0;padding-bottom:0}
+  .trend .num{font-size:22px;font-weight:900;color:#a3a3a3;line-height:1}
+  .trend .tt{flex:1} .trend .tt span{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${accent}}
+  .trend .tt b{display:block;font-size:14px;line-height:1.4;margin:4px 0;color:#171717}
+  .trend .tt small{font-size:11px;color:#a3a3a3}
+  .trend img,.trend .ph{width:80px;height:80px;border-radius:12px;object-fit:cover;flex:none;background:#f5f5f5}
+  .trend .ph{display:flex;align-items:center;justify-content:center;background:${accent};color:#fff;font-weight:900;font-size:20px}
+  .ig-cta{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border-radius:12px;border:1px solid #e5e5e5;text-decoration:none;color:inherit}
+  .ig-cta b{display:block;font-size:12px;font-weight:800;color:${accent}}
+  .ig-cta span{display:block;font-size:11px;color:#737373}
+  .grid-head{display:flex;align-items:center;justify-content:space-between;margin:48px 0 20px;padding-bottom:12px;border-bottom:1px solid #e5e5e5}
+  .grid-head h2{font-size:20px;margin:0;display:flex;align-items:center;gap:10px}
+  .grid-head h2 i{width:10px;height:10px;border-radius:50%;background:${accent};display:inline-block}
+  .grid-head span{font-size:12px;color:#737373}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .card{display:flex;flex-direction:column;text-decoration:none;color:inherit;background:#fff;border:1px solid #e5e5e5;border-radius:16px;overflow:hidden}
+  .card-img{position:relative;aspect-ratio:16/10;width:100%;overflow:hidden;background:#f5f5f5}
+  .card-img img{width:100%;height:100%;object-fit:cover;display:block}
+  .card-img span{position:absolute;top:12px;left:12px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;background:rgba(255,255,255,.95);color:#171717}
+  .card-body{padding:20px;flex:1;display:flex;flex-direction:column;justify-content:space-between}
+  .card-body h3{font-size:18px;line-height:1.35;margin:0 0 8px}
+  .card-body p{font-size:14px;line-height:1.6;color:#525252;margin:0}
+  .card-bar{margin:20px -20px -20px;padding:14px 20px;background:${accent};color:#fff;display:flex;justify-content:space-between;font-size:12px}
+  .pager{margin-top:32px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+  .pager a,.pager span{display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 12px;border-radius:999px;border:1px solid #e5e5e5;font-size:13px;font-weight:700;text-decoration:none;color:#404040}
+  .pager a.current{background:${accent};color:#fff;border-color:${accent}}
+  .pager span.disabled{opacity:.4}
+  .empty{background:#fff;border:1px solid #e5e5e5;border-radius:16px;padding:48px;text-align:center;color:#737373}
+  footer{border-top:1px solid #e5e5e5;padding:24px;text-align:center;font-size:13px;color:#737373}
+  @media(max-width:900px){.hero{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.hero-body h1{font-size:26px}}
+  html.dark body{background:#09090b;color:#f4f4f5}
+  html.dark header{border-bottom-color:rgba(255,255,255,.1)}
+  html.dark .brand small{color:#a3a3a3}
+  html.dark .head nav a{color:#f4f4f5}
+  html.dark .catnav a{border-color:rgba(255,255,255,.15);color:#d4d4d8}
+  html.dark .catnav a.active{background:#f4f4f5;color:#09090b}
+  html.dark form.search input{background:#27272a;border-color:rgba(255,255,255,.15);color:#f4f4f5}
+  html.dark .hero-card,html.dark .box,html.dark .card{background:#18181b;border-color:rgba(255,255,255,.1)}
+  html.dark .hero-body p,html.dark .card-body p{color:#d4d4d8}
+  html.dark .trend .tt b,html.dark .viral-list a{color:#f4f4f5}
+  html.dark footer{border-top-color:rgba(255,255,255,.1);color:#a3a3a3}
+</style>
+</head>
+<body>
+<div class="accent"></div>
+<header><div class="head"><div class="badge">M</div><div class="brand">${escapeHtml(brand.siteName)}<small>${escapeHtml(brand.tagline)}</small></div><nav><a href="/">Beranda</a><a href="https://instagram.com/${escapeHtml(brand.instagram.replace('@', ''))}">Instagram</a></nav></div></header>
+<nav class="catnav">${CATEGORY_NAV.map(([label, href]) => `<a href="${href}"${label === 'Semua' ? ' class="active"' : ''}>${escapeHtml(label)}</a>`).join('')}</nav>
+<form class="search" action="/cari" method="get"><input type="text" name="q" placeholder="Cari topik, berita..." /><button type="submit">Cari</button></form>
+<main>${body}</main>
+<footer>MERAMU — Portal Berita<br /><a href="/">Beranda</a> • <a href="/tentang">Tentang</a> • <a href="/privasi">Privasi</a> • <a href="/kontak">Kontak</a></footer>
+</body>
+</html>`;
+}
+
+export default async function handler(req, res) {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  const apiKey = process.env.VITE_FIREBASE_API_KEY;
+  if (!apiKey) {
+    return res.status(500).send(shell({
+      brand: DEFAULT_BRAND,
+      body: `<div class="empty"><h1>Beranda belum bisa dibuka</h1><p>Terjadi kendala konfigurasi di server. Coba lagi nanti.</p></div>`,
+    }));
+  }
+
+  // Articles + brand settings in parallel; a brand failure falls back to
+  // defaults (the page must still render), an articles failure is a 500.
+  const listUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/artifacts/${APP_ID}/public/data/articles?pageSize=100&key=${apiKey}`;
+  const brandUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/artifacts/${APP_ID}/public/data/settings/brand?key=${apiKey}`;
+  let docs = null;
+  let brand = { ...DEFAULT_BRAND };
+  try {
+    const [lr, br] = await Promise.all([fetch(listUrl), fetch(brandUrl)]);
+    if (!lr.ok) throw new Error(`Firestore ${lr.status}`);
+    const lj = await lr.json();
+    docs = (lj.documents || []).map((d) => {
+      const ff = d.fields || {};
+      return {
+        id: String(d.name || '').split('/').pop(),
+        title: strField(ff, 'title'),
+        excerpt: strField(ff, 'excerpt'),
+        category: strField(ff, 'category'),
+        author: strField(ff, 'author') || 'Redaksi Meramu',
+        readTime: strField(ff, 'readTime'),
+        imageUrl: strField(ff, 'imageUrl'),
+        createdMs: msField(ff, 'createdAt'),
+        isFeatured: boolField(ff, 'isFeatured'),
+        isTrending: boolField(ff, 'isTrending'),
+        isViral: boolField(ff, 'isViral'),
+      };
+    }).filter((a) => a.id && a.title);
+    if (br.ok) {
+      const bj = await br.json();
+      const bf = bj.fields || {};
+      // Same legacy upgrade as the SPA: old default black -> Royal Blue.
+      const accent = strField(bf, 'accentColor');
+      brand = {
+        siteName: strField(bf, 'siteName') || DEFAULT_BRAND.siteName,
+        tagline: strField(bf, 'tagline') || DEFAULT_BRAND.tagline,
+        domain: strField(bf, 'domain') || DEFAULT_BRAND.domain,
+        instagram: strField(bf, 'instagram') || DEFAULT_BRAND.instagram,
+        accentColor: !accent || accent === '#111827' ? '#0D1B8C' : accent,
+      };
+    }
+  } catch {
+    return res.status(500).send(shell({
+      brand,
+      body: `<div class="empty"><h1>Beranda belum bisa dibuka</h1><p>Terjadi kendala saat mengambil daftar berita. Coba lagi nanti.</p></div>`,
+    }));
+  }
+
+  // Mirror the SPA default view exactly: newest first; featured = first
+  // isFeatured else newest; grid = all minus featured; trending = isTrending
+  // max 4 else first 4; viral = isViral max 5 (static list here: the SPA
+  // auto-rotates, but a server page cannot rotate without JS).
+  docs.sort((a, b) => b.createdMs - a.createdMs);
+  const slugMap = assignSlugs(docs);
+  const href = (a) => `/berita/${slugMap.get(a.id) || a.id}`;
+  const featured = docs.find((a) => a.isFeatured) || docs[0] || null;
+  const gridAll = featured ? docs.filter((a) => a.id !== featured.id) : docs;
+  const totalPages = Math.max(1, Math.ceil(gridAll.length / GRID_PAGE_SIZE));
+  let page = parseInt(String(req.query.page || '1'), 10);
+  if (!Number.isFinite(page) || page < 1) page = 1;
+  if (page > totalPages) page = totalPages;
+  const paged = gridAll.slice((page - 1) * GRID_PAGE_SIZE, page * GRID_PAGE_SIZE);
+  const trending = docs.filter((a) => a.isTrending).slice(0, 4);
+  const trendingList = trending.length ? trending : docs.slice(0, 4);
+  const viral = docs.filter((a) => a.isViral).slice(0, 5);
+  const heroImage = featured?.imageUrl ? wikimediaThumb(featured.imageUrl, 1200) : '';
+
+  const hero = featured ? `<section class="hero">
+<a class="hero-card" href="${href(featured)}">
+<div class="hero-img">${featured.imageUrl ? `<img src="${escapeHtml(wikimediaThumb(featured.imageUrl, 1200))}" srcset="${escapeHtml(wikimediaThumb(featured.imageUrl, 800))} 800w, ${escapeHtml(wikimediaThumb(featured.imageUrl, 1200))} 1200w" sizes="(max-width: 900px) 100vw, 760px" width="1200" height="675" fetchpriority="high" decoding="async" alt="${escapeHtml(featured.title)}" />` : ''}<div class="hero-badges"><span class="main">Headline Utama</span><span class="cat">${escapeHtml(featured.category)}</span></div></div>
+<div class="hero-body"><h1>${escapeHtml(featured.title)}</h1>${featured.excerpt ? `<p>${escapeHtml(featured.excerpt)}</p>` : ''}<div class="hero-meta"><span><b>${escapeHtml(featured.author)}</b> • ${formatDate(featured.createdMs)}</span><span>${escapeHtml(featured.readTime)}</span></div></div>
+</a>
+<div class="side">
+${viral.length ? `<div class="box"><div class="box-head">Lagi Viral</div><div class="viral-list">${viral.map((a) => `<a href="${href(a)}">${escapeHtml(a.title)}</a>`).join('')}</div></div>` : ''}
+<div class="box trend"><h2>Pilihan Redaksi</h2>${trendingList.map((item, idx) => `<a href="${href(item)}"><span class="num">0${idx + 1}</span><div class="tt"><span>${escapeHtml(item.category)}</span><b>${escapeHtml(item.title)}</b><small>${formatDate(item.createdMs)} • ${escapeHtml(item.readTime)}</small></div>${item.imageUrl ? `<img src="${escapeHtml(wikimediaThumb(item.imageUrl, 320))}" alt="" width="80" height="80" loading="lazy" decoding="async" />` : `<div class="ph">M</div>`}</a>`).join('')}
+<a class="ig-cta" href="https://instagram.com/${escapeHtml(brand.instagram.replace('@', ''))}" target="_blank" rel="noreferrer"><div><b>Ikuti @${escapeHtml(brand.instagram.replace('@', ''))}</b><span>Update visual harian di Instagram</span></div><span>↗</span></a></div>
+</div></section>` : '';
+
+  const cards = paged.map((a) => `<a class="card" href="${href(a)}">
+<div class="card-img">${a.imageUrl ? `<img src="${escapeHtml(wikimediaThumb(a.imageUrl, 800))}" srcset="${escapeHtml(wikimediaThumb(a.imageUrl, 400))} 400w, ${escapeHtml(wikimediaThumb(a.imageUrl, 800))} 800w" sizes="(max-width: 900px) 90vw, 360px" width="800" height="500" loading="lazy" decoding="async" alt="${escapeHtml(a.title)}" />` : ''}<span>${escapeHtml(a.category)}</span></div>
+<div class="card-body"><div><h3>${escapeHtml(a.title)}</h3>${a.excerpt ? `<p>${escapeHtml(a.excerpt)}</p>` : ''}</div><div class="card-bar"><span>${escapeHtml(a.author)}</span><span>${formatDate(a.createdMs)} • ${escapeHtml(a.readTime)}</span></div></div>
+</a>`).join('\n');
+
+  let pager = '';
+  if (totalPages > 1) {
+    const nums = [];
+    for (let p = 1; p <= totalPages; p++) {
+      nums.push(p === page ? `<span class="current">${p}</span>` : `<a href="/?page=${p}">${p}</a>`);
+    }
+    pager = `<div class="pager">${page > 1 ? `<a href="/?page=${page - 1}">Sebelumnya</a>` : `<span class="disabled">Sebelumnya</span>`}${nums.join('')}${page < totalPages ? `<a href="/?page=${page + 1}">Selanjutnya</a>` : `<span class="disabled">Selanjutnya</span>`}</div>`;
+  }
+
+  const body = `${hero}
+<section>
+<div class="grid-head"><h2><i></i>Terbaru di Meramu</h2><span>${gridAll.length} Artikel Tersedia</span></div>
+${cards ? `<div class="grid">${cards}</div>${pager}` : `<div class="empty"><p>Belum ada berita yang cocok.</p></div>`}
+</section>`;
+
+  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+  return res.status(200).send(shell({ brand, body, heroImage }));
+}

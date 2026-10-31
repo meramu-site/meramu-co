@@ -43,6 +43,31 @@ function msField(fields, name) {
   return 0;
 }
 
+
+// Article slugs (SEO URLs, Oct 2026). MUST stay identical in api/berita.js,
+// api/kategori.js, api/cari.js, api/feed.js, api/sitemap.js, api/index.js
+// and src/App.tsx (no shared import). See api/berita.js for the full rules:
+// lowercase, apostrophes dropped, dashes collapsed, collision = createdAt
+// asc then id asc, first keeps the bare slug, rest get -2, -3, ...
+function slugifyTitle(title) {
+  const s = String(title || '').toLowerCase().replace(/[''']/g, '').replace(/[\u2013\u2014]/g, '-').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return s || 'artikel';
+}
+function assignSlugs(docs) {
+  const groups = new Map();
+  for (const d of docs) {
+    const base = slugifyTitle(d.title);
+    if (!groups.has(base)) groups.set(base, []);
+    groups.get(base).push(d);
+  }
+  const out = new Map();
+  for (const [base, list] of groups) {
+    list.sort((a, b) => (a.createdMs - b.createdMs) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    list.forEach((d, i) => out.set(d.id, i === 0 ? base : `${base}-${i + 1}`));
+  }
+  return out;
+}
+
 export default async function handler(req, res) {
   let docs = [];
   const apiKey = process.env.VITE_FIREBASE_API_KEY;
@@ -62,6 +87,11 @@ export default async function handler(req, res) {
     }
   }
 
+  // Item links + guids use article slugs (Oct 2026). Note: guids change
+  // from the old ID URLs to slug URLs once; feed readers may show the 20
+  // latest items as new a single time, and the old guid URLs 301-redirect
+  // to the new ones anyway.
+  const slugMap = assignSlugs(docs.map((d) => ({ id: d.id, title: strField(d.fields, 'title'), createdMs: msField(d.fields, 'createdAt') })));
   const items = docs
     .sort((a, b) => msField(b.fields, 'createdAt') - msField(a.fields, 'createdAt'))
     .slice(0, 20)
@@ -73,7 +103,7 @@ export default async function handler(req, res) {
       const author = strField(f, 'author') || 'Redaksi Meramu';
       const ms = msField(f, 'createdAt');
       const pubDate = ms ? new Date(ms).toUTCString() : '';
-      const link = `${SITE_URL}/berita/${encodeURIComponent(d.id)}`;
+      const link = `${SITE_URL}/berita/${slugMap.get(d.id) || d.id}`;
       return `    <item>\n      <title>${escapeXml(title)}</title>\n      <link>${escapeXml(link)}</link>\n      <guid isPermaLink="true">${escapeXml(link)}</guid>\n${excerpt ? `      <description>${escapeXml(excerpt)}</description>\n` : ''}${category ? `      <category>${escapeXml(category)}</category>\n` : ''}      <author>${escapeXml(author)}</author>\n${pubDate ? `      <pubDate>${pubDate}</pubDate>\n` : ''}    </item>`;
     })
     .join('\n');
