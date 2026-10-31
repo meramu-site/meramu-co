@@ -53,7 +53,7 @@ const SECTIONS = [
   {
     h: 'Perubahan kebijakan',
     ps: [
-      'Bila praktik kami berubah, halaman ini diperbarui dan tanggal berlakunya ikut berubah. Pertanyaan soal privasi bisa disampaikan lewat halaman Kontak atau DM Instagram/Threads @meramufeed.',
+      'Bila praktik kami berubah, halaman ini diperbarui dan tanggal berlakunya ikut berubah. Pertanyaan soal privasi bisa disampaikan lewat email sapa@meramu.site, halaman Kontak, atau DM Instagram/Threads @meramufeed.',
     ],
   },
 ];

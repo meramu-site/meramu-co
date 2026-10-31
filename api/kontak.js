@@ -1,7 +1,6 @@
 // Vercel Serverless Function: static Contact page.
 // /kontak is rewritten (vercel.json) to /api/kontak.
-// Contact routes use only public handles (@meramufeed). No email
-// address is published here — if the user later approves one, add it.
+// Contact routes: email sapa@meramu.site plus public handles (@meramufeed).
 
 const SITE_URL = 'https://meramu.site';
 const ACCENT = '#0D1B8C';
@@ -17,7 +16,7 @@ function escapeHtml(s) {
 }
 
 const TITLE = 'Kontak Redaksi';
-const DESCRIPTION = 'Hubungi Redaksi Meramu lewat Instagram dan Threads @meramufeed.';
+const DESCRIPTION = 'Hubungi Redaksi Meramu lewat email sapa@meramu.site, Instagram, dan Threads @meramufeed.';
 
 export default async function handler(req, res) {
   const canonical = `${SITE_URL}/kontak`;
@@ -29,12 +28,14 @@ export default async function handler(req, res) {
 <p>Punya kabar untuk diliput, koreksi untuk artikel yang sudah tayang, atau saran buat Meramu? Hubungi redaksi lewat kanal berikut. Kami membaca semua pesan yang masuk.</p>
 </article>
 <div class="social">
+<a href="mailto:sapa@meramu.site">Email sapa@meramu.site</a>
+<span>•</span>
 <a href="https://instagram.com/meramufeed" target="_blank" rel="noreferrer">Instagram @meramufeed</a>
 <span>•</span>
 <a href="https://www.threads.net/@meramufeed" target="_blank" rel="noreferrer">Threads @meramufeed</a>
 </div>
 <article>
-<p>Untuk koreksi berita, sertakan link artikel dan bagian yang perlu dikoreksi supaya bisa kami periksa dan perbaiki.</p>
+<p>Untuk koreksi berita, kirim ke <a href="mailto:sapa@meramu.site">sapa@meramu.site</a> (atau lewat <a href="/koreksi">halaman Koreksi</a>) dengan menyertakan link artikel dan bagian yang perlu dikoreksi supaya bisa kami periksa dan perbaiki.</p>
 </article>
 <a class="back" href="/">&larr; Kembali ke Beranda</a>`;
 

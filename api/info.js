@@ -38,7 +38,7 @@ const PAGES = {
   },
   koreksi: {
     title: 'Kebijakan Koreksi & Hak Jawab',
-    description: 'Kebijakan koreksi dan hak jawab Meramu: kirim ke sapa@meramu.site, respons maksimal 1 hari kerja, koreksi dimuat di artikel yang sama.',
+    description: 'Kebijakan koreksi dan hak jawab Meramu: kirim ke sapa@meramu.site, respons maksimal 1x24 jam, koreksi dimuat di artikel yang sama.',
     body: `<a class="back" style="margin:0 0 20px" href="/">&larr; Beranda</a>
 <div style="margin-top:20px"><span class="chip">Koreksi</span></div>
 <h1>Kebijakan Koreksi &amp; Hak Jawab</h1>
@@ -48,7 +48,7 @@ const PAGES = {
 <p>Kirimkan koreksi atau hak jawab ke <a href="mailto:sapa@meramu.site">sapa@meramu.site</a> dengan menyertakan:</p>
 <ol><li>URL artikel Meramu yang dimaksud</li><li>Bagian yang keliru, dikutip kalimatnya</li><li>Sumber pendukung yang menunjukkan kekeliruan tersebut</li></ol></section>
 <section><h2>Respons</h2>
-<p>Redaksi merespons maksimal 1 hari kerja sejak pengaduan diterima.</p></section>
+<p>Redaksi merespons maksimal 1x24 jam sejak pengaduan diterima.</p></section>
 <section><h2>Cara Kami Memuatnya</h2>
 <p>Koreksi dimuat di artikel yang sama, pada bagian yang dikoreksi, dan waktu pembaruan dicantumkan di artikel tersebut. Hak jawab diproses secara berimbang sesuai Pedoman Media Siber: dimuat dan ditautkan ke artikel yang diberi hak jawab, sehingga pembaca bisa membaca berita awal dan jawabannya berdampingan.</p></section>
 <a class="back" href="/">&larr; Kembali ke Beranda</a>`,
