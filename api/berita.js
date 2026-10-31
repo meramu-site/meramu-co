@@ -97,36 +97,71 @@ function renderContent(raw) {
     .join('\n');
 }
 
-// Resize Wikimedia images via Special:FilePath (PageSpeed fix, Oct 2026).
-// Editors paste full-resolution Wikimedia originals as covers, and the site
-// served them raw even as 96px thumbnails (one 13 MB PNG, several ~4 MB
-// JPGs). Rewriting to Special:FilePath?width=<w> redirects to a
-// Wikimedia-generated thumbnail of the SAME file (verified HTTP 200 +
-// byte sizes, Oct 2026). Direct /thumb/ URLs are NOT constructed here:
-// on-demand widths 400 on some files, only FilePath widths work reliably.
-// - upload.wikimedia.org/wikipedia/<lang>/<a>/<ab>/<file> -> per-host
-//   FilePath form (commons -> commons.wikimedia.org, any other language
-//   -> <lang>.wikipedia.org). The old regex only matched commons, so a
-//   language-wiki file (e.g. wikipedia/id/.../Stadion_Kanjuruhan_Malang2.png,
-//   1.8 MB) slipped through RAW; id FilePath width=320 is verified 200 +
-//   132,145 bytes (Oct 2026).
-// - commons.wikimedia.org/wiki/Special:FilePath/<file> -> append width
-// - anything else (local /meramu.site files, already-thumbed URLs such as
+// Resize + WebP images via images.weserv.nl, fallback Special:FilePath
+// (PageSpeed fix, Oct 2026). Editors paste full-resolution Wikimedia
+// originals as covers, and the site served them raw even as 96px
+// thumbnails (one 13 MB PNG, several ~4 MB JPGs). weserv resizes and
+// converts to WebP (verified live: 329KB JPEG -> 121KB WebP); if weserv
+// fails, onerror swaps to the FilePath JPEG/PNG at the same width, so an
+// image never breaks. FilePath inputs need ?width= inside the proxied
+// URL (a plain FilePath without width 404s on weserv, verified Oct 2026).
+// - upload.wikimedia.org/wikipedia/<lang>/<a>/<ab>/<file> -> weserv
+// - <host>/wiki/Special:FilePath/<file> -> weserv with ?width= inside
+// - https://meramu.site/<file> -> weserv (fallback: original local URL)
+// - anything else (already-thumbed URLs such as
 //   thumb.wikimedia.org/.../500px-..., Unsplash, other hosts) -> unchanged.
 // NOTE: this helper is intentionally duplicated in api/kategori.js,
 // api/cari.js, api/index.js and src/App.tsx (no shared import, so a
 // serverless file can never break because of a bundling miss). Keep the
 // copies in sync.
-function wikimediaThumb(url, width) {
+// Fallback URL for an image: the FilePath JPEG/PNG for Wikimedia files,
+// the original URL for same-origin local files. For pass-through URLs
+// (already-thumb, other CDNs) this equals the input, so no fallback is added.
+function wikimediaFilePath(url, width) {
   if (!url || typeof url !== 'string') return url;
   const up = url.match(/^https:\/\/upload\.wikimedia\.org\/wikipedia\/([^/]+)\/(?!thumb\/)[^/]+\/[^/]+\/(.+)$/);
   if (up) {
     const host = up[1] === 'commons' ? 'commons.wikimedia.org' : `${up[1]}.wikipedia.org`;
     return `https://${host}/wiki/Special:FilePath/${up[2]}?width=${width}`;
   }
-  const fp = url.match(/^https:\/\/commons\.wikimedia\.org\/wiki\/Special:FilePath\/([^?#]+)(\?.*)?$/);
-  if (fp) return `https://commons.wikimedia.org/wiki/Special:FilePath/${fp[1]}${fp[2] ? '&' : '?'}width=${width}`;
+  const fp = url.match(/^https:\/\/(commons\.wikimedia\.org|[a-z-]+\.wikipedia\.org)\/wiki\/Special:FilePath\/([^?#]+)/);
+  if (fp) return `https://${fp[1]}/wiki/Special:FilePath/${fp[2]}?width=${width}`;
   return url;
+}
+
+// Resize + WebP via images.weserv.nl (PageSpeed fix, Oct 2026). Verified
+// live: direct Wikimedia uploads and meramu.site files convert (e.g.
+// 329KB JPEG -> 121KB WebP); FilePath inputs need ?width= inside the
+// proxied URL (a plain FilePath without width 404s on weserv).
+// Already-thumb URLs and other CDNs pass through unchanged. No quality
+// param: w + output=webp only. NOTE: intentionally duplicated in
+// api/kategori.js, api/cari.js, api/index.js and src/App.tsx (no shared
+// import, so a serverless file can never break because of a bundling
+// miss). Keep the copies in sync.
+function wikimediaThumb(url, width) {
+  if (!url || typeof url !== 'string') return url;
+  const up = url.match(/^https:\/\/(upload\.wikimedia\.org\/wikipedia\/([^/]+)\/(?!thumb\/)[^/]+\/[^/]+\/[^?#]+)/);
+  if (up) return `https://images.weserv.nl/?url=${up[1]}&w=${width}&output=webp`;
+  const fp = url.match(/^https:\/\/(commons\.wikimedia\.org|[a-z-]+\.wikipedia\.org)\/wiki\/Special:FilePath\/([^?#]+)/);
+  if (fp) return `https://images.weserv.nl/?url=${fp[1]}/wiki/Special:FilePath/${fp[2]}?width=${width}&w=${width}&output=webp`;
+  const local = url.match(/^https:\/\/meramu\.site\/([^?#]+)/);
+  if (local) return `https://images.weserv.nl/?url=meramu.site/${local[1]}&w=${width}&output=webp`;
+  return url;
+}
+
+// onerror attribute for a weserv <img>: on failure, swap to the fallback
+// (FilePath for Wikimedia, original local URL for same-origin files).
+// Empty when the src is not a weserv URL (nothing to fall back from).
+// For srcset images the srcset is dropped first, otherwise the browser
+// would re-pick the broken weserv candidate instead of the fallback.
+function imgFallback(url, width, hasSrcset) {
+  const t = wikimediaThumb(url, width);
+  const f = wikimediaFilePath(url, width);
+  if (t === f) return '';
+  const esc = f.replace(/&/g, '&amp;').replace(/'/g, "\\'");
+  return hasSrcset
+    ? ` onerror="this.onerror=null;this.removeAttribute('srcset');this.src='${esc}'"`
+    : ` onerror="this.onerror=null;this.src='${esc}'"`;
 }
 
 // Article slugs (SEO URLs, Oct 2026). slugifyTitle + assignSlugs MUST stay
@@ -218,7 +253,7 @@ async function wikimediaImageSize(url) {
   return dims;
 }
 
-function pageShell({ title, description, canonical, ogImage, body, status = 200, jsonLd = '', preloadImage = '' }) {
+function pageShell({ title, description, canonical, ogImage, body, status = 200, jsonLd = '', preloadImage = '', preloadSrcset = '', preloadSizes = '' }) {
   const shareImage = ogImage || DEFAULT_OG;
   const html = `<!DOCTYPE html>
 <html lang="id">
@@ -228,7 +263,8 @@ function pageShell({ title, description, canonical, ogImage, body, status = 200,
 <title>${escapeHtml(title)} — Meramu</title>
 <meta name="description" content="${escapeHtml(description)}" />
 <link rel="canonical" href="${escapeHtml(canonical)}" />
-${preloadImage ? `<link rel="preload" as="image" href="${escapeHtml(preloadImage)}" fetchpriority="high" />` : ''}
+<link rel="icon" href="/favicon.ico" />
+${preloadImage ? `<link rel="preload" as="image" href="${escapeHtml(preloadImage)}"${preloadSrcset ? ` imagesrcset="${escapeHtml(preloadSrcset)}" imagesizes="${escapeHtml(preloadSizes)}"` : ''} fetchpriority="high" />` : ''}
 <meta name="robots" content="max-image-preview:large" />
 <meta property="og:title" content="${escapeHtml(title)} — Meramu" />
 <meta property="og:description" content="${escapeHtml(description)}" />
@@ -240,8 +276,7 @@ ${preloadImage ? `<link rel="preload" as="image" href="${escapeHtml(preloadImage
 <meta name="twitter:description" content="${escapeHtml(description)}" />
 <meta name="twitter:image" content="${escapeHtml(shareImage)}" />
 ${jsonLd ? `<script type="application/ld+json">${jsonLd}</script>` : ''}
-<script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_ID}');</script>
+<script>(function(){function meramuLoadGtag(){window.dataLayer=window.dataLayer||[];window.gtag=function(){window.dataLayer.push(arguments);};window.gtag('js',new Date());window.gtag('config','${GA_ID}');var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id=${GA_ID}';document.head.appendChild(s);}if(document.readyState==='complete'){meramuLoadGtag();}else{window.addEventListener('load',meramuLoadGtag);}})();</script>
 <script>(function(){try{if(localStorage.getItem('meramu-theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}})();</script>
 <style>
   *{box-sizing:border-box} body{margin:0;font-family:ui-sans-system,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#171717;background:#fff}
@@ -516,11 +551,11 @@ async function renderArticlePage({ doc, id, slug, related, res }) {
   ${secondaryCategory ? `<div style="margin-top:8px">${secondarySlug ? `<a class="chip" style="text-decoration:none" href="/kategori/${secondarySlug}">${escapeHtml(secondaryCategory)}</a>` : `<span class="chip">${escapeHtml(secondaryCategory)}</span>`}</div>` : ''}
   <h1>${escapeHtml(title)}</h1>
   <div class="meta">${metaBits.map((b, i) => (i === 0 ? `<b>${b}</b>` : `<span>•</span><span>${b}</span>`)).join('')}</div>
-  ${figureThumb ? `<figure><img src="${escapeHtml(figureThumb)}" alt="${escapeHtml(title)}"${figureAttrs} fetchpriority="high" decoding="async" />${imageCaption ? `<figcaption>${escapeHtml(imageCaption)}</figcaption>` : ''}</figure>` : ''}
+  ${figureThumb ? `<figure><img src="${escapeHtml(figureThumb)}" srcset="${escapeHtml(wikimediaThumb(imageUrl, 500))} 500w, ${escapeHtml(figureThumb)} 800w" sizes="(max-width: 808px) calc(100vw - 40px), 768px"${imgFallback(imageUrl, 800, true)} alt="${escapeHtml(title)}"${figureAttrs} fetchpriority="high" decoding="async" />${imageCaption ? `<figcaption>${escapeHtml(imageCaption)}</figcaption>` : ''}</figure>` : ''}
   ${excerpt ? `<p class="lead">${escapeHtml(excerpt)}</p>` : ''}
   <article>${renderContent(content)}</article>
   ${shareSection}
-  ${related.length ? `<section class="related"><h2>Baca Juga</h2>${related.map((r) => `<a class="rel" href="/berita/${escapeHtml(r.slug || r.id)}">${r.imageUrl ? `<img src="${escapeHtml(wikimediaThumb(r.imageUrl, 320))}" alt="" width="96" height="64" loading="lazy" decoding="async" />` : ''}<div class="rel-text"><b>${escapeHtml(r.title)}</b>${r.createdMs ? `<span>${formatDate(r.createdMs)}</span>` : ''}</div></a>`).join('')}</section>` : ''}
+  ${related.length ? `<section class="related"><h2>Baca Juga</h2>${related.map((r) => `<a class="rel" href="/berita/${escapeHtml(r.slug || r.id)}">${r.imageUrl ? `<img src="${escapeHtml(wikimediaThumb(r.imageUrl, 320))}"${imgFallback(r.imageUrl, 320, false)} alt="" width="96" height="64" loading="lazy" decoding="async" />` : ''}<div class="rel-text"><b>${escapeHtml(r.title)}</b>${r.createdMs ? `<span>${formatDate(r.createdMs)}</span>` : ''}</div></a>`).join('')}</section>` : ''}
   <a class="back" href="/">&larr; Kembali ke Beranda</a>`;
 
     const { html } = pageShell({
@@ -531,6 +566,8 @@ async function renderArticlePage({ doc, id, slug, related, res }) {
       body,
       jsonLd,
       preloadImage: figureThumb,
+      preloadSrcset: imageUrl ? `${wikimediaThumb(imageUrl, 500)} 500w, ${figureThumb} 800w` : '',
+      preloadSizes: '(max-width: 808px) calc(100vw - 40px), 768px',
     });
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');

@@ -72,16 +72,54 @@ function formatDate(ms) {
 // purpose so a serverless file never breaks on a bundling miss). See
 // api/berita.js for the full explanation: FilePath widths are verified
 // working, direct /thumb/ widths are not.
-function wikimediaThumb(url, width) {
+// Fallback URL for an image: the FilePath JPEG/PNG for Wikimedia files,
+// the original URL for same-origin local files. For pass-through URLs
+// (already-thumb, other CDNs) this equals the input, so no fallback is added.
+function wikimediaFilePath(url, width) {
   if (!url || typeof url !== 'string') return url;
   const up = url.match(/^https:\/\/upload\.wikimedia\.org\/wikipedia\/([^/]+)\/(?!thumb\/)[^/]+\/[^/]+\/(.+)$/);
   if (up) {
     const host = up[1] === 'commons' ? 'commons.wikimedia.org' : `${up[1]}.wikipedia.org`;
     return `https://${host}/wiki/Special:FilePath/${up[2]}?width=${width}`;
   }
-  const fp = url.match(/^https:\/\/commons\.wikimedia\.org\/wiki\/Special:FilePath\/([^?#]+)(\?.*)?$/);
-  if (fp) return `https://commons.wikimedia.org/wiki/Special:FilePath/${fp[1]}${fp[2] ? '&' : '?'}width=${width}`;
+  const fp = url.match(/^https:\/\/(commons\.wikimedia\.org|[a-z-]+\.wikipedia\.org)\/wiki\/Special:FilePath\/([^?#]+)/);
+  if (fp) return `https://${fp[1]}/wiki/Special:FilePath/${fp[2]}?width=${width}`;
   return url;
+}
+
+// Resize + WebP via images.weserv.nl (PageSpeed fix, Oct 2026). Verified
+// live: direct Wikimedia uploads and meramu.site files convert (e.g.
+// 329KB JPEG -> 121KB WebP); FilePath inputs need ?width= inside the
+// proxied URL (a plain FilePath without width 404s on weserv).
+// Already-thumb URLs and other CDNs pass through unchanged. No quality
+// param: w + output=webp only. NOTE: intentionally duplicated in
+// api/kategori.js, api/cari.js, api/index.js and src/App.tsx (no shared
+// import, so a serverless file can never break because of a bundling
+// miss). Keep the copies in sync.
+function wikimediaThumb(url, width) {
+  if (!url || typeof url !== 'string') return url;
+  const up = url.match(/^https:\/\/(upload\.wikimedia\.org\/wikipedia\/([^/]+)\/(?!thumb\/)[^/]+\/[^/]+\/[^?#]+)/);
+  if (up) return `https://images.weserv.nl/?url=${up[1]}&w=${width}&output=webp`;
+  const fp = url.match(/^https:\/\/(commons\.wikimedia\.org|[a-z-]+\.wikipedia\.org)\/wiki\/Special:FilePath\/([^?#]+)/);
+  if (fp) return `https://images.weserv.nl/?url=${fp[1]}/wiki/Special:FilePath/${fp[2]}?width=${width}&w=${width}&output=webp`;
+  const local = url.match(/^https:\/\/meramu\.site\/([^?#]+)/);
+  if (local) return `https://images.weserv.nl/?url=meramu.site/${local[1]}&w=${width}&output=webp`;
+  return url;
+}
+
+// onerror attribute for a weserv <img>: on failure, swap to the fallback
+// (FilePath for Wikimedia, original local URL for same-origin files).
+// Empty when the src is not a weserv URL (nothing to fall back from).
+// For srcset images the srcset is dropped first, otherwise the browser
+// would re-pick the broken weserv candidate instead of the fallback.
+function imgFallback(url, width, hasSrcset) {
+  const t = wikimediaThumb(url, width);
+  const f = wikimediaFilePath(url, width);
+  if (t === f) return '';
+  const esc = f.replace(/&/g, '&amp;').replace(/'/g, "\\'");
+  return hasSrcset
+    ? ` onerror="this.onerror=null;this.removeAttribute('srcset');this.src='${esc}'"`
+    : ` onerror="this.onerror=null;this.src='${esc}'"`;
 }
 
 // Article slugs (SEO URLs, Oct 2026). MUST stay identical in api/berita.js,
@@ -118,6 +156,7 @@ function shell({ title, description, canonical, body }) {
 <title>${escapeHtml(title)} — Meramu</title>
 <meta name="description" content="${escapeHtml(description)}" />
 <link rel="canonical" href="${escapeHtml(canonical)}" />
+<link rel="icon" href="/favicon.ico" />
 <meta name="robots" content="max-image-preview:large" />
 <meta property="og:title" content="${escapeHtml(title)} — Meramu" />
 <meta property="og:description" content="${escapeHtml(description)}" />
@@ -128,8 +167,7 @@ function shell({ title, description, canonical, body }) {
 <meta name="twitter:title" content="${escapeHtml(title)} — Meramu" />
 <meta name="twitter:description" content="${escapeHtml(description)}" />
 <meta name="twitter:image" content="https://meramu.site/og-image.png" />
-<script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_ID}');</script>
+<script>(function(){function meramuLoadGtag(){window.dataLayer=window.dataLayer||[];window.gtag=function(){window.dataLayer.push(arguments);};window.gtag('js',new Date());window.gtag('config','${GA_ID}');var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id=${GA_ID}';document.head.appendChild(s);}if(document.readyState==='complete'){meramuLoadGtag();}else{window.addEventListener('load',meramuLoadGtag);}})();</script>
 <script>(function(){try{if(localStorage.getItem('meramu-theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}})();</script>
 <style>
   *{box-sizing:border-box} body{margin:0;font-family:ui-sans-system,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#171717;background:#fff}
@@ -229,7 +267,7 @@ export default async function handler(req, res) {
     const readTime = strField(f, 'readTime');
     const meta = [author, dateStr, readTime].filter(Boolean).join(' • ');
     const thumb = imageUrl
-      ? `<img src="${escapeHtml(wikimediaThumb(imageUrl, 320))}" alt="" width="96" height="96" loading="lazy" decoding="async" />`
+      ? `<img src="${escapeHtml(wikimediaThumb(imageUrl, 320))}"${imgFallback(imageUrl, 320, false)} alt="" width="96" height="96" loading="lazy" decoding="async" />`
       : `<div class="ph">M</div>`;
     const slug = slugMap.get(d.id) || d.id;
     return `<a class="card" href="/berita/${slug}">${thumb}<div><h2>${escapeHtml(title)}</h2>${excerpt ? `<p>${escapeHtml(excerpt)}</p>` : ''}<div class="meta">${escapeHtml(meta)}</div></div></a>`;

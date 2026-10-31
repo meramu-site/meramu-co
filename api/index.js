@@ -102,16 +102,54 @@ function formatDate(ms) {
 // (duplicated on purpose so a serverless file never breaks on a bundling
 // miss). See api/berita.js for the full explanation, including the
 // per-language-wiki FilePath fix (Oct 2026).
-function wikimediaThumb(url, width) {
+// Fallback URL for an image: the FilePath JPEG/PNG for Wikimedia files,
+// the original URL for same-origin local files. For pass-through URLs
+// (already-thumb, other CDNs) this equals the input, so no fallback is added.
+function wikimediaFilePath(url, width) {
   if (!url || typeof url !== 'string') return url;
   const up = url.match(/^https:\/\/upload\.wikimedia\.org\/wikipedia\/([^/]+)\/(?!thumb\/)[^/]+\/[^/]+\/(.+)$/);
   if (up) {
     const host = up[1] === 'commons' ? 'commons.wikimedia.org' : `${up[1]}.wikipedia.org`;
     return `https://${host}/wiki/Special:FilePath/${up[2]}?width=${width}`;
   }
-  const fp = url.match(/^https:\/\/commons\.wikimedia\.org\/wiki\/Special:FilePath\/([^?#]+)(\?.*)?$/);
-  if (fp) return `https://commons.wikimedia.org/wiki/Special:FilePath/${fp[1]}${fp[2] ? '&' : '?'}width=${width}`;
+  const fp = url.match(/^https:\/\/(commons\.wikimedia\.org|[a-z-]+\.wikipedia\.org)\/wiki\/Special:FilePath\/([^?#]+)/);
+  if (fp) return `https://${fp[1]}/wiki/Special:FilePath/${fp[2]}?width=${width}`;
   return url;
+}
+
+// Resize + WebP via images.weserv.nl (PageSpeed fix, Oct 2026). Verified
+// live: direct Wikimedia uploads and meramu.site files convert (e.g.
+// 329KB JPEG -> 121KB WebP); FilePath inputs need ?width= inside the
+// proxied URL (a plain FilePath without width 404s on weserv).
+// Already-thumb URLs and other CDNs pass through unchanged. No quality
+// param: w + output=webp only. NOTE: intentionally duplicated in
+// api/kategori.js, api/cari.js, api/index.js and src/App.tsx (no shared
+// import, so a serverless file can never break because of a bundling
+// miss). Keep the copies in sync.
+function wikimediaThumb(url, width) {
+  if (!url || typeof url !== 'string') return url;
+  const up = url.match(/^https:\/\/(upload\.wikimedia\.org\/wikipedia\/([^/]+)\/(?!thumb\/)[^/]+\/[^/]+\/[^?#]+)/);
+  if (up) return `https://images.weserv.nl/?url=${up[1]}&w=${width}&output=webp`;
+  const fp = url.match(/^https:\/\/(commons\.wikimedia\.org|[a-z-]+\.wikipedia\.org)\/wiki\/Special:FilePath\/([^?#]+)/);
+  if (fp) return `https://images.weserv.nl/?url=${fp[1]}/wiki/Special:FilePath/${fp[2]}?width=${width}&w=${width}&output=webp`;
+  const local = url.match(/^https:\/\/meramu\.site\/([^?#]+)/);
+  if (local) return `https://images.weserv.nl/?url=meramu.site/${local[1]}&w=${width}&output=webp`;
+  return url;
+}
+
+// onerror attribute for a weserv <img>: on failure, swap to the fallback
+// (FilePath for Wikimedia, original local URL for same-origin files).
+// Empty when the src is not a weserv URL (nothing to fall back from).
+// For srcset images the srcset is dropped first, otherwise the browser
+// would re-pick the broken weserv candidate instead of the fallback.
+function imgFallback(url, width, hasSrcset) {
+  const t = wikimediaThumb(url, width);
+  const f = wikimediaFilePath(url, width);
+  if (t === f) return '';
+  const esc = f.replace(/&/g, '&amp;').replace(/'/g, "\\'");
+  return hasSrcset
+    ? ` onerror="this.onerror=null;this.removeAttribute('srcset');this.src='${esc}'"`
+    : ` onerror="this.onerror=null;this.src='${esc}'"`;
 }
 
 // Article slugs (SEO URLs, Oct 2026). MUST stay identical in api/berita.js,
@@ -136,7 +174,7 @@ function assignSlugs(docs) {
   return out;
 }
 
-function shell({ brand, body, heroImage }) {
+function shell({ brand, body, heroImage, heroSrcset = '', heroSizes = '' }) {
   const accent = brand.accentColor || ACCENT;
   const jsonLd = JSON.stringify({
     '@context': 'https://schema.org',
@@ -161,7 +199,8 @@ function shell({ brand, body, heroImage }) {
 <title>Meramu — Portal Berita</title>
 <meta name="description" content="MERAMU — portal berita pop culture, ekonomi kreatif, musik, lifestyle, dan tech." />
 <link rel="canonical" href="${SITE_URL}/" />
-${heroImage ? `<link rel="preload" as="image" href="${escapeHtml(heroImage)}" fetchpriority="high" />` : ''}
+<link rel="icon" href="/favicon.ico" />
+${heroImage ? `<link rel="preload" as="image" href="${escapeHtml(heroImage)}"${heroSrcset ? ` imagesrcset="${escapeHtml(heroSrcset)}" imagesizes="${escapeHtml(heroSizes)}"` : ''} fetchpriority="high" />` : ''}
 <meta name="robots" content="max-image-preview:large" />
 <meta property="og:title" content="Meramu — Portal Berita" />
 <meta property="og:description" content="Baca berita secukupnya, lanjut kerja lagi." />
@@ -173,8 +212,7 @@ ${heroImage ? `<link rel="preload" as="image" href="${escapeHtml(heroImage)}" fe
 <meta name="twitter:description" content="Baca berita secukupnya, lanjut kerja lagi." />
 <meta name="twitter:image" content="${SITE_URL}/og-image.png" />
 <script type="application/ld+json">${jsonLd}</script>
-<script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_ID}');</script>
+<script>(function(){function meramuLoadGtag(){window.dataLayer=window.dataLayer||[];window.gtag=function(){window.dataLayer.push(arguments);};window.gtag('js',new Date());window.gtag('config','${GA_ID}');var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id=${GA_ID}';document.head.appendChild(s);}if(document.readyState==='complete'){meramuLoadGtag();}else{window.addEventListener('load',meramuLoadGtag);}})();</script>
 <script>(function(){try{if(localStorage.getItem('meramu-theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}})();</script>
 <style>
   *{box-sizing:border-box} body{margin:0;font-family:ui-sans-system,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#171717;background:#fff}
@@ -340,20 +378,22 @@ export default async function handler(req, res) {
   const trendingList = trending.length ? trending : docs.slice(0, 4);
   const viral = docs.filter((a) => a.isViral).slice(0, 5);
   const heroImage = featured?.imageUrl ? wikimediaThumb(featured.imageUrl, 1200) : '';
+  const heroSrcset = featured?.imageUrl ? `${wikimediaThumb(featured.imageUrl, 800)} 800w, ${wikimediaThumb(featured.imageUrl, 1200)} 1200w` : '';
+  const heroSizes = '(max-width: 900px) 100vw, 760px';
 
   const hero = featured ? `<section class="hero">
 <a class="hero-card" href="${href(featured)}">
-<div class="hero-img">${featured.imageUrl ? `<img src="${escapeHtml(wikimediaThumb(featured.imageUrl, 1200))}" srcset="${escapeHtml(wikimediaThumb(featured.imageUrl, 800))} 800w, ${escapeHtml(wikimediaThumb(featured.imageUrl, 1200))} 1200w" sizes="(max-width: 900px) 100vw, 760px" width="1200" height="675" fetchpriority="high" decoding="async" alt="${escapeHtml(featured.title)}" />` : ''}<div class="hero-badges"><span class="main">Headline Utama</span><span class="cat">${escapeHtml(featured.category)}</span></div></div>
+<div class="hero-img">${featured.imageUrl ? `<img src="${escapeHtml(wikimediaThumb(featured.imageUrl, 1200))}"${imgFallback(featured.imageUrl, 1200, true)} srcset="${escapeHtml(wikimediaThumb(featured.imageUrl, 800))} 800w, ${escapeHtml(wikimediaThumb(featured.imageUrl, 1200))} 1200w" sizes="(max-width: 900px) 100vw, 760px" width="1200" height="675" fetchpriority="high" decoding="async" alt="${escapeHtml(featured.title)}" />` : ''}<div class="hero-badges"><span class="main">Headline Utama</span><span class="cat">${escapeHtml(featured.category)}</span></div></div>
 <div class="hero-body"><h1>${escapeHtml(featured.title)}</h1>${featured.excerpt ? `<p>${escapeHtml(featured.excerpt)}</p>` : ''}<div class="hero-meta"><span><b>${escapeHtml(featured.author)}</b> • ${formatDate(featured.createdMs)}</span><span>${escapeHtml(featured.readTime)}</span></div></div>
 </a>
 <div class="side">
 ${viral.length ? `<div class="box"><div class="box-head">Lagi Viral</div><div class="viral-list">${viral.map((a) => `<a href="${href(a)}">${escapeHtml(a.title)}</a>`).join('')}</div></div>` : ''}
-<div class="box trend"><h2>Pilihan Redaksi</h2>${trendingList.map((item, idx) => `<a href="${href(item)}"><span class="num">0${idx + 1}</span><div class="tt"><span>${escapeHtml(item.category)}</span><b>${escapeHtml(item.title)}</b><small>${formatDate(item.createdMs)} • ${escapeHtml(item.readTime)}</small></div>${item.imageUrl ? `<img src="${escapeHtml(wikimediaThumb(item.imageUrl, 320))}" alt="" width="80" height="80" loading="lazy" decoding="async" />` : `<div class="ph">M</div>`}</a>`).join('')}
+<div class="box trend"><h2>Pilihan Redaksi</h2>${trendingList.map((item, idx) => `<a href="${href(item)}"><span class="num">0${idx + 1}</span><div class="tt"><span>${escapeHtml(item.category)}</span><b>${escapeHtml(item.title)}</b><small>${formatDate(item.createdMs)} • ${escapeHtml(item.readTime)}</small></div>${item.imageUrl ? `<img src="${escapeHtml(wikimediaThumb(item.imageUrl, 320))}"${imgFallback(item.imageUrl, 320, false)} alt="" width="80" height="80" loading="lazy" decoding="async" />` : `<div class="ph">M</div>`}</a>`).join('')}
 <a class="ig-cta" href="https://instagram.com/${escapeHtml(brand.instagram.replace('@', ''))}" target="_blank" rel="noreferrer"><div><b>Ikuti @${escapeHtml(brand.instagram.replace('@', ''))}</b><span>Update visual harian di Instagram</span></div><span>↗</span></a></div>
 </div></section>` : '';
 
   const cards = paged.map((a) => `<a class="card" href="${href(a)}">
-<div class="card-img">${a.imageUrl ? `<img src="${escapeHtml(wikimediaThumb(a.imageUrl, 800))}" srcset="${escapeHtml(wikimediaThumb(a.imageUrl, 400))} 400w, ${escapeHtml(wikimediaThumb(a.imageUrl, 800))} 800w" sizes="(max-width: 900px) 90vw, 360px" width="800" height="500" loading="lazy" decoding="async" alt="${escapeHtml(a.title)}" />` : ''}<span>${escapeHtml(a.category)}</span></div>
+<div class="card-img">${a.imageUrl ? `<img src="${escapeHtml(wikimediaThumb(a.imageUrl, 800))}"${imgFallback(a.imageUrl, 800, true)} srcset="${escapeHtml(wikimediaThumb(a.imageUrl, 400))} 400w, ${escapeHtml(wikimediaThumb(a.imageUrl, 800))} 800w" sizes="(max-width: 900px) 90vw, 360px" width="800" height="500" loading="lazy" decoding="async" alt="${escapeHtml(a.title)}" />` : ''}<span>${escapeHtml(a.category)}</span></div>
 <div class="card-body"><div><h3>${escapeHtml(a.title)}</h3>${a.excerpt ? `<p>${escapeHtml(a.excerpt)}</p>` : ''}</div><div class="card-bar"><span>${escapeHtml(a.author)}</span><span>${formatDate(a.createdMs)} • ${escapeHtml(a.readTime)}</span></div></div>
 </a>`).join('\n');
 
@@ -373,5 +413,5 @@ ${cards ? `<div class="grid">${cards}</div>${pager}` : `<div class="empty"><p>Be
 </section>`;
 
   res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
-  return res.status(200).send(shell({ brand, body, heroImage }));
+  return res.status(200).send(shell({ brand, body, heroImage, heroSrcset, heroSizes }));
 }

@@ -46,6 +46,7 @@ export default async function handler(req, res) {
 <title>${escapeHtml(TITLE)} — Meramu</title>
 <meta name="description" content="${escapeHtml(DESCRIPTION)}" />
 <link rel="canonical" href="${escapeHtml(canonical)}" />
+<link rel="icon" href="/favicon.ico" />
 <meta name="robots" content="max-image-preview:large" />
 <meta property="og:title" content="${escapeHtml(TITLE)} — Meramu" />
 <meta property="og:description" content="${escapeHtml(DESCRIPTION)}" />
@@ -56,8 +57,7 @@ export default async function handler(req, res) {
 <meta name="twitter:title" content="${escapeHtml(TITLE)} — Meramu" />
 <meta name="twitter:description" content="${escapeHtml(DESCRIPTION)}" />
 <meta name="twitter:image" content="https://meramu.site/og-image.png" />
-<script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_ID}');</script>
+<script>(function(){function meramuLoadGtag(){window.dataLayer=window.dataLayer||[];window.gtag=function(){window.dataLayer.push(arguments);};window.gtag('js',new Date());window.gtag('config','${GA_ID}');var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id=${GA_ID}';document.head.appendChild(s);}if(document.readyState==='complete'){meramuLoadGtag();}else{window.addEventListener('load',meramuLoadGtag);}})();</script>
 <script>(function(){try{if(localStorage.getItem('meramu-theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}})();</script>
 <style>
   *{box-sizing:border-box} body{margin:0;font-family:ui-sans-system,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#171717;background:#fff}
