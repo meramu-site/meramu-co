@@ -380,6 +380,9 @@ ${heroImage ? `<link rel="preload" as="image" href="${escapeHtml(heroImage)}"${h
   html.dark .meramu-mmenu-foot{ border-top-color:rgba(255,255,255,.1); }
   html.dark .meramu-mmenu-foot a,html.dark .meramu-foot-theme{ color:#f4f4f5; }
   html.dark .scrim{ background: rgba(0,0,0,.5); }
+  @media (min-width:769px){
+    .meramu-mmenu{ left:auto; right:calc((100vw - 768px)/2 + 16px); width:380px; bottom:auto; max-height:min(70vh, 640px); }
+  }
   @media (prefers-reduced-motion: reduce){
     .meramu-mmenu, .scrim, .meramu-sub, .meramu-chev{ transition: none; }
   }
