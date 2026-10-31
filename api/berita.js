@@ -241,6 +241,41 @@ function assignSlugs(docs) {
 // behavior; the page still renders. Results are cached per warm instance;
 // a file revision's dimensions do not change, so the cache needs no TTL.
 const wikimediaSizeCache = new Map();
+// Self-hosted /img/ covers are the exception to the null case above: their
+// dimensions are known statically (measured from the generated -1200.webp
+// variants; all variants of one cover share the same aspect), so the figure
+// keeps its reservation with no API call.
+const IMG_DIMS = {
+  'bahlil-lahadalia-at-the-indonesia-naik-kelas-book-launching-21-november-2025-30': { w: 1200, h: 801 },
+  'battery-pack-of-an-ev': { w: 1200, h: 1600 },
+  'bogor-ketoprak-indonesian-traditional-food': { w: 1200, h: 675 },
+  'borobodur1': { w: 400, h: 210 },
+  'bundaran-hi-transjakarta-brt-station': { w: 1200, h: 900 },
+  'camp-nou-fc-barcelona-barcelona': { w: 1200, h: 900 },
+  'columbia-city-cinema-main-hall': { w: 1200, h: 900 },
+  'fatimah-azzahra-orasi': { w: 1170, h: 785 },
+  'indonesiagelap-protests-1': { w: 1200, h: 900 },
+  'jakarta-international-stadium-from-toll-road': { w: 1200, h: 703 },
+  'jakarta-skyline-part-2': { w: 1200, h: 596 },
+  'jay-idzes-indonesia-china-5-june-2025': { w: 1023, h: 1537 },
+  'kalibo-ati-atihan-festival-philippines': { w: 1200, h: 800 },
+  'kantor-bank-mandiri-kcp-palembang': { w: 720, h: 1600 },
+  'kelme-jersey': { w: 1080, h: 1350 },
+  'maliq-kabar-bahagia': { w: 1170, h: 659 },
+  'prabowo-in-singapore': { w: 1200, h: 800 },
+  'raisa-at-la-lights-music-project': { w: 533, h: 800 },
+  'rans-carnival-poster': { w: 956, h: 1280 },
+  'rans-poster-nologo': { w: 956, h: 1049 },
+  'si-jalak-harupat-2023': { w: 1024, h: 576 },
+  'smoke-haze-cuz-forest-fire-this-is-near-my-house': { w: 1200, h: 900 },
+  'stadion-kanjuruhan-panoramio': { w: 640, h: 480 },
+  'state-library-victoria-exterior': { w: 1200, h: 554 },
+  'students-protest-in-jakarta': { w: 1200, h: 900 },
+  'the-international-2014': { w: 1200, h: 800 },
+  'three-finger-salute-flag': { w: 1200, h: 800 },
+  'timnas-irfan-bachdim': { w: 428, h: 600 },
+  'ye-live-in-jakarta-2026-at-gelora-bung-karno-stadium': { w: 1200, h: 900 },
+};
 function wikimediaImageSizeUrl(url) {
   if (!url || typeof url !== 'string') return null;
   try {
@@ -257,6 +292,10 @@ function wikimediaImageSizeUrl(url) {
   return null;
 }
 async function wikimediaImageSize(url) {
+  if (typeof url === 'string') {
+    const local = url.match(/^(?:https:\/\/meramu\.site)?\/img\/([a-z0-9-]+)\.webp$/);
+    if (local && IMG_DIMS[local[1]]) return IMG_DIMS[local[1]];
+  }
   const parsed = wikimediaImageSizeUrl(url);
   if (!parsed) return null;
   const key = `${parsed.api}|${parsed.file}`;
