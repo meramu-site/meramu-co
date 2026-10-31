@@ -196,11 +196,25 @@ function shell({ title, description, canonical, body }) {
   html.dark .card img{background:#27272a}
   html.dark .card p{color:#d4d4d8}
   html.dark footer{border-top-color:rgba(255,255,255,.1);color:#a3a3a3}
+  .head-actions{margin-left:0;display:flex;align-items:center;gap:8px;flex:none}
+  .meramu-theme-btn,.meramu-menu-btn{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;border:1px solid #e5e5e5;background:#fff;color:#171717;cursor:pointer;padding:0}
+  .meramu-theme-btn svg,.meramu-menu-btn svg{width:20px;height:20px;display:block}
+  .meramu-theme-btn .theme-icon-sun{display:none}
+  html.dark .meramu-theme-btn .theme-icon-sun{display:inline-flex}
+  html.dark .meramu-theme-btn .theme-icon-moon{display:none}
+  .meramu-mmenu{display:none;border-top:1px solid #e5e5e5;padding:4px 16px 12px}
+  .meramu-mmenu.open{display:block}
+  .meramu-mmenu a{display:block;padding:11px 0;text-decoration:none;color:#171717;font-weight:600;font-size:15px;border-bottom:1px solid #f5f5f5}
+  .meramu-mmenu a:last-child{border-bottom:0}
+  html.dark .meramu-theme-btn,html.dark .meramu-menu-btn{background:#18181b;border-color:rgba(255,255,255,.15);color:#f4f4f5}
+  html.dark .meramu-mmenu{border-top-color:rgba(255,255,255,.1)}
+  html.dark .meramu-mmenu a{color:#f4f4f5;border-bottom-color:rgba(255,255,255,.1)}
+  @media(max-width:640px){.head nav{display:none}.head-actions{margin-left:auto}}
 </style>
 </head>
 <body>
 <div class="accent"></div>
-<header><div class="head"><div class="badge">M</div><div class="brand">MERAMU<small>Gagasan, kultur, cerita — diramu jadi satu.</small></div><nav><a href="/">Beranda</a><a href="https://instagram.com/meramufeed">Instagram</a></nav></div></header>
+<header><div class="head"><div class="badge">M</div><div class="brand">MERAMU<small>Gagasan, kultur, cerita — diramu jadi satu.</small></div><nav><a href="/">Beranda</a><a href="https://instagram.com/meramufeed">Instagram</a></nav><div class="head-actions"><button type="button" class="meramu-theme-btn" aria-label="Mode gelap"><span class="theme-icon-moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span><span class="theme-icon-sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></span></button><button type="button" class="meramu-menu-btn" aria-label="Menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button></div></div><nav class="meramu-mmenu"><a href="/">Beranda</a><a href="/kategori/pop-culture">Pop Culture</a><a href="/kategori/ekonomi-kreatif">Ekonomi Kreatif</a><a href="/kategori/musik">Musik</a><a href="/kategori/entertainment">Entertainment</a><a href="/kategori/lifestyle">Lifestyle</a><a href="/kategori/tech">Tech</a><a href="/kategori/berita-umum">Berita Umum</a><a href="/kategori/sports">Sports</a><a href="/kategori/esports">Esports</a><a href="/kategori/politik">Politik</a><a href="https://instagram.com/meramufeed">Instagram</a><a href="https://www.threads.net/@meramufeed">Threads</a></nav></header><script>(function(){var themeBtn=document.querySelector('.meramu-theme-btn');var menuBtn=document.querySelector('.meramu-menu-btn');var menu=document.querySelector('.meramu-mmenu');function syncTheme(){if(!themeBtn)return;var dark=document.documentElement.classList.contains('dark');themeBtn.setAttribute('aria-label',dark?'Mode terang':'Mode gelap');}syncTheme();if(themeBtn){themeBtn.addEventListener('click',function(){var dark=document.documentElement.classList.toggle('dark');try{localStorage.setItem('meramu-theme',dark?'dark':'light');}catch(e){}syncTheme();});}if(menuBtn&&menu){menuBtn.addEventListener('click',function(){var open=menu.classList.toggle('open');menuBtn.setAttribute('aria-expanded',open?'true':'false');});menu.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){menu.classList.remove('open');menuBtn.setAttribute('aria-expanded','false');});});}})();</script>
 <main>${body}</main>
 <footer>MERAMU — Portal Berita<br /><a href="/">Beranda</a> • <a href="/tentang">Tentang</a> • <a href="/privasi">Privasi</a> • <a href="/kontak">Kontak</a></footer>
 </body>
