@@ -126,7 +126,10 @@ export default async function handler(req, res) {
   // Homepage: lastmod = newest article date (or today when empty).
   const newestMs = docs.reduce((m, d) => Math.max(m, msField(d.fields, 'createdAt')), 0);
   entries.push(urlEntry(`${SITE_URL}/`, newestMs ? dayInJakarta(newestMs) : today, '1.0'));
-  entries.push(urlEntry(`${SITE_URL}/home`, newestMs ? dayInJakarta(newestMs) : today, '0.9'));
+  // /home is intentionally NOT in the sitemap (Oct 2026 crawl fix): it is
+  // the SPA entry (a JS shell with an empty body for crawlers) whose
+  // canonical already points to "/". Listing it only created a duplicate
+  // crawl URL of the homepage.
   entries.push(urlEntry(`${SITE_URL}/tentang`, '2026-10-30', '0.8'));
   entries.push(urlEntry(`${SITE_URL}/privasi`, '2026-10-30', '0.5'));
   entries.push(urlEntry(`${SITE_URL}/kontak`, '2026-10-30', '0.5'));

@@ -194,7 +194,7 @@ function assignSlugs(docs) {
   return out;
 }
 
-function shell({ brand, body, heroImage, heroSrcset = '', heroSizes = '' }) {
+function shell({ brand, body, heroImage, heroSrcset = '', heroSizes = '', canonicalUrl = SITE_URL + '/' }) {
   const accent = brand.accentColor || ACCENT;
   const jsonLd = JSON.stringify({
     '@context': 'https://schema.org',
@@ -218,14 +218,14 @@ function shell({ brand, body, heroImage, heroSrcset = '', heroSizes = '' }) {
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Meramu — Portal Berita</title>
 <meta name="description" content="MERAMU — portal berita pop culture, ekonomi kreatif, musik, lifestyle, dan tech." />
-<link rel="canonical" href="${SITE_URL}/" />
+<link rel="canonical" href="${escapeHtml(canonicalUrl)}" />
 <link rel="icon" href="/favicon.ico" />
 ${heroImage ? `<link rel="preload" as="image" href="${escapeHtml(heroImage)}"${heroSrcset ? ` imagesrcset="${escapeHtml(heroSrcset)}" imagesizes="${escapeHtml(heroSizes)}"` : ''} fetchpriority="high" />` : ''}
 <meta name="robots" content="max-image-preview:large" />
 <meta property="og:title" content="Meramu — Portal Berita" />
 <meta property="og:description" content="Baca berita secukupnya, lanjut kerja lagi." />
 <meta property="og:type" content="website" />
-<meta property="og:url" content="${SITE_URL}/" />
+<meta property="og:url" content="${escapeHtml(canonicalUrl)}" />
 <meta property="og:image" content="${SITE_URL}/og-image.png" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Meramu — Portal Berita" />
@@ -406,7 +406,15 @@ export default async function handler(req, res) {
   const totalPages = Math.max(1, Math.ceil(gridAll.length / GRID_PAGE_SIZE));
   let page = parseInt(String(req.query.page || '1'), 10);
   if (!Number.isFinite(page) || page < 1) page = 1;
-  if (page > totalPages) page = totalPages;
+  if (page > totalPages) {
+    // Out-of-range pagination does not exist: 404 instead of silently
+    // serving the last page as a duplicate (Oct 2026 crawl fix).
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.status(404).send('<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Halaman tidak ditemukan — MERAMU</title></head><body><h1>404 — Halaman tidak ditemukan</h1><p>Halaman yang kamu cari tidak ada. <a href="/">Kembali ke beranda</a></p></body></html>');
+  }
+  // Self-referential canonical per page (Oct 2026 crawl fix): page 1 is
+  // the homepage itself, page N canonicalizes to its own ?page=N URL.
+  const canonicalUrl = page === 1 ? `${SITE_URL}/` : `${SITE_URL}/?page=${page}`;
   const paged = gridAll.slice((page - 1) * GRID_PAGE_SIZE, page * GRID_PAGE_SIZE);
   const trending = docs.filter((a) => a.isTrending).slice(0, 4);
   const trendingList = trending.length ? trending : docs.slice(0, 4);
@@ -433,11 +441,12 @@ ${viral.length ? `<div class="box"><div class="box-head">Lagi Viral</div><div cl
 
   let pager = '';
   if (totalPages > 1) {
+    const pageHref = (p) => (p === 1 ? '/' : `/?page=${p}`);
     const nums = [];
     for (let p = 1; p <= totalPages; p++) {
-      nums.push(p === page ? `<span class="current">${p}</span>` : `<a href="/?page=${p}">${p}</a>`);
+      nums.push(p === page ? `<span class="current">${p}</span>` : `<a href="${pageHref(p)}">${p}</a>`);
     }
-    pager = `<div class="pager">${page > 1 ? `<a href="/?page=${page - 1}">Sebelumnya</a>` : `<span class="disabled">Sebelumnya</span>`}${nums.join('')}${page < totalPages ? `<a href="/?page=${page + 1}">Selanjutnya</a>` : `<span class="disabled">Selanjutnya</span>`}</div>`;
+    pager = `<div class="pager">${page > 1 ? `<a href="${pageHref(page - 1)}">Sebelumnya</a>` : `<span class="disabled">Sebelumnya</span>`}${nums.join('')}${page < totalPages ? `<a href="/?page=${page + 1}">Selanjutnya</a>` : `<span class="disabled">Selanjutnya</span>`}</div>`;
   }
 
   const body = `${hero}
@@ -447,5 +456,5 @@ ${cards ? `<div class="grid">${cards}</div>${pager}` : `<div class="empty"><p>Be
 </section>`;
 
   res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
-  return res.status(200).send(shell({ brand, body, heroImage, heroSrcset, heroSizes }));
+  return res.status(200).send(shell({ brand, body, heroImage, heroSrcset, heroSizes, canonicalUrl }));
 }
