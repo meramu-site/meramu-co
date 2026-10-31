@@ -289,7 +289,7 @@ ${jsonLd ? `<script type="application/ld+json">${jsonLd}</script>` : ''}
   .chip{display:inline-block;background:${ACCENT};color:#fff;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 12px;border-radius:999px}
   h1{font-size:30px;line-height:1.2;letter-spacing:-.02em;margin:16px 0 12px}
   .meta{font-size:13px;color:#737373;display:flex;gap:8px;flex-wrap:wrap;padding-bottom:20px;border-bottom:1px solid #f5f5f5}
-  .meta b{color:#171717} figure{margin:24px 0} figure img{width:100%;border-radius:16px;display:block;background:#f5f5f5}
+  .meta b{color:#171717} figure{margin:24px 0} figure img{width:100%;height:auto;border-radius:16px;display:block;background:#f5f5f5}
   figcaption{font-size:12px;color:#737373;margin-top:8px} .lead{font-size:18px;line-height:1.7;color:#404040}
   article p{font-size:17px;line-height:1.8;color:#404040;margin:14px 0}
   article h2{font-size:21px;margin:26px 0 10px;color:#171717}
