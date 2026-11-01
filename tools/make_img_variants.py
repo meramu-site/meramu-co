@@ -124,6 +124,12 @@ def main():
         im.load()
     except Exception as e:
         raise SystemExit(f'ERROR: cannot open image {src}: {e}')
+    # EXIF orientation (Nov 2026 fix): phone photos can be stored sideways
+    # with an Orientation tag (e.g. Football_Celebration, tag 6). Browsers
+    # and proxies auto-rotate on display, but raw PIL crops do not, so
+    # transpose first or the variants come out sideways.
+    from PIL import ImageOps
+    im = ImageOps.exif_transpose(im)
     if im.format == 'SVG':
         raise SystemExit('ERROR: SVG input is not supported; pass a PNG render instead.')
     ow, oh = im.size
