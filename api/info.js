@@ -176,6 +176,14 @@ function ogVariant(posterUrl) {
   return String(posterUrl || '').replace(/\.webp$/, '-1200.jpg');
 }
 
+function schemaDescription(ev) {
+  const first = String(ev.description || '').split(/\n\s*\n/)[0].replace(/\s+/g, ' ').trim();
+  if (first.length <= 200) return first;
+  const cut = first.slice(0, 200);
+  const lastSpace = cut.lastIndexOf(' ');
+  return (lastSpace > 120 ? cut.slice(0, lastSpace) : cut).trim();
+}
+
 function eventJsonLd(ev, st) {
   const offers = { '@type': 'Offer', url: ev.ticketUrl || ev.sumberUrl, priceCurrency: 'IDR', availability: 'https://schema.org/InStock' };
   if (typeof ev.harga === 'number') offers.price = ev.harga;
@@ -184,6 +192,7 @@ function eventJsonLd(ev, st) {
     '@context': 'https://schema.org',
     '@type': 'Event',
     name: ev.title,
+    description: schemaDescription(ev),
     startDate: ev.startDate,
     eventStatus: eventStatusSchema(st),
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
@@ -218,7 +227,7 @@ const JADWAL_CSS = `<style>
 .jadwal-cat{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${ACCENT}}
 .jadwal-body h3{font-size:18px;line-height:1.35;margin:6px 0}
 .jadwal-venue{font-size:13px;color:#737373}
-.jadwal-chip{display:inline-block;margin-top:10px;padding:4px 10px;border-radius:999px;background:#f5f5f5;font-size:12px;font-weight:700}
+.jadwal-chip{display:inline-block;margin-top:10px;padding:4px 10px;border-radius:999px;background:#f5f5f5;color:#171717;font-size:12px;font-weight:700}
 .jadwal-chip.done{background:#e5e5e5;color:#525252}
 .jadwal-fig{margin:0 0 20px}
 .jadwal-fig img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;border-radius:16px}
@@ -299,7 +308,6 @@ function jadwalDetailPage(req) {
   if (!ev) return null;
   const today = todayJakarta();
   const st = deriveStatus(ev, today);
-  const ticketHref = ev.ticketUrl || ev.sumberUrl;
   const related = ev.relatedArticleUrl ? `<section><h2>${ev.relatedKind === 'coverage' ? 'Liputan Meramu' : 'Artikel terkait'}</h2><p><a href="${escapeHtml(ev.relatedArticleUrl)}">${escapeHtml(ev.relatedArticleTitle || 'Baca artikel Meramu')}</a>${ev.relatedKind === 'related' ? ' (artikel terkait, bukan liputan event ini)' : ''}</p></section>` : '';
   const cancelNote = st === 'cancelled' ? `<section><h2>Status</h2><p>Event ini dibatalkan oleh penyelenggara.${ev.cancelNote ? ` ${escapeHtml(ev.cancelNote)}` : ''}</p></section>` : '';
   const body = `<a class="back" style="margin:0 0 20px" href="/jadwal">&larr; Jadwal Event</a>
@@ -309,7 +317,7 @@ function jadwalDetailPage(req) {
 <figure class="jadwal-fig"><img src="${escapeHtml(imgVariant(ev.posterUrl, 1200))}" width="1200" height="675" alt="${escapeHtml(ev.title)}" /><figcaption>${escapeHtml(ev.posterCredit || '')}</figcaption></figure>
 <section><p>${escapeHtml(ev.description)}</p></section>
 <section><h2>Lineup</h2><ul class="jadwal-lineup">${(ev.lineup || []).map((n) => `<li>${escapeHtml(n)}</li>`).join('')}</ul></section>
-<section><h2>Tiket</h2><p>Harga: ${escapeHtml(hargaText(ev))}</p><p><a class="jadwal-tiket" href="${escapeHtml(ticketHref)}" target="_blank" rel="noreferrer">Tiket resmi</a><a href="${escapeHtml(ev.sumberUrl)}" target="_blank" rel="noreferrer">Sumber resmi ↗</a></p></section>
+<section><h2>Tiket</h2><p>Harga: ${escapeHtml(hargaText(ev))}</p><p><a class="jadwal-tiket" href="/keluar/${escapeHtml(ev.slug)}" target="_blank" rel="nofollow sponsored">Tiket resmi</a><a href="${escapeHtml(ev.sumberUrl)}" target="_blank" rel="noreferrer">Sumber resmi ↗</a></p></section>
 ${cancelNote}
 ${related}
 <section><p>Terakhir diperiksa: ${escapeHtml(fmtDate(ev.lastCheckedAt))}. Jadwal dan harga dapat berubah; periksa selalu halaman resmi penyelenggara sebelum membeli.</p></section>
@@ -325,8 +333,25 @@ ${related}
   };
 }
 
+function keluarRedirect(req, res) {
+  const slug = req.query && req.query.slug;
+  const ev = loadEvents().find((e) => e.slug === slug);
+  const dest = ev && (ev.ticketUrl || ev.sumberUrl);
+  if (!dest) {
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    return res.status(404).send('Event tidak ditemukan');
+  }
+  const ref = (req.headers && req.headers.referer) || '-';
+  console.log(`[keluar] slug=${ev.slug} ts=${new Date().toISOString()} referrer=${ref}`);
+  res.setHeader('Location', dest);
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('X-Robots-Tag', 'noindex');
+  return res.status(302).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Mengalihkan…</title></head><body><p><a href="${escapeHtml(dest)}">Lanjutkan ke halaman tiket</a></p></body></html>`);
+}
+
 export default async function handler(req, res) {
   const halaman = req.query && req.query.halaman;
+  if (halaman === 'keluar') return keluarRedirect(req, res);
   let page = PAGES[halaman];
   if (halaman === 'jadwal') page = jadwalHubPage(req);
   else if (halaman === 'jadwal-detail') page = jadwalDetailPage(req);
