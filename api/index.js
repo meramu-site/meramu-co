@@ -95,15 +95,15 @@ function jadwalUpcomingHtml() {
     .sort((a, b) => (a.startDate < b.startDate ? -1 : a.startDate > b.startDate ? 1 : 0))
     .slice(0, 4);
   if (!upcoming.length) return '';
-  const cards = upcoming.map((e) => {
+  const rows = upcoming.map((e, i) => {
     const [y, m, d] = e.startDate.split('-').map(Number);
     const days = jadwalDaysUntil(e, today);
     const chip = days <= 0 ? 'Hari ini' : `${days} hari lagi`;
-    return `<a class="up-card" href="/jadwal/${escapeHtml(e.slug)}"><div class="up-date"><b>${d}</b><span>${JADWAL_MONTHS_SHORT[(m || 1) - 1]} ${y}</span></div><div class="up-body"><div class="up-cat">${escapeHtml(e.kategori)}</div><h3>${escapeHtml(e.title)}</h3><div class="up-venue">${escapeHtml(e.venue)}, ${escapeHtml(e.kota)}</div><span class="up-chip">${escapeHtml(chip)}</span></div></a>`;
+    return `<a class="up-row${i === 0 ? ' first' : ''}" href="/jadwal/${escapeHtml(e.slug)}"><div class="up-date"><b>${d}</b><span>${JADWAL_MONTHS_SHORT[(m || 1) - 1]}</span></div><div class="up-main"><div class="up-cat">${escapeHtml(e.kategori)}</div><h3>${escapeHtml(e.title)}</h3><div class="up-venue">${escapeHtml(e.venue)}, ${escapeHtml(e.kota)}</div></div><span class="up-chip">${escapeHtml(chip)}</span></a>`;
   }).join('');
   return `<section class="up-events">
-<div class="grid-head"><h2><i></i>Upcoming Events</h2><a class="up-all" href="/jadwal">Lihat semua &rarr;</a></div>
-<div class="up-grid">${cards}</div>
+<div class="up-head"><span class="up-head-left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span class="up-pill">UPCOMING PUBLIC EVENTS</span></span><a class="up-all" href="/jadwal">JADWAL LENGKAP &rarr;</a></div>
+<div class="up-list">${rows}</div>
 </section>`;
 }
 
@@ -366,21 +366,31 @@ ${heroImage ? `<link rel="preload" as="image" href="${escapeHtml(heroImage)}"${h
   .pager a.current{background:${accent};color:#fff;border-color:${accent}}
   .pager span.disabled{opacity:.4}
   .empty{background:#fff;border:1px solid #e5e5e5;border-radius:16px;padding:48px;text-align:center;color:#737373}
-  .up-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
-  .up-card{display:flex;gap:0;text-decoration:none;color:inherit;background:#fff;border:1px solid #e5e5e5;border-radius:16px;overflow:hidden}
-  .up-date{width:88px;flex:none;background:${accent};color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 8px}
-  .up-date b{font-size:30px;line-height:1}
-  .up-date span{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-top:4px}
-  .up-body{padding:16px;flex:1;min-width:0}
+  .up-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+  .up-head-left{display:flex;align-items:center;gap:10px;min-width:0}
+  .up-head-left svg{width:22px;height:22px;flex:none;color:#737373}
+  .up-pill{display:inline-block;padding:8px 16px;border-radius:999px;background:#e5e5e5;color:#171717;font-size:14px;font-weight:800;font-style:italic;letter-spacing:.02em;white-space:nowrap}
+  .up-all{font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;text-decoration:none;color:#737373;white-space:nowrap}
+  .up-list{display:flex;flex-direction:column;gap:12px}
+  .up-row{display:flex;align-items:center;gap:16px;padding:16px;border:1px solid #e5e5e5;border-radius:16px;background:#fff;text-decoration:none;color:inherit}
+  .up-row.first{background:#eef0ff;border-color:#c7cdf5}
+  .up-date{width:64px;flex:none;display:flex;flex-direction:column;align-items:center;line-height:1}
+  .up-date b{font-size:30px;font-weight:800}
+  .up-date span{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#737373;margin-top:4px}
+  .up-main{flex:1;min-width:0}
   .up-cat{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${accent}}
-  .up-body h3{font-size:17px;line-height:1.35;margin:6px 0}
-  .up-venue{font-size:13px;color:#737373}
-  .up-chip{display:inline-block;margin-top:10px;padding:4px 10px;border-radius:999px;background:#f5f5f5;font-size:12px;font-weight:700}
-  .up-all{font-size:13px;font-weight:700;text-decoration:none}
-  @media(max-width:900px){.up-grid{grid-template-columns:1fr}}
-  html.dark .up-card{background:#18181b;border-color:rgba(255,255,255,.1)}
+  .up-main h3{font-size:17px;line-height:1.35;margin:4px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .up-venue{font-size:13px;color:#737373;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .up-chip{flex:none;padding:8px 14px;border:1px solid #d4d4d4;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:#525252;white-space:nowrap}
+  .up-row.first .up-chip{background:#171717;border-color:#171717;color:#fff}
+  @media(max-width:480px){.up-row{padding:12px;gap:12px}.up-date{width:52px}.up-date b{font-size:24px}.up-chip{padding:6px 10px;font-size:11px}.up-pill{font-size:12px;padding:6px 12px}}
+  html.dark .up-pill{background:#27272a;color:#f4f4f5}
+  html.dark .up-all{color:#a3a3a3}
+  html.dark .up-row{background:#18181b;border-color:rgba(255,255,255,.1)}
+  html.dark .up-row.first{background:#27272a;border-color:rgba(255,255,255,.15)}
   html.dark .up-venue{color:#a3a3a3}
-  html.dark .up-chip{background:#27272a}
+  html.dark .up-chip{border-color:rgba(255,255,255,.2);color:#d4d4d8}
+  html.dark .up-row.first .up-chip{background:#f4f4f5;border-color:#f4f4f5;color:#09090b}
   footer{border-top:1px solid #e5e5e5;padding:24px;text-align:center;font-size:13px;color:#737373}
   @media(max-width:900px){.hero{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.hero-body h1{font-size:26px}}
   html.dark body{background:#09090b;color:#f4f4f5}
