@@ -97,91 +97,28 @@ function renderContent(raw) {
     .join('\n');
 }
 
-// Resize + WebP images via images.weserv.nl, fallback Special:FilePath
-// (PageSpeed fix, Oct 2026). Editors paste full-resolution Wikimedia
-// originals as covers, and the site served them raw even as 96px
-// thumbnails (one 13 MB PNG, several ~4 MB JPGs). weserv resizes and
-// converts to WebP (verified live: 329KB JPEG -> 121KB WebP); if weserv
-// fails, onerror swaps to the FilePath JPEG/PNG at the same width, so an
-// image never breaks. FilePath inputs need ?width= inside the proxied
-// URL (a plain FilePath without width 404s on weserv, verified Oct 2026).
-// - upload.wikimedia.org/wikipedia/<lang>/<a>/<ab>/<file> -> weserv
-// - <host>/wiki/Special:FilePath/<file> -> weserv with ?width= inside
-// - https://meramu.site/<file> -> weserv (fallback: original local URL)
-// - anything else (already-thumbed URLs such as
-//   thumb.wikimedia.org/.../500px-..., Unsplash, other hosts) -> unchanged.
-// NOTE: this helper is intentionally duplicated in api/kategori.js,
-// api/cari.js, api/index.js and src/App.tsx (no shared import, so a
+// Cover images are self-hosted only (Nov 2026): the external image proxy
+// and all hotlinked originals were removed from <img> rendering after the
+// full /img/ migration (all 42 articles). Covers MUST be stored as
+// https://meramu.site/img/<base>.webp with generated 500/800/1200 WebP
+// variants (see tools/make_img_variants.py); the requested width maps to
+// the nearest variant. A non-/img/ URL passes through unchanged (admin SOP
+// forbids new external covers; the deploy check greps rendered HTML for
+// proxied and hotlinked <img> srcs). No onerror fallback: self-hosted
+// images need none, and a fallback must never point at an external host.
+// NOTE: intentionally duplicated in api/berita.js, api/index.js,
+// api/kategori.js, api/cari.js and src/App.tsx (no shared import, so a
 // serverless file can never break because of a bundling miss). Keep the
 // copies in sync.
-// Fallback URL for an image: the FilePath JPEG/PNG for Wikimedia files,
-// the original URL for same-origin local files. For pass-through URLs
-// (already-thumb, other CDNs) this equals the input, so no fallback is added.
-function wikimediaFilePath(url, width) {
-  if (!url || typeof url !== 'string') return url;
-  // Self-hosted /img/ fallback (migration, Nov 2026): the JPEG sibling
-  // of the same base, used as the onerror fallback for /img/ images.
-  // Absolute in, absolute out; relative in, relative out.
-  const selfImg = url.match(/^(https:\/\/meramu\.site)?\/img\/([a-z0-9-]+)\.webp$/);
-  if (selfImg) {
-    const base = selfImg[2].replace(/-(500|800|1200)$/, '');
-    return `${selfImg[1] || ''}/img/${base}-1200.jpg`;
-  }
-  const up = url.match(/^https:\/\/upload\.wikimedia\.org\/wikipedia\/([^/]+)\/(?!thumb\/)[^/]+\/[^/]+\/(.+)$/);
-  if (up) {
-    const host = up[1] === 'commons' ? 'commons.wikimedia.org' : `${up[1]}.wikipedia.org`;
-    return `https://${host}/wiki/Special:FilePath/${up[2]}?width=${width}`;
-  }
-  const fp = url.match(/^https:\/\/(commons\.wikimedia\.org|[a-z-]+\.wikipedia\.org)\/wiki\/Special:FilePath\/([^?#]+)/);
-  if (fp) return `https://${fp[1]}/wiki/Special:FilePath/${fp[2]}?width=${width}`;
-  return url;
-}
-
-// Resize + WebP via images.weserv.nl (PageSpeed fix, Oct 2026). Verified
-// live: direct Wikimedia uploads and meramu.site files convert (e.g.
-// 329KB JPEG -> 121KB WebP); FilePath inputs need ?width= inside the
-// proxied URL (a plain FilePath without width 404s on weserv).
-// Already-thumb URLs and other CDNs pass through unchanged. No quality
-// param: w + output=webp only. NOTE: intentionally duplicated in
-// api/kategori.js, api/cari.js, api/index.js and src/App.tsx (no shared
-// import, so a serverless file can never break because of a bundling
-// miss). Keep the copies in sync.
 function wikimediaThumb(url, width) {
   if (!url || typeof url !== 'string') return url;
-  // Self-hosted /img/ variants (migration, Nov 2026): the stored form is
-  // https://meramu.site/img/<base>.webp (or relative /img/<base>.webp).
-  // Map the requested width to the nearest generated size; a trailing
-  // size suffix on the input is stripped first so sized URLs re-map.
-  // This branch MUST stay above the same-origin rule below, or /img/
-  // URLs would still go through weserv.
   const selfImg = url.match(/^(https:\/\/meramu\.site)?\/img\/([a-z0-9-]+)\.webp$/);
   if (selfImg) {
     const base = selfImg[2].replace(/-(500|800|1200)$/, '');
     const w = width <= 500 ? 500 : width <= 800 ? 800 : 1200;
     return `${selfImg[1] || ''}/img/${base}-${w}.webp`;
   }
-  const up = url.match(/^https:\/\/(upload\.wikimedia\.org\/wikipedia\/([^/]+)\/(?!thumb\/)[^/]+\/[^/]+\/[^?#]+)/);
-  if (up) return `https://images.weserv.nl/?url=${up[1]}&w=${width}&output=webp`;
-  const fp = url.match(/^https:\/\/(commons\.wikimedia\.org|[a-z-]+\.wikipedia\.org)\/wiki\/Special:FilePath\/([^?#]+)/);
-  if (fp) return `https://images.weserv.nl/?url=${fp[1]}/wiki/Special:FilePath/${fp[2]}?width=${width}&w=${width}&output=webp`;
-  const local = url.match(/^https:\/\/meramu\.site\/([^?#]+)/);
-  if (local) return `https://images.weserv.nl/?url=meramu.site/${local[1]}&w=${width}&output=webp`;
   return url;
-}
-
-// onerror attribute for a weserv <img>: on failure, swap to the fallback
-// (FilePath for Wikimedia, original local URL for same-origin files).
-// Empty when the src is not a weserv URL (nothing to fall back from).
-// For srcset images the srcset is dropped first, otherwise the browser
-// would re-pick the broken weserv candidate instead of the fallback.
-function imgFallback(url, width, hasSrcset) {
-  const t = wikimediaThumb(url, width);
-  const f = wikimediaFilePath(url, width);
-  if (t === f) return '';
-  const esc = f.replace(/&/g, '&amp;').replace(/'/g, "\\'");
-  return hasSrcset
-    ? ` onerror="this.onerror=null;this.removeAttribute('srcset');this.src='${esc}'"`
-    : ` onerror="this.onerror=null;this.src='${esc}'"`;
 }
 
 // og:image derivation (self-host migration, Nov 2026): X/Twitter link
@@ -250,13 +187,18 @@ const wikimediaSizeCache = new Map();
 const IMG_DIMS = {
   'bahlil-lahadalia-at-the-indonesia-naik-kelas-book-launching-21-november-2025-30': { w: 1200, h: 801 },
   'battery-pack-of-an-ev': { w: 1200, h: 1600 },
+  'bobotoh-jalak-harupat': { w: 1200, h: 675 },
   'bogor-ketoprak-indonesian-traditional-food': { w: 1200, h: 675 },
   'borobodur1': { w: 400, h: 210 },
   'bundaran-hi-transjakarta-brt-station': { w: 1200, h: 900 },
   'camp-nou-fc-barcelona-barcelona': { w: 1200, h: 900 },
   'columbia-city-cinema-main-hall': { w: 1200, h: 900 },
+  'dandelion-paris': { w: 1200, h: 675 },
+  'edutorium-ums': { w: 1200, h: 675 },
   'fatimah-azzahra-orasi': { w: 1170, h: 785 },
+  'gbk-stadion-2007': { w: 1200, h: 675 },
   'ice-bsd-venue': { w: 1080, h: 608 },
+  'indomilk-arena': { w: 1200, h: 675 },
   'indonesiagelap-protests-1': { w: 1200, h: 900 },
   'jakarta-international-stadium-from-toll-road': { w: 1200, h: 703 },
   'jakarta-skyline-part-2': { w: 1200, h: 596 },
@@ -264,8 +206,12 @@ const IMG_DIMS = {
   'kalibo-ati-atihan-festival-philippines': { w: 1200, h: 800 },
   'kantor-bank-mandiri-kcp-palembang': { w: 720, h: 1600 },
   'kelme-jersey': { w: 1080, h: 608 },
+  'lany-lyodra-jakarta': { w: 1200, h: 675 },
   'maliq-kabar-bahagia': { w: 1170, h: 659 },
+  'nersc-server-racks': { w: 1200, h: 675 },
   'prabowo-in-singapore': { w: 1200, h: 800 },
+  'qris-bus-trans-metro-pasundan': { w: 1200, h: 675 },
+  'rafael-struick-indonesia': { w: 612, h: 344 },
   'raisa-at-la-lights-music-project': { w: 533, h: 300 },
   'rans-carnival-poster': { w: 1200, h: 675 },
   'rans-poster-nologo': { w: 1200, h: 675 },
@@ -706,11 +652,11 @@ async function renderArticlePage({ doc, id, slug, related, res }) {
   ${secondaryCategory ? `<div style="margin-top:8px">${secondarySlug ? `<a class="chip" style="text-decoration:none" href="/kategori/${secondarySlug}">${escapeHtml(secondaryCategory)}</a>` : `<span class="chip">${escapeHtml(secondaryCategory)}</span>`}</div>` : ''}
   <h1>${escapeHtml(title)}</h1>
   <div class="meta">${metaBits.map((b, i) => (i === 0 ? `<b>${b}</b>` : `<span>•</span><span>${b}</span>`)).join('')}</div>
-  ${figureThumb ? `<figure><img src="${escapeHtml(figureThumb)}" srcset="${escapeHtml(wikimediaThumb(imageUrl, 500))} 500w, ${escapeHtml(figureThumb)} 800w" sizes="(max-width: 808px) calc(100vw - 40px), 768px"${imgFallback(imageUrl, 800, true)} alt="${escapeHtml(title)}"${figureAttrs} fetchpriority="high" decoding="async" />${imageCaption ? `<figcaption>${escapeHtml(imageCaption)}</figcaption>` : ''}</figure>` : ''}
+  ${figureThumb ? `<figure><img src="${escapeHtml(figureThumb)}" srcset="${escapeHtml(wikimediaThumb(imageUrl, 500))} 500w, ${escapeHtml(figureThumb)} 800w" sizes="(max-width: 808px) calc(100vw - 40px), 768px" alt="${escapeHtml(title)}"${figureAttrs} fetchpriority="high" decoding="async" />${imageCaption ? `<figcaption>${escapeHtml(imageCaption)}</figcaption>` : ''}</figure>` : ''}
   ${excerpt ? `<p class="lead">${escapeHtml(excerpt)}</p>` : ''}
   <article>${renderContent(content)}</article>
   ${shareSection}
-  ${related.length ? `<section class="related"><h2>Baca Juga</h2>${related.map((r) => `<a class="rel" href="/berita/${escapeHtml(r.slug || r.id)}">${r.imageUrl ? `<img src="${escapeHtml(wikimediaThumb(r.imageUrl, 320))}"${imgFallback(r.imageUrl, 320, false)} alt="${escapeHtml(r.title)}" width="96" height="64" loading="lazy" decoding="async" />` : ''}<div class="rel-text"><b>${escapeHtml(r.title)}</b>${r.createdMs ? `<span>${formatDate(r.createdMs)}</span>` : ''}</div></a>`).join('')}</section>` : ''}
+  ${related.length ? `<section class="related"><h2>Baca Juga</h2>${related.map((r) => `<a class="rel" href="/berita/${escapeHtml(r.slug || r.id)}">${r.imageUrl ? `<img src="${escapeHtml(wikimediaThumb(r.imageUrl, 320))}" alt="${escapeHtml(r.title)}" width="96" height="64" loading="lazy" decoding="async" />` : ''}<div class="rel-text"><b>${escapeHtml(r.title)}</b>${r.createdMs ? `<span>${formatDate(r.createdMs)}</span>` : ''}</div></a>`).join('')}</section>` : ''}
   <a class="back" href="/">&larr; Kembali ke Beranda</a>`;
 
     const { html } = pageShell({

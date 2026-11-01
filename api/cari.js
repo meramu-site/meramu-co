@@ -54,79 +54,28 @@ function formatDate(ms) {
   }
 }
 
-// Resize Wikimedia images via Special:FilePath (PageSpeed fix, Oct 2026).
-// Same helper as api/berita.js, api/kategori.js and src/App.tsx (duplicated
-// on purpose so a serverless file never breaks on a bundling miss). See
-// api/berita.js for the full explanation: FilePath widths are verified
-// working, direct /thumb/ widths are not.
-// Fallback URL for an image: the FilePath JPEG/PNG for Wikimedia files,
-// the original URL for same-origin local files. For pass-through URLs
-// (already-thumb, other CDNs) this equals the input, so no fallback is added.
-function wikimediaFilePath(url, width) {
-  if (!url || typeof url !== 'string') return url;
-  // Self-hosted /img/ fallback (migration, Nov 2026): the JPEG sibling
-  // of the same base, used as the onerror fallback for /img/ images.
-  // Absolute in, absolute out; relative in, relative out.
-  const selfImg = url.match(/^(https:\/\/meramu\.site)?\/img\/([a-z0-9-]+)\.webp$/);
-  if (selfImg) {
-    const base = selfImg[2].replace(/-(500|800|1200)$/, '');
-    return `${selfImg[1] || ''}/img/${base}-1200.jpg`;
-  }
-  const up = url.match(/^https:\/\/upload\.wikimedia\.org\/wikipedia\/([^/]+)\/(?!thumb\/)[^/]+\/[^/]+\/(.+)$/);
-  if (up) {
-    const host = up[1] === 'commons' ? 'commons.wikimedia.org' : `${up[1]}.wikipedia.org`;
-    return `https://${host}/wiki/Special:FilePath/${up[2]}?width=${width}`;
-  }
-  const fp = url.match(/^https:\/\/(commons\.wikimedia\.org|[a-z-]+\.wikipedia\.org)\/wiki\/Special:FilePath\/([^?#]+)/);
-  if (fp) return `https://${fp[1]}/wiki/Special:FilePath/${fp[2]}?width=${width}`;
-  return url;
-}
-
-// Resize + WebP via images.weserv.nl (PageSpeed fix, Oct 2026). Verified
-// live: direct Wikimedia uploads and meramu.site files convert (e.g.
-// 329KB JPEG -> 121KB WebP); FilePath inputs need ?width= inside the
-// proxied URL (a plain FilePath without width 404s on weserv).
-// Already-thumb URLs and other CDNs pass through unchanged. No quality
-// param: w + output=webp only. NOTE: intentionally duplicated in
-// api/kategori.js, api/cari.js, api/index.js and src/App.tsx (no shared
-// import, so a serverless file can never break because of a bundling
-// miss). Keep the copies in sync.
+// Cover images are self-hosted only (Nov 2026): the external image proxy
+// and all hotlinked originals were removed from <img> rendering after the
+// full /img/ migration (all 42 articles). Covers MUST be stored as
+// https://meramu.site/img/<base>.webp with generated 500/800/1200 WebP
+// variants (see tools/make_img_variants.py); the requested width maps to
+// the nearest variant. A non-/img/ URL passes through unchanged (admin SOP
+// forbids new external covers; the deploy check greps rendered HTML for
+// proxied and hotlinked <img> srcs). No onerror fallback: self-hosted
+// images need none, and a fallback must never point at an external host.
+// NOTE: intentionally duplicated in api/berita.js, api/index.js,
+// api/kategori.js, api/cari.js and src/App.tsx (no shared import, so a
+// serverless file can never break because of a bundling miss). Keep the
+// copies in sync.
 function wikimediaThumb(url, width) {
   if (!url || typeof url !== 'string') return url;
-  // Self-hosted /img/ variants (migration, Nov 2026): the stored form is
-  // https://meramu.site/img/<base>.webp (or relative /img/<base>.webp).
-  // Map the requested width to the nearest generated size; a trailing
-  // size suffix on the input is stripped first so sized URLs re-map.
-  // This branch MUST stay above the same-origin rule below, or /img/
-  // URLs would still go through weserv.
   const selfImg = url.match(/^(https:\/\/meramu\.site)?\/img\/([a-z0-9-]+)\.webp$/);
   if (selfImg) {
     const base = selfImg[2].replace(/-(500|800|1200)$/, '');
     const w = width <= 500 ? 500 : width <= 800 ? 800 : 1200;
     return `${selfImg[1] || ''}/img/${base}-${w}.webp`;
   }
-  const up = url.match(/^https:\/\/(upload\.wikimedia\.org\/wikipedia\/([^/]+)\/(?!thumb\/)[^/]+\/[^/]+\/[^?#]+)/);
-  if (up) return `https://images.weserv.nl/?url=${up[1]}&w=${width}&output=webp`;
-  const fp = url.match(/^https:\/\/(commons\.wikimedia\.org|[a-z-]+\.wikipedia\.org)\/wiki\/Special:FilePath\/([^?#]+)/);
-  if (fp) return `https://images.weserv.nl/?url=${fp[1]}/wiki/Special:FilePath/${fp[2]}?width=${width}&w=${width}&output=webp`;
-  const local = url.match(/^https:\/\/meramu\.site\/([^?#]+)/);
-  if (local) return `https://images.weserv.nl/?url=meramu.site/${local[1]}&w=${width}&output=webp`;
   return url;
-}
-
-// onerror attribute for a weserv <img>: on failure, swap to the fallback
-// (FilePath for Wikimedia, original local URL for same-origin files).
-// Empty when the src is not a weserv URL (nothing to fall back from).
-// For srcset images the srcset is dropped first, otherwise the browser
-// would re-pick the broken weserv candidate instead of the fallback.
-function imgFallback(url, width, hasSrcset) {
-  const t = wikimediaThumb(url, width);
-  const f = wikimediaFilePath(url, width);
-  if (t === f) return '';
-  const esc = f.replace(/&/g, '&amp;').replace(/'/g, "\\'");
-  return hasSrcset
-    ? ` onerror="this.onerror=null;this.removeAttribute('srcset');this.src='${esc}'"`
-    : ` onerror="this.onerror=null;this.src='${esc}'"`;
 }
 
 // Article slugs (SEO URLs, Oct 2026). MUST stay identical in api/berita.js,
@@ -366,7 +315,7 @@ ${searchForm}
     const readTime = strField(f, 'readTime');
     const meta = [author, dateStr, readTime].filter(Boolean).join(' • ');
     const thumb = imageUrl
-      ? `<img src="${escapeHtml(wikimediaThumb(imageUrl, 320))}"${imgFallback(imageUrl, 320, false)} alt="" width="96" height="96" loading="lazy" decoding="async" />`
+      ? `<img src="${escapeHtml(wikimediaThumb(imageUrl, 320))}" alt="" width="96" height="96" loading="lazy" decoding="async" />`
       : `<div class="ph">M</div>`;
     const slug = slugMap.get(d.id) || d.id;
     return `<a class="card" href="/berita/${slug}">${thumb}<div><h2>${escapeHtml(title)}</h2>${excerpt ? `<p>${escapeHtml(excerpt)}</p>` : ''}<div class="meta">${escapeHtml(meta)}</div></div></a>`;
