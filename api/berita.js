@@ -377,7 +377,7 @@ ${jsonLd ? `<script type="application/ld+json">${jsonLd}</script>` : ''}
   .share-label{font-size:13px;font-weight:700;color:#737373;margin-bottom:12px}
   .share-row{display:flex;gap:10px;flex-wrap:wrap}
   .share-btn{display:inline-block;padding:10px 18px;border-radius:999px;font-size:14px;font-weight:700;text-decoration:none;color:#fff;border:0;cursor:pointer;font-family:inherit}
-  .share-btn.wa{background:#25D366}
+  .share-btn.wa{background:#1A7A43}
   .share-btn.th{background:#000}
   .share-btn.ig{background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)}
   .share-btn.link{background:${ACCENT}}
