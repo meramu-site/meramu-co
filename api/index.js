@@ -339,10 +339,10 @@ ${heroImage ? `<link rel="preload" as="image" href="${escapeHtml(heroImage)}"${h
   .trend h2{font-size:14px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${accent};margin:0 0 16px;padding-bottom:12px;border-bottom:1px solid #f5f5f5}
   .trend a{display:flex;gap:14px;align-items:flex-start;text-decoration:none;color:inherit;padding:12px 0;border-bottom:1px solid #f5f5f5}
   .trend a:first-of-type{padding-top:0} .trend a:last-child{border-bottom:0;padding-bottom:0}
-  .trend .num{font-size:22px;font-weight:900;color:#a3a3a3;line-height:1}
+  .trend .num{font-size:22px;font-weight:900;color:#737373;line-height:1}
   .trend .tt{flex:1} .trend .tt span{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${accent}}
   .trend .tt b{display:block;font-size:14px;line-height:1.4;margin:4px 0;color:#171717}
-  .trend .tt small{font-size:11px;color:#a3a3a3}
+  .trend .tt small{font-size:11px;color:#737373}
   .trend img,.trend .ph{width:80px;height:80px;border-radius:12px;object-fit:cover;flex:none;background:#f5f5f5}
   .trend .ph{display:flex;align-items:center;justify-content:center;background:${accent};color:#fff;font-weight:900;font-size:20px}
   .trend a.ig-cta{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:16px;border:1px solid ${accent};background:${accent};text-decoration:none;color:#fff}
@@ -364,7 +364,7 @@ ${heroImage ? `<link rel="preload" as="image" href="${escapeHtml(heroImage)}"${h
   .pager{margin-top:32px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
   .pager a,.pager span{display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 12px;border-radius:999px;border:1px solid #e5e5e5;font-size:13px;font-weight:700;text-decoration:none;color:#404040}
   .pager a.current{background:${accent};color:#fff;border-color:${accent}}
-  .pager span.disabled{opacity:.4}
+  .pager span.disabled{color:#737373}
   .empty{background:#fff;border:1px solid #e5e5e5;border-radius:16px;padding:48px;text-align:center;color:#737373}
   .up-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
   .up-head-left{display:flex;align-items:center;gap:10px;min-width:0}
