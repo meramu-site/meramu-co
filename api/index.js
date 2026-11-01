@@ -42,6 +42,71 @@ const DEFAULT_BRAND = {
   accentColor: '#0D1B8C',
 };
 
+// Jadwal Event module (Nov 2026). Same data/events.json as api/info.js
+// (no shared import: this codebase keeps each api/ file self-contained).
+// Status is derived at render time from the Asia/Jakarta date; only a
+// stored "cancelled" is authoritative. Homepage shows upcoming items only.
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const JADWAL_MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+function loadJadwalEvents() {
+  const candidates = [];
+  try { candidates.push(fileURLToPath(new URL('../data/events.json', import.meta.url))); } catch { /* ignore */ }
+  try { candidates.push(path.join(process.cwd(), 'data/events.json')); } catch { /* ignore */ }
+  for (const p of candidates) {
+    try {
+      const raw = fs.readFileSync(p, 'utf8');
+      const d = JSON.parse(raw);
+      if (d && Array.isArray(d.events)) return d.events;
+    } catch { /* try next candidate */ }
+  }
+  return [];
+}
+
+function jadwalTodayJakarta() {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Jakarta' }).format(new Date());
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
+}
+
+function jadwalDeriveStatus(ev, today) {
+  if (ev.status === 'cancelled') return 'cancelled';
+  const end = ev.endDate || ev.startDate;
+  if (today > end) return 'done';
+  if (ev.startDate <= today && today <= end) return 'ongoing';
+  return 'upcoming';
+}
+
+function jadwalDaysUntil(ev, today) {
+  const ms = Date.parse(`${ev.startDate}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`);
+  return Math.round(ms / 86400000);
+}
+
+function jadwalUpcomingHtml() {
+  const events = loadJadwalEvents();
+  const today = jadwalTodayJakarta();
+  const upcoming = events
+    .filter((e) => jadwalDeriveStatus(e, today) === 'upcoming')
+    .sort((a, b) => (a.startDate < b.startDate ? -1 : a.startDate > b.startDate ? 1 : 0))
+    .slice(0, 4);
+  if (!upcoming.length) return '';
+  const cards = upcoming.map((e) => {
+    const [y, m, d] = e.startDate.split('-').map(Number);
+    const days = jadwalDaysUntil(e, today);
+    const chip = days <= 0 ? 'Hari ini' : `${days} hari lagi`;
+    return `<a class="up-card" href="/jadwal/${escapeHtml(e.slug)}"><div class="up-date"><b>${d}</b><span>${JADWAL_MONTHS_SHORT[(m || 1) - 1]} ${y}</span></div><div class="up-body"><div class="up-cat">${escapeHtml(e.kategori)}</div><h3>${escapeHtml(e.title)}</h3><div class="up-venue">${escapeHtml(e.venue)}, ${escapeHtml(e.kota)}</div><span class="up-chip">${escapeHtml(chip)}</span></div></a>`;
+  }).join('');
+  return `<section class="up-events">
+<div class="grid-head"><h2><i></i>Upcoming Events</h2><a class="up-all" href="/jadwal">Lihat semua &rarr;</a></div>
+<div class="up-grid">${cards}</div>
+</section>`;
+}
+
 function escapeHtml(s) {
   return String(s ?? '')
     .replace(/&/g, '&amp;')
@@ -301,6 +366,21 @@ ${heroImage ? `<link rel="preload" as="image" href="${escapeHtml(heroImage)}"${h
   .pager a.current{background:${accent};color:#fff;border-color:${accent}}
   .pager span.disabled{opacity:.4}
   .empty{background:#fff;border:1px solid #e5e5e5;border-radius:16px;padding:48px;text-align:center;color:#737373}
+  .up-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .up-card{display:flex;gap:0;text-decoration:none;color:inherit;background:#fff;border:1px solid #e5e5e5;border-radius:16px;overflow:hidden}
+  .up-date{width:88px;flex:none;background:${accent};color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 8px}
+  .up-date b{font-size:30px;line-height:1}
+  .up-date span{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-top:4px}
+  .up-body{padding:16px;flex:1;min-width:0}
+  .up-cat{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${accent}}
+  .up-body h3{font-size:17px;line-height:1.35;margin:6px 0}
+  .up-venue{font-size:13px;color:#737373}
+  .up-chip{display:inline-block;margin-top:10px;padding:4px 10px;border-radius:999px;background:#f5f5f5;font-size:12px;font-weight:700}
+  .up-all{font-size:13px;font-weight:700;text-decoration:none}
+  @media(max-width:900px){.up-grid{grid-template-columns:1fr}}
+  html.dark .up-card{background:#18181b;border-color:rgba(255,255,255,.1)}
+  html.dark .up-venue{color:#a3a3a3}
+  html.dark .up-chip{background:#27272a}
   footer{border-top:1px solid #e5e5e5;padding:24px;text-align:center;font-size:13px;color:#737373}
   @media(max-width:900px){.hero{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.hero-body h1{font-size:26px}}
   html.dark body{background:#09090b;color:#f4f4f5}
@@ -514,7 +594,10 @@ ${viral.length ? `<div class="box"><div class="box-head">Lagi Viral</div><div cl
     pager = `<div class="pager">${page > 1 ? `<a href="${pageHref(page - 1)}">Sebelumnya</a>` : `<span class="disabled">Sebelumnya</span>`}${nums.join('')}${page < totalPages ? `<a href="/?page=${page + 1}">Selanjutnya</a>` : `<span class="disabled">Selanjutnya</span>`}</div>`;
   }
 
+  const upcomingEvents = jadwalUpcomingHtml();
+
   const body = `${hero}
+${upcomingEvents}
 <section>
 <div class="grid-head"><h2><i></i>Terbaru di Meramu</h2><span>${gridAll.length} Artikel Tersedia</span></div>
 ${cards ? `<div class="grid">${cards}</div>${pager}` : `<div class="empty"><p>Belum ada berita yang cocok.</p></div>`}

@@ -70,9 +70,266 @@ const PAGES = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Jadwal Event module (Nov 2026). Events live in ONE repo JSON file,
+// data/events.json (no new api/ file: Vercel Hobby allows max 12
+// Serverless Functions and api/ already holds 11). This router renders
+// /jadwal (hub) and /jadwal/<slug> (detail) through the same shell below.
+// Status is DERIVED at render time from the Asia/Jakarta date; the stored
+// "status" field in JSON is only authoritative for "cancelled" (a stored
+// cancelled event never revives). Countdown = whole days from server
+// today to startDate; 0 = "Hari ini".
+// ---------------------------------------------------------------------------
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const MONTHS_ID = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+function loadEvents() {
+  const candidates = [];
+  try { candidates.push(fileURLToPath(new URL('../data/events.json', import.meta.url))); } catch { /* ignore */ }
+  try { candidates.push(path.join(process.cwd(), 'data/events.json')); } catch { /* ignore */ }
+  for (const p of candidates) {
+    try {
+      const raw = fs.readFileSync(p, 'utf8');
+      const d = JSON.parse(raw);
+      if (d && Array.isArray(d.events)) return d.events;
+    } catch { /* try next candidate */ }
+  }
+  return [];
+}
+
+function todayJakarta() {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Jakarta' }).format(new Date());
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
+}
+
+function deriveStatus(ev, today) {
+  if (ev.status === 'cancelled') return 'cancelled';
+  const end = ev.endDate || ev.startDate;
+  if (today > end) return 'done';
+  if (ev.startDate <= today && today <= end) return 'ongoing';
+  return 'upcoming';
+}
+
+function daysUntil(ev, today) {
+  const ms = Date.parse(`${ev.startDate}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`);
+  return Math.round(ms / 86400000);
+}
+
+function statusChip(st, ev, today) {
+  if (st === 'cancelled') return 'Dibatalkan';
+  if (st === 'done') return 'Sudah berlangsung';
+  if (st === 'ongoing') return 'Berlangsung sekarang';
+  const d = daysUntil(ev, today);
+  return d <= 0 ? 'Hari ini' : `${d} hari lagi`;
+}
+
+function eventStatusSchema(st) {
+  return {
+    upcoming: 'https://schema.org/EventScheduled',
+    ongoing: 'https://schema.org/EventInProgress',
+    done: 'https://schema.org/EventCompleted',
+    cancelled: 'https://schema.org/EventCancelled',
+  }[st] || 'https://schema.org/EventScheduled';
+}
+
+function fmtDate(iso) {
+  const [y, m, d] = String(iso).split('-').map(Number);
+  return `${d} ${MONTHS_ID[(m || 1) - 1]} ${y}`;
+}
+
+function fmtRange(ev) {
+  if (!ev.endDate || ev.endDate === ev.startDate) return fmtDate(ev.startDate);
+  const [y1, m1, d1] = ev.startDate.split('-').map(Number);
+  const [y2, m2, d2] = ev.endDate.split('-').map(Number);
+  if (y1 === y2 && m1 === m2) return `${d1}–${d2} ${MONTHS_ID[m1 - 1]} ${y1}`;
+  return `${fmtDate(ev.startDate)} – ${fmtDate(ev.endDate)}`;
+}
+
+function fmtMonth(yyyyMm) {
+  const [y, m] = String(yyyyMm).split('-').map(Number);
+  return `${MONTHS_ID[(m || 1) - 1]} ${y}`;
+}
+
+function fmtDayMonth(iso) {
+  const [y, m, d] = String(iso).split('-').map(Number);
+  return { day: d, mon: MONTHS_SHORT[(m || 1) - 1], year: y };
+}
+
+function hargaText(ev) {
+  if (typeof ev.harga === 'number') return `Mulai Rp${ev.harga.toLocaleString('id-ID')}`;
+  if (ev.harga === 'gratis') return 'Gratis';
+  return 'Belum diumumkan';
+}
+
+function imgVariant(posterUrl, w) {
+  return String(posterUrl || '').replace(/\.webp$/, `-${w}.webp`);
+}
+
+function ogVariant(posterUrl) {
+  return String(posterUrl || '').replace(/\.webp$/, '-1200.jpg');
+}
+
+function eventJsonLd(ev, st) {
+  const offers = { '@type': 'Offer', url: ev.ticketUrl || ev.sumberUrl, priceCurrency: 'IDR', availability: 'https://schema.org/InStock' };
+  if (typeof ev.harga === 'number') offers.price = ev.harga;
+  else if (ev.harga === 'gratis') offers.price = 0;
+  const o = {
+    '@context': 'https://schema.org',
+    '@type': 'Event',
+    name: ev.title,
+    startDate: ev.startDate,
+    eventStatus: eventStatusSchema(st),
+    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+    location: { '@type': 'Place', name: ev.venue, address: { '@type': 'PostalAddress', addressLocality: ev.kota } },
+    performer: (ev.lineup || []).map((n) => ({ '@type': 'PerformingGroup', name: n })),
+    offers,
+    image: ogVariant(ev.posterUrl),
+  };
+  if (ev.endDate) o.endDate = ev.endDate;
+  return o;
+}
+
+function breadcrumbJsonLd(trail) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: trail.map((t, i) => ({ '@type': 'ListItem', position: i + 1, name: t[0], item: `${SITE_URL}${t[1]}` })),
+  };
+}
+
+const JADWAL_CSS = `<style>
+.jadwal-filters{margin:20px 0 8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.jadwal-filters b{font-size:13px;margin-right:2px}
+.jadwal-filters a{padding:6px 14px;border:1px solid #e5e5e5;border-radius:999px;font-size:13px;font-weight:600;color:#404040;text-decoration:none}
+.jadwal-filters a.active{background:${ACCENT};color:#fff;border-color:${ACCENT}}
+.jadwal-month{font-size:20px;margin:32px 0 12px}
+.jadwal-card{display:flex;gap:0;text-decoration:none;color:inherit;background:#fff;border:1px solid #e5e5e5;border-radius:16px;overflow:hidden;margin:0 0 16px}
+.jadwal-date{width:88px;flex:none;background:${ACCENT};color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 8px}
+.jadwal-date b{font-size:30px;line-height:1}
+.jadwal-date span{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-top:4px}
+.jadwal-body{padding:16px;flex:1;min-width:0}
+.jadwal-cat{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${ACCENT}}
+.jadwal-body h3{font-size:18px;line-height:1.35;margin:6px 0}
+.jadwal-venue{font-size:13px;color:#737373}
+.jadwal-chip{display:inline-block;margin-top:10px;padding:4px 10px;border-radius:999px;background:#f5f5f5;font-size:12px;font-weight:700}
+.jadwal-chip.done{background:#e5e5e5;color:#525252}
+.jadwal-fig{margin:0 0 20px}
+.jadwal-fig img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;border-radius:16px}
+.jadwal-fig figcaption{font-size:13px;color:#737373;margin-top:8px}
+.jadwal-lineup{padding-left:20px}
+.jadwal-tiket{display:inline-block;background:${ACCENT};color:#fff !important;font-weight:700;text-decoration:none;padding:12px 24px;border-radius:999px;margin:8px 12px 8px 0}
+.jadwal-meta{font-size:13px;color:#737373;display:flex;gap:8px;flex-wrap:wrap;padding-bottom:20px;border-bottom:1px solid #f5f5f5}
+html.dark .jadwal-card{background:#18181b;border-color:rgba(255,255,255,.1)}
+html.dark .jadwal-filters a{border-color:rgba(255,255,255,.15);color:#d4d4d8}
+html.dark .jadwal-venue,html.dark .jadwal-meta{color:#a3a3a3}
+html.dark .jadwal-chip{background:#27272a}
+html.dark .jadwal-chip.done{background:#27272a;color:#a3a3a3}
+html.dark .jadwal-fig figcaption{color:#a3a3a3}
+</style>`;
+
+function jadwalHubPage(req) {
+  const events = loadEvents();
+  const today = todayJakarta();
+  const q = (req.query || {});
+  const kategori = typeof q.kategori === 'string' ? q.kategori : '';
+  const kota = typeof q.kota === 'string' ? q.kota : '';
+  const cats = [...new Set(events.map((e) => e.kategori))];
+  const kotas = [...new Set(events.map((e) => e.kota))];
+  const filtered = events.filter((e) => (!kategori || e.kategori === kategori) && (!kota || e.kota === kota));
+  const sorted = [...filtered].sort((a, b) => (a.startDate < b.startDate ? -1 : a.startDate > b.startDate ? 1 : 0));
+  const groups = new Map();
+  for (const e of sorted) {
+    const k = e.startDate.slice(0, 7);
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(e);
+  }
+  const qs = (kat, ko) => {
+    const p = [];
+    if (kat) p.push(`kategori=${encodeURIComponent(kat)}`);
+    if (ko) p.push(`kota=${encodeURIComponent(ko)}`);
+    return p.length ? `?${p.join('&')}` : '';
+  };
+  const filters = cats.length || kotas.length
+    ? `${cats.length ? `<div class="jadwal-filters"><b>Kategori:</b><a href="/jadwal${qs('', kota)}" class="${!kategori ? 'active' : ''}">Semua</a>${cats.map((v) => `<a href="/jadwal${qs(v, kota)}" class="${kategori === v ? 'active' : ''}">${escapeHtml(v)}</a>`).join('')}</div>` : ''}${kotas.length ? `<div class="jadwal-filters"><b>Kota:</b><a href="/jadwal${qs(kategori, '')}" class="${!kota ? 'active' : ''}">Semua</a>${kotas.map((v) => `<a href="/jadwal${qs(kategori, v)}" class="${kota === v ? 'active' : ''}">${escapeHtml(v)}</a>`).join('')}</div>` : ''}`
+    : '';
+  let listHtml = '';
+  for (const [month, items] of groups) {
+    listHtml += `<h2 class="jadwal-month">${escapeHtml(fmtMonth(month))}</h2>`;
+    listHtml += items.map((e) => {
+      const st = deriveStatus(e, today);
+      const dm = fmtDayMonth(e.startDate);
+      return `<a class="jadwal-card" href="/jadwal/${escapeHtml(e.slug)}"><div class="jadwal-date"><b>${dm.day}</b><span>${dm.mon} ${dm.year}</span></div><div class="jadwal-body"><div class="jadwal-cat">${escapeHtml(e.kategori)}</div><h3>${escapeHtml(e.title)}</h3><div class="jadwal-venue">${escapeHtml(e.venue)}, ${escapeHtml(e.kota)}</div><span class="jadwal-chip${st === 'done' || st === 'cancelled' ? ' done' : ''}">${escapeHtml(statusChip(st, e, today))}</span></div></a>`;
+    }).join('');
+  }
+  if (!listHtml) listHtml = `<p>Belum ada event untuk filter ini. <a href="/jadwal">Lihat semua event</a>.</p>`;
+  const body = `<a class="back" style="margin:0 0 20px" href="/">&larr; Beranda</a>
+<div style="margin-top:20px"><span class="chip">Jadwal</span></div>
+<h1>Jadwal Event</h1>
+<div class="jadwal-meta"><b>Meramu</b><span>•</span><span>Konser, festival, dan esports di Indonesia</span></div>
+<section><p>Konser, festival, dan pertandingan yang sudah terverifikasi dari sumber resmi promotor atau venue. Event yang sudah lewat tidak dihapus: statusnya berubah menjadi "Sudah berlangsung" dan tetap bisa dibuka.</p></section>
+${filters}
+${listHtml}
+<a class="back" href="/">&larr; Kembali ke Beranda</a>`;
+  const itemList = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    itemListElement: events.map((e, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE_URL}/jadwal/${e.slug}`, name: e.title })),
+  };
+  const extraHead = `${JADWAL_CSS}<script type="application/ld+json">${JSON.stringify(itemList)}</script><script type="application/ld+json">${JSON.stringify(breadcrumbJsonLd([['Beranda', '/'], ['Jadwal Event', '/jadwal']]))}</script>`;
+  return {
+    title: 'Jadwal Event',
+    description: 'Jadwal konser, festival, dan pertandingan esports di Indonesia: tanggal, venue, lineup, dan tautan tiket resmi.',
+    canonical: `${SITE_URL}/jadwal`,
+    body,
+    extraHead,
+  };
+}
+
+function jadwalDetailPage(req) {
+  const events = loadEvents();
+  const slug = req.query && req.query.slug;
+  const ev = events.find((e) => e.slug === slug);
+  if (!ev) return null;
+  const today = todayJakarta();
+  const st = deriveStatus(ev, today);
+  const ticketHref = ev.ticketUrl || ev.sumberUrl;
+  const related = ev.relatedArticleUrl ? `<section><h2>${ev.relatedKind === 'coverage' ? 'Liputan Meramu' : 'Artikel terkait'}</h2><p><a href="${escapeHtml(ev.relatedArticleUrl)}">${escapeHtml(ev.relatedArticleTitle || 'Baca artikel Meramu')}</a>${ev.relatedKind === 'related' ? ' (artikel terkait, bukan liputan event ini)' : ''}</p></section>` : '';
+  const cancelNote = st === 'cancelled' ? `<section><h2>Status</h2><p>Event ini dibatalkan oleh penyelenggara.${ev.cancelNote ? ` ${escapeHtml(ev.cancelNote)}` : ''}</p></section>` : '';
+  const body = `<a class="back" style="margin:0 0 20px" href="/jadwal">&larr; Jadwal Event</a>
+<div style="margin-top:20px"><span class="chip">${escapeHtml(ev.kategori)}</span></div>
+<h1>${escapeHtml(ev.title)}</h1>
+<div class="jadwal-meta"><span>${escapeHtml(fmtRange(ev))}</span><span>•</span><span>${escapeHtml(ev.venue)}, ${escapeHtml(ev.kota)}</span><span>•</span><span class="jadwal-chip${st === 'done' || st === 'cancelled' ? ' done' : ''}" style="margin-top:0">${escapeHtml(statusChip(st, ev, today))}</span></div>
+<figure class="jadwal-fig"><img src="${escapeHtml(imgVariant(ev.posterUrl, 1200))}" width="1200" height="675" alt="${escapeHtml(ev.title)}" /><figcaption>${escapeHtml(ev.posterCredit || '')}</figcaption></figure>
+<section><p>${escapeHtml(ev.description)}</p></section>
+<section><h2>Lineup</h2><ul class="jadwal-lineup">${(ev.lineup || []).map((n) => `<li>${escapeHtml(n)}</li>`).join('')}</ul></section>
+<section><h2>Tiket</h2><p>Harga: ${escapeHtml(hargaText(ev))}</p><p><a class="jadwal-tiket" href="${escapeHtml(ticketHref)}" target="_blank" rel="noreferrer">Tiket resmi</a><a href="${escapeHtml(ev.sumberUrl)}" target="_blank" rel="noreferrer">Sumber resmi ↗</a></p></section>
+${cancelNote}
+${related}
+<section><p>Terakhir diperiksa: ${escapeHtml(fmtDate(ev.lastCheckedAt))}. Jadwal dan harga dapat berubah; periksa selalu halaman resmi penyelenggara sebelum membeli.</p></section>
+<a class="back" href="/jadwal">&larr; Kembali ke Jadwal Event</a>`;
+  const extraHead = `${JADWAL_CSS}<script type="application/ld+json">${JSON.stringify(eventJsonLd(ev, st))}</script><script type="application/ld+json">${JSON.stringify(breadcrumbJsonLd([['Beranda', '/'], ['Jadwal Event', '/jadwal'], [ev.title, `/jadwal/${ev.slug}`]]))}</script>`;
+  return {
+    title: ev.title,
+    description: ev.description.slice(0, 160),
+    canonical: `${SITE_URL}/jadwal/${ev.slug}`,
+    body,
+    ogImage: ogVariant(ev.posterUrl),
+    extraHead,
+  };
+}
+
 export default async function handler(req, res) {
   const halaman = req.query && req.query.halaman;
-  const page = PAGES[halaman];
+  let page = PAGES[halaman];
+  if (halaman === 'jadwal') page = jadwalHubPage(req);
+  else if (halaman === 'jadwal-detail') page = jadwalDetailPage(req);
   if (!page) {
     const html404 = `<!DOCTYPE html>
 <html lang="id">
@@ -92,8 +349,10 @@ export default async function handler(req, res) {
   }
   const title = page.title;
   const description = page.description;
-  const canonical = `${SITE_URL}/${halaman}`;
+  const canonical = page.canonical || `${SITE_URL}/${halaman}`;
   const body = page.body;
+  const ogImage = page.ogImage || 'https://meramu.site/og-image.png';
+  const extraHead = page.extraHead || '';
 
   const html = `<!DOCTYPE html>
 <html lang="id">
@@ -110,12 +369,13 @@ export default async function handler(req, res) {
 <meta property="og:description" content="${escapeHtml(description)}" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="${escapeHtml(canonical)}" />
-<meta property="og:image" content="https://meramu.site/og-image.png" />
+<meta property="og:image" content="${escapeHtml(ogImage)}" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="${escapeHtml(title)} — Meramu" />
 <meta name="twitter:description" content="${escapeHtml(description)}" />
-<meta name="twitter:image" content="https://meramu.site/og-image.png" />
+<meta name="twitter:image" content="${escapeHtml(ogImage)}" />
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Meramu","url":"https://meramu.site","logo":"https://meramu.site/favicon.svg","description":"Baca berita secukupnya, lanjut kerja lagi.","foundingDate":"2026-10-28","sameAs":["https://instagram.com/meramufeed","https://www.threads.net/@meramufeed"]}</script>
+${extraHead}
 <script>(function(){function meramuLoadGtag(){window.dataLayer=window.dataLayer||[];window.gtag=function(){window.dataLayer.push(arguments);};window.gtag('js',new Date());window.gtag('config','${GA_ID}');var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id=${GA_ID}';document.head.appendChild(s);}if(document.readyState==='complete'){meramuLoadGtag();}else{window.addEventListener('load',meramuLoadGtag);}})();</script>
 <script>(function(){try{if(localStorage.getItem('meramu-theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}})();</script>
 <style>

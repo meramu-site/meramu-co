@@ -12,6 +12,27 @@ const PROJECT_ID = 'meramu-site';
 const APP_ID = 'meramu-site-app';
 const SITE_URL = 'https://meramu.site';
 
+// Jadwal Event (Nov 2026): sitemap lists /jadwal + every /jadwal/<slug>
+// with lastmod = the event's lastCheckedAt date. Same data/events.json
+// as api/info.js (no shared import: each api/ file stays self-contained).
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+function loadJadwalEvents() {
+  const candidates = [];
+  try { candidates.push(fileURLToPath(new URL('../data/events.json', import.meta.url))); } catch { /* ignore */ }
+  try { candidates.push(path.join(process.cwd(), 'data/events.json')); } catch { /* ignore */ }
+  for (const p of candidates) {
+    try {
+      const raw = fs.readFileSync(p, 'utf8');
+      const d = JSON.parse(raw);
+      if (d && Array.isArray(d.events)) return d.events;
+    } catch { /* try next candidate */ }
+  }
+  return [];
+}
+
 const CATEGORY_SLUGS = [
   'pop-culture',
   'ekonomi-kreatif',
@@ -136,6 +157,18 @@ export default async function handler(req, res) {
   entries.push(urlEntry(`${SITE_URL}/pedoman`, '2026-10-31', '0.5'));
   entries.push(urlEntry(`${SITE_URL}/koreksi`, '2026-10-31', '0.5'));
   entries.push(urlEntry(`${SITE_URL}/beriklan`, '2026-10-31', '0.5'));
+
+  // Jadwal Event: hub + detail pages, lastmod = lastCheckedAt (Nov 2026).
+  const jadwalEvents = loadJadwalEvents();
+  if (jadwalEvents.length) {
+    const maxChecked = jadwalEvents.map((e) => e.lastCheckedAt || '').sort().pop();
+    entries.push(urlEntry(`${SITE_URL}/jadwal`, maxChecked || '', '0.8'));
+    [...jadwalEvents]
+      .sort((a, b) => (a.startDate < b.startDate ? -1 : a.startDate > b.startDate ? 1 : 0))
+      .forEach((e) => {
+        entries.push(urlEntry(`${SITE_URL}/jadwal/${e.slug}`, e.lastCheckedAt || '', '0.8'));
+      });
+  }
 
   // Category pages: lastmod = newest article date in that category.
   const byCategory = {};
