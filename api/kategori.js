@@ -23,6 +23,11 @@ const SLUG_TO_CATEGORY = {
   'politik': 'Politik',
 };
 
+// Per-rubrik intro text (only slugs listed here render one; others omit it).
+const CATEGORY_DESCRIPTIONS = {
+  'lifestyle': 'Lifestyle Meramu: gaya hidup anak muda kota, dari kuliner dan tempat nongkrong sampai fesyen dan hal-hal kecil yang bikin hari biasa jadi cerita. Semua rekomendasi dikurasi redaksi.',
+};
+
 function escapeHtml(s) {
   return String(s ?? '')
     .replace(/&/g, '&amp;')
@@ -202,6 +207,7 @@ function shell({ title, description, canonical, body }) {
   .chip{display:inline-block;background:${ACCENT};color:#fff;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 12px;border-radius:999px}
   h1{font-size:28px;line-height:1.2;letter-spacing:-.02em;margin:16px 0 8px}
   .count{font-size:14px;color:#737373;margin-bottom:24px}
+  .cat-desc{font-size:15px;line-height:1.6;color:#525252;margin:0 0 24px}
   .card{display:flex;gap:16px;text-decoration:none;color:#171717;padding:18px 0;border-top:1px solid #f5f5f5}
   .card img,.ph{width:96px;height:96px;border-radius:12px;object-fit:cover;flex:none;background:#f5f5f5}
   .ph{display:flex;align-items:center;justify-content:center;background:${ACCENT};color:#fff;font-weight:900;font-size:22px}
@@ -214,6 +220,7 @@ function shell({ title, description, canonical, body }) {
   html.dark .brand{color:#8EA2FF}html.dark .brand small{color:#f4f4f5}
   html.dark .head nav a{color:#f4f4f5}
   html.dark .count{color:#a3a3a3}
+  html.dark .cat-desc{color:#d4d4d8}
   html.dark .card{color:#f4f4f5;border-top-color:rgba(255,255,255,.1)}
   html.dark .card img{background:#27272a}
   html.dark .card p{color:#d4d4d8}
@@ -380,6 +387,7 @@ export default async function handler(req, res) {
 <div style="margin-top:20px"><span class="chip">Rubrik</span></div>
 <h1>${escapeHtml(category)}</h1>
 <p class="count">${items.length} Artikel Tersedia</p>
+${CATEGORY_DESCRIPTIONS[slug] ? `<p class="cat-desc">${escapeHtml(CATEGORY_DESCRIPTIONS[slug])}</p>` : ''}
 ${cards || `<p class="count">Belum ada berita di rubrik ini.</p>`}
 <a class="back" href="/">&larr; Kembali ke Beranda</a>`,
   }));
