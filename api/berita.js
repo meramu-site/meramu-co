@@ -266,6 +266,8 @@ const IMG_DIMS = {
   'kelme-jersey': { w: 1080, h: 608 },
   'maliq-kabar-bahagia': { w: 1170, h: 659 },
   'prabowo-in-singapore': { w: 1200, h: 800 },
+  'qris-bus-trans-metro-pasundan': { w: 3259, h: 1833 },
+  'rafael-struick-indonesia': { w: 612, h: 344 },
   'raisa-at-la-lights-music-project': { w: 533, h: 300 },
   'rans-carnival-poster': { w: 1200, h: 675 },
   'rans-poster-nologo': { w: 1200, h: 675 },
