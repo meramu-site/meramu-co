@@ -182,83 +182,27 @@ const DEFAULT_BRAND = {
 // — change it here, not in Dapur Redaksi.
 const HEADER_TAGLINE = 'Gagasan, kultur, cerita — diramu jadi satu.';
 
-// Resize Wikimedia images via Special:FilePath (PageSpeed fix, Oct 2026).
-// Same helper as api/berita.js, api/kategori.js, api/cari.js and api/index.js
-// (duplicated on purpose so a serverless file never breaks on a bundling
-// miss). See api/berita.js for the full explanation: FilePath widths are
-// verified working, direct /thumb/ widths are not. Per-language fix (Oct
-// 2026): the old regex only matched commons, so a language-wiki file (e.g.
-// wikipedia/id/.../Stadion_Kanjuruhan_Malang2.png, 1.8 MB) slipped through
-// RAW; it now maps to <lang>.wikipedia.org FilePath (verified 200 + 132 KB
-// at width=320 for the id file).
-// Fallback URL for an image: the FilePath JPEG/PNG for Wikimedia files,
-// the original URL for same-origin local files. For pass-through URLs
-// (already-thumb, other CDNs) this equals the input, so no fallback is added.
-function wikimediaFilePath(url: string, width: number): string {
-  if (!url || typeof url !== 'string') return url;
-  // Self-hosted /img/ fallback (migration, Nov 2026): the JPEG sibling
-  // of the same base, used as the onerror fallback for /img/ images.
-  // Absolute in, absolute out; relative in, relative out.
-  const selfImg = url.match(/^(https:\/\/meramu\.site)?\/img\/([a-z0-9-]+)\.webp$/);
-  if (selfImg) {
-    const base = selfImg[2].replace(/-(500|800|1200)$/, '');
-    return `${selfImg[1] || ''}/img/${base}-1200.jpg`;
-  }
-  const up = url.match(/^https:\/\/upload\.wikimedia\.org\/wikipedia\/([^/]+)\/(?!thumb\/)[^/]+\/[^/]+\/(.+)$/);
-  if (up) {
-    const host = up[1] === 'commons' ? 'commons.wikimedia.org' : `${up[1]}.wikipedia.org`;
-    return `https://${host}/wiki/Special:FilePath/${up[2]}?width=${width}`;
-  }
-  const fp = url.match(/^https:\/\/(commons\.wikimedia\.org|[a-z-]+\.wikipedia\.org)\/wiki\/Special:FilePath\/([^?#]+)/);
-  if (fp) return `https://${fp[1]}/wiki/Special:FilePath/${fp[2]}?width=${width}`;
-  return url;
-}
-
-// Resize + WebP via images.weserv.nl (PageSpeed fix, Oct 2026). Verified
-// live: direct Wikimedia uploads and meramu.site files convert (e.g.
-// 329KB JPEG -> 121KB WebP); FilePath inputs need ?width= inside the
-// proxied URL (a plain FilePath without width 404s on weserv).
-// Already-thumb URLs and other CDNs pass through unchanged. No quality
-// param: w + output=webp only. NOTE: intentionally duplicated in
-// api/*.js (no shared import, so a serverless file can never break
-// because of a bundling miss). Keep the copies in sync.
+// Cover images are self-hosted only (Nov 2026): the external image proxy
+// and all hotlinked originals were removed from <img> rendering after the
+// full /img/ migration (all 42 articles). Covers MUST be stored as
+// https://meramu.site/img/<base>.webp with generated 500/800/1200 WebP
+// variants (see tools/make_img_variants.py); the requested width maps to
+// the nearest variant. A non-/img/ URL passes through unchanged (admin SOP
+// forbids new external covers; the deploy check greps rendered HTML for
+// proxied and hotlinked <img> srcs). No onError fallback: self-hosted
+// images need none, and a fallback must never point at an external host.
+// NOTE: intentionally duplicated in api/*.js (no shared import, so a
+// serverless file can never break because of a bundling miss). Keep the
+// copies in sync.
 function wikimediaThumb(url: string, width: number): string {
   if (!url || typeof url !== 'string') return url;
-  // Self-hosted /img/ variants (migration, Nov 2026): the stored form is
-  // https://meramu.site/img/<base>.webp (or relative /img/<base>.webp).
-  // Map the requested width to the nearest generated size; a trailing
-  // size suffix on the input is stripped first so sized URLs re-map.
-  // This branch MUST stay above the same-origin rule below, or /img/
-  // URLs would still go through weserv.
   const selfImg = url.match(/^(https:\/\/meramu\.site)?\/img\/([a-z0-9-]+)\.webp$/);
   if (selfImg) {
     const base = selfImg[2].replace(/-(500|800|1200)$/, '');
     const w = width <= 500 ? 500 : width <= 800 ? 800 : 1200;
     return `${selfImg[1] || ''}/img/${base}-${w}.webp`;
   }
-  const up = url.match(/^https:\/\/(upload\.wikimedia\.org\/wikipedia\/([^/]+)\/(?!thumb\/)[^/]+\/[^/]+\/[^?#]+)/);
-  if (up) return `https://images.weserv.nl/?url=${up[1]}&w=${width}&output=webp`;
-  const fp = url.match(/^https:\/\/(commons\.wikimedia\.org|[a-z-]+\.wikipedia\.org)\/wiki\/Special:FilePath\/([^?#]+)/);
-  if (fp) return `https://images.weserv.nl/?url=${fp[1]}/wiki/Special:FilePath/${fp[2]}?width=${width}&w=${width}&output=webp`;
-  const local = url.match(/^https:\/\/meramu\.site\/([^?#]+)/);
-  if (local) return `https://images.weserv.nl/?url=meramu.site/${local[1]}&w=${width}&output=webp`;
   return url;
-}
-
-// React onError fallback for a weserv <img>. The dataset flag guards
-// against re-firing if the fallback itself fails (React listeners are
-// not removed by setting onerror=null, unlike inline handlers).
-function weservFallback(url: string, width: number, hasSrcset: boolean) {
-  const t = wikimediaThumb(url, width);
-  const f = wikimediaFilePath(url, width);
-  if (t === f) return undefined;
-  return (e: { currentTarget: HTMLImageElement }) => {
-    const img = e.currentTarget;
-    if (img.dataset.fb) return;
-    img.dataset.fb = '1';
-    if (hasSrcset) img.removeAttribute('srcset');
-    img.src = f;
-  };
 }
 
 // Article slugs (SEO URLs, Oct 2026). Logic MUST stay identical to
@@ -1074,7 +1018,6 @@ export default function App() {
                     <img
                       src={wikimediaThumb(featuredArticle.imageUrl, 1200)}
                       srcSet={`${wikimediaThumb(featuredArticle.imageUrl, 800)} 800w, ${wikimediaThumb(featuredArticle.imageUrl, 1200)} 1200w`}
-                      onError={weservFallback(featuredArticle.imageUrl, 1200, true)}
                       sizes="(max-width: 1024px) 100vw, 840px"
                       width="1200"
                       height="675"
@@ -1200,7 +1143,6 @@ export default function App() {
                         {item.imageUrl ? (
                           <img
                             src={wikimediaThumb(item.imageUrl, 320)}
-                            onError={weservFallback(item.imageUrl, 320, false)}
                             alt={item.title}
                             width="80"
                             height="80"
@@ -1304,7 +1246,6 @@ export default function App() {
                         <img
                           src={wikimediaThumb(article.imageUrl, 800)}
                           srcSet={`${wikimediaThumb(article.imageUrl, 400)} 400w, ${wikimediaThumb(article.imageUrl, 800)} 800w`}
-                          onError={weservFallback(article.imageUrl, 800, true)}
                           sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 380px"
                           width="800"
                           height="500"
@@ -1467,7 +1408,6 @@ export default function App() {
                       src={wikimediaThumb(currentArticle.imageUrl, 800)}
                       srcSet={`${wikimediaThumb(currentArticle.imageUrl, 500)} 500w, ${wikimediaThumb(currentArticle.imageUrl, 800)} 800w`}
                       sizes="(max-width: 640px) calc(100vw - 32px), (max-width: 1024px) calc(100vw - 48px), 768px"
-                      onError={weservFallback(currentArticle.imageUrl, 800, true)}
                       alt={currentArticle.title}
                       width="800"
                       height="450"
@@ -1526,7 +1466,6 @@ export default function App() {
                           src={wikimediaThumb(rel.imageUrl, 640)}
                           srcSet={`${wikimediaThumb(rel.imageUrl, 400)} 400w, ${wikimediaThumb(rel.imageUrl, 640)} 640w`}
                           sizes="(max-width: 640px) calc(100vw - 32px), 245px"
-                          onError={weservFallback(rel.imageUrl, 640, true)}
                           alt={rel.title}
                           width="640"
                           height="400"
