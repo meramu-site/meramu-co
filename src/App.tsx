@@ -594,6 +594,27 @@ export default function App() {
     }).format(new Date(timestamp));
   };
 
+  // New-format dateline (Nov 2026): bold the brand in a leading "Meramu — ".
+  // Old-format "[Kota], Meramu — " openings are left untouched.
+  const datelineNode = (text) => {
+    if (text && text.startsWith('Meramu — ')) {
+      return (<><strong>Meramu</strong> — {text.slice('Meramu — '.length)}</>);
+    }
+    return text;
+  };
+
+  // No double lead (Nov 2026): drop the first body block when it is
+  // identical to the excerpt (the excerpt already renders as the lead).
+  const dedupContent = (rawText, excerptText) => {
+    if (!rawText || !excerptText) return rawText;
+    const blocks = rawText.split('\n\n');
+    const first = (blocks[0] || '').trim();
+    if (first && first === excerptText.trim() && !first.startsWith('## ') && !first.startsWith('> ')) {
+      return blocks.slice(1).join('\n\n');
+    }
+    return rawText;
+  };
+
   // Render Formatted Content Paragraphs
   const renderArticleContent = (rawText) => {
     if (!rawText) return null;
@@ -622,7 +643,7 @@ export default function App() {
       }
       return (
         <p key={index} className="my-3 text-neutral-700 leading-relaxed text-base sm:text-lg dark:text-neutral-300">
-          {trimmed}
+          {datelineNode(trimmed)}
         </p>
       );
     });
@@ -1352,7 +1373,7 @@ export default function App() {
 
               {/* Excerpt / Lead */}
               <p className="mt-4 text-base sm:text-xl text-neutral-600 leading-relaxed font-normal dark:text-neutral-400">
-                {currentArticle.excerpt}
+                {datelineNode(currentArticle.excerpt)}
               </p>
 
               {/* Author & Share Bar */}
@@ -1425,7 +1446,7 @@ export default function App() {
 
               {/* Article Body Content */}
               <div className="mt-8 prose max-w-none">
-                {renderArticleContent(currentArticle.content)}
+                {renderArticleContent(dedupContent(currentArticle.content, currentArticle.excerpt))}
               </div>
 
               {/* Footer Tag & Quick Edit Button for Admin */}
