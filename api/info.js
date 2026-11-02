@@ -388,6 +388,8 @@ export default async function handler(req, res) {
 <meta name="description" content="${escapeHtml(description)}" />
 <link rel="canonical" href="${escapeHtml(canonical)}" />
   <link rel="alternate" type="application/rss+xml" href="https://meramu.site/feed.xml">
+  <meta name="theme-color" content="#0D1B8C">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="icon" href="/favicon.ico" />
 <meta name="robots" content="max-image-preview:large" />
 <meta property="og:title" content="${escapeHtml(title)} — Meramu" />

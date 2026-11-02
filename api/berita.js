@@ -298,6 +298,8 @@ function pageShell({ title, description, canonical, ogImage, body, status = 200,
 <meta name="description" content="${escapeHtml(description)}" />
 <link rel="canonical" href="${escapeHtml(canonical)}" />
   <link rel="alternate" type="application/rss+xml" href="https://meramu.site/feed.xml">
+  <meta name="theme-color" content="#0D1B8C">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="icon" href="/favicon.ico" />
 ${preloadImage ? `<link rel="preload" as="image" href="${escapeHtml(preloadImage)}"${preloadSrcset ? ` imagesrcset="${escapeHtml(preloadSrcset)}" imagesizes="${escapeHtml(preloadSizes)}"` : ''} fetchpriority="high" />` : ''}
 <meta name="robots" content="max-image-preview:large" />
@@ -603,12 +605,16 @@ async function renderArticlePage({ doc, id, slug, related, res }) {
     const categorySlug = CATEGORY_SLUGS[category] || '';
     const secondarySlug = CATEGORY_SLUGS[secondaryCategory] || '';
 
+    // JSON-LD image must resolve: bare /img/<base>.webp has no file; use the -1200 variant (1200px, Discover-ready).
+    const ldImage = imageUrl && imageUrl.includes('/img/') && imageUrl.endsWith('.webp')
+      ? imageUrl.replace(/\.webp$/, '-1200.webp')
+      : (imageUrl || DEFAULT_OG);
     const ld = {
       '@context': 'https://schema.org',
       '@type': 'NewsArticle',
       headline: title,
       description: excerpt || title,
-      image: imageUrl ? [imageUrl] : [DEFAULT_OG],
+      image: [ldImage],
       author: { '@type': 'Organization', name: author, url: SITE_URL },
       publisher: {
         '@type': 'Organization',

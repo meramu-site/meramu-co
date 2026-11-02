@@ -235,6 +235,8 @@ function shell({ brand, body, heroImage, heroSrcset = '', heroSizes = '', canoni
 <meta name="description" content="MERAMU — portal berita pop culture, ekonomi kreatif, musik, lifestyle, dan tech." />
 <link rel="canonical" href="${escapeHtml(canonicalUrl)}" />
   <link rel="alternate" type="application/rss+xml" href="https://meramu.site/feed.xml">
+  <meta name="theme-color" content="#0D1B8C">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="icon" href="/favicon.ico" />
 ${heroImage ? `<link rel="preload" as="image" href="${escapeHtml(heroImage)}"${heroSrcset ? ` imagesrcset="${escapeHtml(heroSrcset)}" imagesizes="${escapeHtml(heroSizes)}"` : ''} fetchpriority="high" />` : ''}
 <meta name="robots" content="max-image-preview:large" />
