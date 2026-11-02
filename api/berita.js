@@ -221,6 +221,8 @@ const IMG_DIMS = {
   'nersc-server-racks': { w: 1200, h: 675 },
   'nona-shopee-1111': { w: 1200, h: 675 },
   'perlinsos-den-istana': { w: 1040, h: 585 },
+  'riefky-handover': { w: 1200, h: 675 },
+  'nadia-omara': { w: 689, h: 388 },
   'prabowo-in-singapore': { w: 1200, h: 800 },
   'qris-bus-trans-metro-pasundan': { w: 1200, h: 675 },
   'rafael-struick-indonesia': { w: 612, h: 344 },
