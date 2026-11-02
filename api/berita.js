@@ -208,6 +208,7 @@ const IMG_DIMS = {
   'fatimah-azzahra-orasi': { w: 1170, h: 785 },
   'gbk-stadion-2007': { w: 1200, h: 675 },
   'ice-bsd-venue': { w: 1080, h: 608 },
+  'ikl-fall-2026-stage': { w: 1200, h: 675 },
   'indomilk-arena': { w: 1200, h: 675 },
   'indonesiagelap-protests-1': { w: 1200, h: 900 },
   'jakarta-international-stadium-from-toll-road': { w: 1200, h: 703 },
