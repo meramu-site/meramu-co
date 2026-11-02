@@ -79,6 +79,16 @@ function formatDate(ms) {
 
 // Mirrors the portal's renderArticleContent: blank-line separated blocks,
 // "## " becomes a subheading, "> " becomes a quote, the rest paragraphs.
+// New-format dateline (Nov 2026): articles open with "Meramu — " (no city)
+// and the brand name renders bold. Content is escaped, so bolding is
+// applied to the escaped text: only a leading "Meramu — " is touched, so
+// old-format "[Kota], Meramu — " openings render unchanged.
+function datelineBold(escaped) {
+  const prefix = 'Meramu — ';
+  if (escaped.startsWith(prefix)) return `<strong>Meramu</strong> — ${escaped.slice(prefix.length)}`;
+  return escaped;
+}
+
 function renderContent(raw) {
   if (!raw) return '';
   return raw
@@ -92,7 +102,7 @@ function renderContent(raw) {
       if (trimmed.startsWith('> ')) {
         return `<blockquote>${escapeHtml(trimmed.slice(2).trim())}</blockquote>`;
       }
-      return `<p>${escapeHtml(trimmed)}</p>`;
+      return `<p>${datelineBold(escapeHtml(trimmed))}</p>`;
     })
     .join('\n');
 }
@@ -570,6 +580,17 @@ async function renderArticlePage({ doc, id, slug, related, res }) {
     const readTime = strField(f, 'readTime');
     const imageUrl = strField(f, 'imageUrl');
     const imageCaption = strField(f, 'imageCaption');
+    // No double lead (Nov 2026): when the excerpt is identical to the first
+    // body paragraph, the template used to render both (lead + body para 1).
+    // Drop the duplicated first body block; the lead keeps showing it once.
+    let bodyContent = content;
+    if (excerpt && content) {
+      const blocks = content.split('\n\n');
+      const first = (blocks[0] || '').trim();
+      if (first && first === excerpt.trim() && !first.startsWith('## ') && !first.startsWith('> ')) {
+        bodyContent = blocks.slice(1).join('\n\n');
+      }
+    }
     // True figure dimensions (for CLS-free rendering); awaited at figure
     // build time.
     const figureDimsPromise = imageUrl ? wikimediaImageSize(imageUrl) : Promise.resolve(null);
@@ -653,8 +674,8 @@ async function renderArticlePage({ doc, id, slug, related, res }) {
   <h1>${escapeHtml(title)}</h1>
   <div class="meta">${metaBits.map((b, i) => (i === 0 ? `<b>${b}</b>` : `<span>•</span><span>${b}</span>`)).join('')}</div>
   ${figureThumb ? `<figure><img src="${escapeHtml(figureThumb)}" srcset="${escapeHtml(wikimediaThumb(imageUrl, 500))} 500w, ${escapeHtml(figureThumb)} 800w" sizes="(max-width: 808px) calc(100vw - 40px), 768px" alt="${escapeHtml(title)}"${figureAttrs} fetchpriority="high" decoding="async" />${imageCaption ? `<figcaption>${escapeHtml(imageCaption)}</figcaption>` : ''}</figure>` : ''}
-  ${excerpt ? `<p class="lead">${escapeHtml(excerpt)}</p>` : ''}
-  <article>${renderContent(content)}</article>
+  ${excerpt ? `<p class="lead">${datelineBold(escapeHtml(excerpt))}</p>` : ''}
+  <article>${renderContent(bodyContent)}</article>
   ${shareSection}
   ${related.length ? `<section class="related"><h2>Baca Juga</h2>${related.map((r) => `<a class="rel" href="/berita/${escapeHtml(r.slug || r.id)}">${r.imageUrl ? `<img src="${escapeHtml(wikimediaThumb(r.imageUrl, 320))}" alt="${escapeHtml(r.title)}" width="96" height="64" loading="lazy" decoding="async" />` : ''}<div class="rel-text"><b>${escapeHtml(r.title)}</b>${r.createdMs ? `<span>${formatDate(r.createdMs)}</span>` : ''}</div></a>`).join('')}</section>` : ''}
   <a class="back" href="/">&larr; Kembali ke Beranda</a>`;
