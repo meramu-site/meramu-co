@@ -219,6 +219,8 @@ const IMG_DIMS = {
   'lany-lyodra-jakarta': { w: 1200, h: 675 },
   'maliq-kabar-bahagia': { w: 1170, h: 659 },
   'nersc-server-racks': { w: 1200, h: 675 },
+  'nona-shopee-1111': { w: 1200, h: 675 },
+  'perlinsos-den-istana': { w: 1040, h: 585 },
   'prabowo-in-singapore': { w: 1200, h: 800 },
   'qris-bus-trans-metro-pasundan': { w: 1200, h: 675 },
   'rafael-struick-indonesia': { w: 612, h: 344 },
