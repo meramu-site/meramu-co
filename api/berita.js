@@ -217,6 +217,7 @@ const IMG_DIMS = {
   'isyana-sarasvati': { w: 1200, h: 675 },
   'gedung-kemenkeu': { w: 1200, h: 675 },
   'artbat-live': { w: 1200, h: 675 },
+  'raffi-ahmad-2020': { w: 750, h: 422 },
   'indomilk-arena': { w: 1200, h: 675 },
   'indonesiagelap-protests-1': { w: 1200, h: 900 },
   'jakarta-international-stadium-from-toll-road': { w: 1200, h: 703 },
