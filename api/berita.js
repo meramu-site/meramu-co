@@ -214,6 +214,8 @@ const IMG_DIMS = {
   'rans-carnival-crowd': { w: 1200, h: 675 },
   'timnas-u17-pakansari': { w: 1200, h: 675 },
   'tissa-biani': { w: 539, h: 303 },
+  'isyana-sarasvati': { w: 1200, h: 675 },
+  'gedung-kemenkeu': { w: 1200, h: 675 },
   'indomilk-arena': { w: 1200, h: 675 },
   'indonesiagelap-protests-1': { w: 1200, h: 900 },
   'jakarta-international-stadium-from-toll-road': { w: 1200, h: 703 },
