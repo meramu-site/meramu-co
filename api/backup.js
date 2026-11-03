@@ -80,7 +80,7 @@ export default async function handler(req, res) {
     });
 
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+  res.setHeader('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=300');
   return res.status(200).json({
     site: 'meramu.site',
     generatedAt: new Date().toISOString(),

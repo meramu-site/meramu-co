@@ -569,6 +569,6 @@ ${upcomingEvents}
 ${cards ? `<div class="grid">${cards}</div>${pager}` : `<div class="empty"><p>Belum ada berita yang cocok.</p></div>`}
 </section>`;
 
-  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+  res.setHeader('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=300');
   return res.status(200).send(shell({ brand, body, heroImage, heroSrcset, heroSizes, canonicalUrl }));
 }

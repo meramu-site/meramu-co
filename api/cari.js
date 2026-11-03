@@ -323,7 +323,7 @@ ${searchForm}
     return `<a class="card" href="/berita/${slug}">${thumb}<div><h2>${escapeHtml(title)}</h2>${excerpt ? `<p>${escapeHtml(excerpt)}</p>` : ''}<div class="meta">${escapeHtml(meta)}</div></div></a>`;
   }).join('\n');
 
-  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+  res.setHeader('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=300');
   return res.status(200).send(shell({
     title: `Hasil cari: ${q}`,
     description: `Hasil pencarian "${q}" di Meramu.`,
