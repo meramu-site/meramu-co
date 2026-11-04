@@ -875,6 +875,7 @@ export default function App() {
                   </div>
                   <nav className="divide-y divide-neutral-200/70 dark:divide-white/10">
                     <a href="/" className="block py-4 text-[17px] font-semibold text-neutral-800 dark:text-neutral-100">{t.menuHome}</a>
+                    <a href="/ruang-main/lu-anak-konser-yang-mana" className="block py-4 text-[17px] font-semibold text-neutral-800 dark:text-neutral-100">Ruang Main</a>
                     <a href="/cari" className="block py-4 text-[17px] font-semibold text-neutral-800 dark:text-neutral-100">{t.menuSearch}</a>
                     <a href="/tentang" className="block py-4 text-[17px] font-semibold text-neutral-800 dark:text-neutral-100">{t.menuAbout}</a>
                     <div>
