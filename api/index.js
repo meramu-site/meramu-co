@@ -45,7 +45,8 @@ const DEFAULT_BRAND = {
 // Jadwal Event module (Nov 2026). Same data/events.json as api/info.js
 // (no shared import: this codebase keeps each api/ file self-contained).
 // Status is derived at render time from the Asia/Jakarta date; only a
-// stored "cancelled" is authoritative. Homepage shows upcoming items only.
+// stored "cancelled" is authoritative. Homepage shows upcoming + ongoing
+// items (ongoing first); an event stays listed until its end date passes.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -90,15 +91,23 @@ function jadwalDaysUntil(ev, today) {
 function jadwalUpcomingHtml() {
   const events = loadJadwalEvents();
   const today = jadwalTodayJakarta();
-  const upcoming = events
-    .filter((e) => jadwalDeriveStatus(e, today) === 'upcoming')
-    .sort((a, b) => (a.startDate < b.startDate ? -1 : a.startDate > b.startDate ? 1 : 0))
+  const shown = events
+    .filter((e) => {
+      const st = jadwalDeriveStatus(e, today);
+      return st === 'upcoming' || st === 'ongoing';
+    })
+    .sort((a, b) => {
+      const sa = jadwalDeriveStatus(a, today);
+      const sb = jadwalDeriveStatus(b, today);
+      if (sa !== sb) return sa === 'ongoing' ? -1 : 1;
+      return a.startDate < b.startDate ? -1 : a.startDate > b.startDate ? 1 : 0;
+    })
     .slice(0, 4);
-  if (!upcoming.length) return '';
-  const rows = upcoming.map((e, i) => {
+  if (!shown.length) return '';
+  const rows = shown.map((e, i) => {
     const [y, m, d] = e.startDate.split('-').map(Number);
     const days = jadwalDaysUntil(e, today);
-    const chip = days <= 0 ? 'Hari ini' : `${days} hari lagi`;
+    const chip = jadwalDeriveStatus(e, today) === 'ongoing' ? 'Sedang berlangsung' : (days <= 0 ? 'Hari ini' : `${days} hari lagi`);
     return `<a class="up-row${i === 0 ? ' first' : ''}" href="/jadwal/${escapeHtml(e.slug)}"><div class="up-date"><b>${d}</b><span>${JADWAL_MONTHS_SHORT[(m || 1) - 1]}</span></div><div class="up-main"><div class="up-cat">${escapeHtml(e.kategori)}</div><h3>${escapeHtml(e.title)}</h3><div class="up-venue">${escapeHtml(e.venue)}, ${escapeHtml(e.kota)}</div></div><span class="up-chip">${escapeHtml(chip)}</span></a>`;
   }).join('');
   return `<section class="up-events">
@@ -315,8 +324,10 @@ ${heroImage ? `<link rel="preload" as="image" href="${escapeHtml(heroImage)}"${h
   .card-bar{margin:20px -20px -20px;padding:14px 20px;background:${accent};color:#fff;display:flex;justify-content:space-between;font-size:12px}
   .pager{margin-top:32px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
   .pager a,.pager span{display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 12px;border-radius:999px;border:1px solid #e5e5e5;font-size:13px;font-weight:700;text-decoration:none;color:#404040}
-  .pager a.current{background:${accent};color:#fff;border-color:${accent}}
+  .pager .current{background:${accent};color:#fff;border-color:${accent}}
   .pager span.disabled{color:#737373}
+  .pager span.gap{border:none;min-width:0;padding:0 4px;color:#a3a3a3}
+  @media(max-width:640px){.pager a.pg:not(.edge):not(.near){display:none}}
   .empty{background:#fff;border:1px solid #e5e5e5;border-radius:16px;padding:48px;text-align:center;color:#737373}
   .up-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
   .up-head-left{display:flex;align-items:center;gap:10px;min-width:0}
@@ -553,10 +564,32 @@ ${viral.length ? `<div class="box"><div class="box-head">Lagi Viral</div><div cl
   let pager = '';
   if (totalPages > 1) {
     const pageHref = (p) => (p === 1 ? '/' : `/?page=${p}`);
-    const nums = [];
-    for (let p = 1; p <= totalPages; p++) {
-      nums.push(p === page ? `<span class="current">${p}</span>` : `<a href="${pageHref(p)}">${p}</a>`);
-    }
+    // Pager window (same logic as src/components/Pagination.jsx, desktop 6):
+    // [Prev] 1 ... n-1 n n+1 ... last [Next]. Query logic untouched: pageHref,
+    // page parsing, GRID_PAGE_SIZE and the out-of-range 404 above are unchanged.
+    const pageWindow = (current, total, maxVisible = 6) => {
+      if (total <= maxVisible) return Array.from({ length: total }, (_, i) => i + 1);
+      let start = Math.max(2, current - 1);
+      let end = Math.min(total - 1, current + 1);
+      while (end - start + 1 < maxVisible - 2) {
+        if (start > 2) start -= 1;
+        else if (end < total - 1) end += 1;
+        else break;
+      }
+      const items = [1];
+      if (start > 2) items.push('…');
+      for (let p = start; p <= end; p += 1) items.push(p);
+      if (end < total - 1) items.push('…');
+      items.push(total);
+      return items;
+    };
+    // Mobile shows 3–5 numbers: the CSS below hides .pg links that are neither
+    // first/last (.edge) nor adjacent to the current page (.near).
+    const nums = pageWindow(page, totalPages, 6).map((p) => {
+      if (p === '…') return `<span class="gap">…</span>`;
+      const cls = ['pg', p === 1 || p === totalPages ? 'edge' : '', Math.abs(p - page) <= 1 ? 'near' : ''].filter(Boolean).join(' ');
+      return p === page ? `<span class="current ${cls}">${p}</span>` : `<a class="${cls}" href="${pageHref(p)}">${p}</a>`;
+    });
     pager = `<div class="pager">${page > 1 ? `<a href="${pageHref(page - 1)}">Sebelumnya</a>` : `<span class="disabled">Sebelumnya</span>`}${nums.join('')}${page < totalPages ? `<a href="/?page=${page + 1}">Selanjutnya</a>` : `<span class="disabled">Selanjutnya</span>`}</div>`;
   }
 
