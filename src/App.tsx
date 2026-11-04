@@ -380,6 +380,8 @@ export default function App() {
   // Rubrik section inside the menu card: collapsed by default, like a
   // dropdown row (reference: berkatpetani.com "Our Brands" row).
   const [rubrikOpen, setRubrikOpen] = useState(false);
+  // Ruang Main section inside the menu card: same dropdown pattern.
+  const [ruangMainOpen, setRuangMainOpen] = useState(false);
   // Lock background scroll while the floating menu card is open.
   useEffect(() => {
     if (!menuOpen) return;
@@ -875,7 +877,33 @@ export default function App() {
                   </div>
                   <nav className="divide-y divide-neutral-200/70 dark:divide-white/10">
                     <a href="/" className="block py-4 text-[17px] font-semibold text-neutral-800 dark:text-neutral-100">{t.menuHome}</a>
-                    <a href="/ruang-main/lu-anak-konser-yang-mana" className="block py-4 text-[17px] font-semibold text-neutral-800 dark:text-neutral-100">Ruang Main</a>
+                    <div>
+                      <button
+                        type="button"
+                        aria-expanded={ruangMainOpen}
+                        onClick={() => setRuangMainOpen((o) => !o)}
+                        className="w-full flex items-center justify-between py-4 text-[17px] font-semibold text-neutral-800 cursor-pointer dark:text-neutral-100"
+                      >
+                        <span>Ruang Main</span>
+                        <ChevronDown className={`w-5 h-5 transition-transform ${ruangMainOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                      {ruangMainOpen && (
+                        <div className="pb-3 pl-3">
+                          <a
+                            href="/ruang-main/main-sendiri"
+                            className="block py-2.5 text-[15px] font-semibold text-neutral-600 dark:text-neutral-300"
+                          >
+                            Main Sendiri
+                          </a>
+                          <a
+                            href="/ruang-main/main-bareng"
+                            className="block py-2.5 text-[15px] font-semibold text-neutral-600 dark:text-neutral-300"
+                          >
+                            Main Bareng
+                          </a>
+                        </div>
+                      )}
+                    </div>
                     <a href="/cari" className="block py-4 text-[17px] font-semibold text-neutral-800 dark:text-neutral-100">{t.menuSearch}</a>
                     <a href="/tentang" className="block py-4 text-[17px] font-semibold text-neutral-800 dark:text-neutral-100">{t.menuAbout}</a>
                     <div>
