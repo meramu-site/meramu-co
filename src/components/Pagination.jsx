@@ -2,7 +2,7 @@
 //
 // Window rule (same logic as the server-rendered pager in api/index.js):
 //   [Prev] 1 ... n-1 n n+1 ... last [Next]
-//   - At most 6 page numbers on desktop, 5 on mobile (Tailwind sm breakpoint).
+//   - At most 6 page numbers on desktop AND mobile, with ellipsis.
 //   - First and last pages are always shown; ellipsis only where pages are skipped.
 //   - Prev is disabled on page 1, Next on the last page; the active page is
 //     bold with the brand accent background.
@@ -65,7 +65,7 @@ function PageNumberButton({ page, current, onPage, accentColor }) {
 
 function PageRow({ items, current, onPage, prevLabel, nextLabel, accentColor }) {
   return (
-    <div className="flex items-center justify-center gap-2">
+    <div className="flex flex-wrap items-center justify-center gap-2">
       <PrevNextButton
         label={prevLabel}
         disabled={current === 1}
@@ -108,32 +108,17 @@ export default function Pagination({
   accentColor,
 }) {
   if (total <= 1) return null;
-  const desktopItems = getPageItems(current, total, 6);
-  const mobileItems = getPageItems(current, total, 5);
+  const items = getPageItems(current, total, 6);
   return (
     <nav aria-label="Pagination" className="mt-8">
-      {/* Desktop: up to 6 numbers. */}
-      <div className="hidden sm:block">
-        <PageRow
-          items={desktopItems}
-          current={current}
-          onPage={onPage}
-          prevLabel={prevLabel}
-          nextLabel={nextLabel}
-          accentColor={accentColor}
-        />
-      </div>
-      {/* Mobile: 3–5 numbers. */}
-      <div className="block sm:hidden">
-        <PageRow
-          items={mobileItems}
-          current={current}
-          onPage={onPage}
-          prevLabel={prevLabel}
-          nextLabel={nextLabel}
-          accentColor={accentColor}
-        />
-      </div>
+      <PageRow
+        items={items}
+        current={current}
+        onPage={onPage}
+        prevLabel={prevLabel}
+        nextLabel={nextLabel}
+        accentColor={accentColor}
+      />
     </nav>
   );
 }
