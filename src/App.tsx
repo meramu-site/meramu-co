@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
+import Pagination from './components/Pagination';
 import { initializeApp } from 'firebase/app';
 import { 
   getFirestore, 
@@ -1304,32 +1305,14 @@ export default function App() {
                   ))}
                 </div>
                 {totalGridPages > 1 && (
-                  <div className="mt-8 flex items-center justify-center gap-2">
-                    <button
-                      disabled={safeGridPage === 1}
-                      onClick={() => goToGridPage(safeGridPage - 1)}
-                      className="px-3 py-2 rounded-full border border-neutral-200 text-xs font-semibold text-neutral-700 disabled:opacity-40 dark:border-white/10 dark:text-neutral-300"
-                    >
-                      {t.prevPage}
-                    </button>
-                    {Array.from({ length: totalGridPages }, (_, i) => i + 1).map((p) => (
-                      <button
-                        key={p}
-                        onClick={() => goToGridPage(p)}
-                        style={p === safeGridPage ? { backgroundColor: brandSettings.accentColor } : undefined}
-                        className={`w-9 h-9 rounded-full text-xs font-bold ${p === safeGridPage ? 'text-white' : 'border border-neutral-200 text-neutral-700 dark:border-white/10 dark:text-neutral-300'}`}
-                      >
-                        {p}
-                      </button>
-                    ))}
-                    <button
-                      disabled={safeGridPage === totalGridPages}
-                      onClick={() => goToGridPage(safeGridPage + 1)}
-                      className="px-3 py-2 rounded-full border border-neutral-200 text-xs font-semibold text-neutral-700 disabled:opacity-40 dark:border-white/10 dark:text-neutral-300"
-                    >
-                      {t.nextPage}
-                    </button>
-                  </div>
+                  <Pagination
+                    current={safeGridPage}
+                    total={totalGridPages}
+                    onPage={goToGridPage}
+                    prevLabel={t.prevPage}
+                    nextLabel={t.nextPage}
+                    accentColor={brandSettings.accentColor}
+                  />
                 )}
                 </>
               )}
