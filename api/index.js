@@ -327,7 +327,7 @@ ${heroImage ? `<link rel="preload" as="image" href="${escapeHtml(heroImage)}"${h
   .pager .current{background:${accent};color:#fff;border-color:${accent}}
   .pager span.disabled{color:#737373}
   .pager span.gap{border:none;min-width:0;padding:0 4px;color:#a3a3a3}
-  @media(max-width:640px){.pager a.pg:not(.edge):not(.near){display:none}}
+  @media(max-width:480px){.pager a,.pager span{min-width:32px;padding:0 8px;font-size:12px}}
   .empty{background:#fff;border:1px solid #e5e5e5;border-radius:16px;padding:48px;text-align:center;color:#737373}
   .up-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
   .up-head-left{display:flex;align-items:center;gap:10px;min-width:0}
@@ -583,12 +583,11 @@ ${viral.length ? `<div class="box"><div class="box-head">Lagi Viral</div><div cl
       items.push(total);
       return items;
     };
-    // Mobile shows 3–5 numbers: the CSS below hides .pg links that are neither
-    // first/last (.edge) nor adjacent to the current page (.near).
+    // Mobile uses the same 6-number window as desktop (user 4 Nov 2026:
+    // early pages must show 1–5, not collapse to 1, 2, last).
     const nums = pageWindow(page, totalPages, 6).map((p) => {
       if (p === '…') return `<span class="gap">…</span>`;
-      const cls = ['pg', p === 1 || p === totalPages ? 'edge' : '', Math.abs(p - page) <= 1 ? 'near' : ''].filter(Boolean).join(' ');
-      return p === page ? `<span class="current ${cls}">${p}</span>` : `<a class="${cls}" href="${pageHref(p)}">${p}</a>`;
+      return p === page ? `<span class="current">${p}</span>` : `<a href="${pageHref(p)}">${p}</a>`;
     });
     pager = `<div class="pager">${page > 1 ? `<a href="${pageHref(page - 1)}">Sebelumnya</a>` : `<span class="disabled">Sebelumnya</span>`}${nums.join('')}${page < totalPages ? `<a href="/?page=${page + 1}">Selanjutnya</a>` : `<span class="disabled">Selanjutnya</span>`}</div>`;
   }
