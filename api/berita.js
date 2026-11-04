@@ -223,6 +223,7 @@ const IMG_DIMS = {
   'isyana-magnofestwo': { w: 1200, h: 675 },
   'ndarboy-bantul': { w: 850, h: 478 },
   'polri-badge': { w: 1200, h: 675 },
+  'rayban-meta-gen1': { w: 1200, h: 675 },
   'indomilk-arena': { w: 1200, h: 675 },
   'indonesiagelap-protests-1': { w: 1200, h: 900 },
   'jakarta-international-stadium-from-toll-road': { w: 1200, h: 703 },
