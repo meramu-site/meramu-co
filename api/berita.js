@@ -236,6 +236,8 @@ const IMG_DIMS = {
   'student-with-computer': { w: 1200, h: 675 },
   'tulus-java-jazz-2020': { w: 1014, h: 570 },
   'private-jet-cabin': { w: 1200, h: 675 },
+  'redmi-note14pro-hyperos': { w: 1200, h: 675 },
+  'pikachu-balloon-istanbul': { w: 1200, h: 675 },
   'indomilk-arena': { w: 1200, h: 675 },
   'indonesiagelap-protests-1': { w: 1200, h: 900 },
   'jakarta-international-stadium-from-toll-road': { w: 1200, h: 703 },
