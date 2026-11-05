@@ -229,6 +229,8 @@ const IMG_DIMS = {
   'hacker-illustration': { w: 1200, h: 675 },
   '5g-cell-tower': { w: 1200, h: 675 },
   'burgerkill-metal-frenzy-2024': { w: 1200, h: 675 },
+  'mount-arjuno-welirang': { w: 1200, h: 675 },
+  'motorola-edge70-back': { w: 1200, h: 675 },
   'indomilk-arena': { w: 1200, h: 675 },
   'indonesiagelap-protests-1': { w: 1200, h: 900 },
   'jakarta-international-stadium-from-toll-road': { w: 1200, h: 703 },
