@@ -270,6 +270,8 @@ const IMG_DIMS = {
   'three-finger-salute-flag': { w: 1200, h: 800 },
   'timnas-irfan-bachdim': { w: 428, h: 241 },
   'ye-live-in-jakarta-2026-at-gelora-bung-karno-stadium': { w: 1200, h: 900 },
+  'gesrek-festival-2026': { w: 1200, h: 675 },
+  'maliq-java-jazz-2020': { w: 1200, h: 675 },
 };
 function wikimediaImageSizeUrl(url) {
   if (!url || typeof url !== 'string') return null;
