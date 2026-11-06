@@ -272,6 +272,7 @@ const IMG_DIMS = {
   'ye-live-in-jakarta-2026-at-gelora-bung-karno-stadium': { w: 1200, h: 900 },
   'gesrek-festival-2026': { w: 1200, h: 675 },
   'maliq-java-jazz-2020': { w: 1200, h: 675 },
+  'enet-atm-familymart': { w: 1200, h: 675 },
 };
 function wikimediaImageSizeUrl(url) {
   if (!url || typeof url !== 'string') return null;
