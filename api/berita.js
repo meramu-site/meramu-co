@@ -275,6 +275,8 @@ const IMG_DIMS = {
   'enet-atm-familymart': { w: 1200, h: 675 },
   'bts-mic-drop-hong-kong-2019': { w: 1200, h: 675 },
   'redmi-note-8': { w: 1200, h: 675 },
+  'gak-ada-matinya-poster': { w: 1200, h: 675 },
+  'android-tv-box-tracer': { w: 1200, h: 675 },
 };
 function wikimediaImageSizeUrl(url) {
   if (!url || typeof url !== 'string') return null;
