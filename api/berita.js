@@ -279,6 +279,9 @@ const IMG_DIMS = {
   'android-tv-box-tracer': { w: 1200, h: 675 },
   'king-nassar-poster': { w: 1200, h: 675 },
   'jis-west-gate': { w: 1200, h: 675 },
+  'timnas-china-2025': { w: 1200, h: 675 },
+  'dewsbury-hall': { w: 1194, h: 672 },
+  'gbk-seats': { w: 1200, h: 675 },
 };
 function wikimediaImageSizeUrl(url) {
   if (!url || typeof url !== 'string') return null;
