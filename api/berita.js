@@ -270,18 +270,8 @@ const IMG_DIMS = {
   'three-finger-salute-flag': { w: 1200, h: 800 },
   'timnas-irfan-bachdim': { w: 428, h: 241 },
   'ye-live-in-jakarta-2026-at-gelora-bung-karno-stadium': { w: 1200, h: 900 },
-  'gesrek-festival-2026': { w: 1200, h: 675 },
-  'maliq-java-jazz-2020': { w: 1200, h: 675 },
-  'enet-atm-familymart': { w: 1200, h: 675 },
-  'bts-mic-drop-hong-kong-2019': { w: 1200, h: 675 },
-  'redmi-note-8': { w: 1200, h: 675 },
-  'gak-ada-matinya-poster': { w: 1200, h: 675 },
-  'android-tv-box-tracer': { w: 1200, h: 675 },
-  'king-nassar-poster': { w: 1200, h: 675 },
-  'jis-west-gate': { w: 1200, h: 675 },
-  'timnas-china-2025': { w: 1200, h: 675 },
-  'dewsbury-hall': { w: 1194, h: 672 },
-  'gbk-seats': { w: 1200, h: 675 },
+  'isyana-magnofestwo-cropped': { w: 664, h: 374 },
+  'yura-pertiwi-piano': { w: 1200, h: 675 },
 };
 function wikimediaImageSizeUrl(url) {
   if (!url || typeof url !== 'string') return null;
