@@ -277,6 +277,8 @@ const IMG_DIMS = {
   'redmi-note-8': { w: 1200, h: 675 },
   'gak-ada-matinya-poster': { w: 1200, h: 675 },
   'android-tv-box-tracer': { w: 1200, h: 675 },
+  'king-nassar-poster': { w: 1200, h: 675 },
+  'jis-west-gate': { w: 1200, h: 675 },
 };
 function wikimediaImageSizeUrl(url) {
   if (!url || typeof url !== 'string') return null;
