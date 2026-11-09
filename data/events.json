@@ -1,39 +1,11 @@
 {
   "events": [
     {
-      "description": "Playoff MPL ID Season 18 adalah babak penentuan kompetisi Mobile Legends: Bang Bang kasta tertinggi Indonesia musim ini. Enam tim terbaik dari musim reguler, Team Liquid ID, NAVI, Alter Ego Esports, ONIC, Bigetron by Vitality, dan EVOS, bertanding selama lima hari di Jatim Expo (JX International), Surabaya, untuk memperebutkan dua tiket menuju M8 World Championship. Absennya RRQ, tim dengan basis penggemar terbesar di skena ini, menjadi salah satu cerita utama playoff musim ini. Format playoff mempertemukan para juara musim reguler dengan tim-tim yang lolos lewat babak sebelumnya, sehingga setiap seri bisa mengubah peta kekuatan menuju panggung dunia. Dua tim yang bertahan hingga akhir berhak atas tiket M8 World Championship, turnamen dunia Mobile Legends: Bang Bang yang menjadi puncak kalender kompetitif tahun ini. Bagi tim-tim peserta, playoff ini juga menjadi ajang pembuktian setelah musim reguler yang panjang, di mana konsistensi selama berminggu-minggu diuji dalam seri-seri hidup-mati. Tiket pertandingan dijual mulai Rp10.000 melalui situs resmi id-mpl.com/ticket. Di lokasi yang sama pekan itu, Tunjungan Plaza 6 juga menggelar MPL Festival sebagai acara pendamping yang bisa dikunjungi gratis, terpisah dari pertandingan playoff di Jatim Expo.",
-      "endDate": "2026-11-08",
-      "harga": 10000,
-      "kategori": "Esports",
-      "kota": "Surabaya",
-      "lastCheckedAt": "2026-11-02",
-      "lineup": [
-        "Team Liquid ID",
-        "NAVI",
-        "Alter Ego Esports",
-        "ONIC",
-        "Bigetron by Vitality",
-        "EVOS"
-      ],
-      "posterCredit": "Foto panggung esports: Riot Games, via Wikimedia Commons (CC BY 3.0).",
-      "posterUrl": "https://meramu.site/img/mpl-id-s18-stage.webp",
-      "relatedArticleUrl": "https://meramu.site/berita/playoff-mpl-id-s18-dimulai-4-november-6-tim-rebutan-2-tiket-m8-dan-rrq-nggak-ada-di-sana",
-      "relatedKind": "coverage",
-      "slug": "playoff-mpl-id-s18",
-      "startDate": "2026-11-04",
-      "status": "upcoming",
-      "sumberUrl": "https://id-mpl.com/ticket",
-      "ticketUrl": "https://id-mpl.com/ticket",
-      "title": "Playoff MPL ID Season 18",
-      "venue": "Jatim Expo (JX International)",
-      "relatedArticleTitle": "Playoff MPL ID S18 Dimulai 4 November, 6 Tim Rebutan 2 Tiket M8 — dan RRQ Nggak Ada di Sana"
-    },
-    {
       "description": "Men I Trust, band indie asal Montreal, Kanada, membawa Asia Tour 2026 ke Jakarta pada 12 November 2026 pukul 19.00 WIB di Tennis Indoor Senayan, Jakarta Pusat. Promotor Plainsong Live menghadirkan trio Emma Proulx, Jessy Caron, dan Dragos Chiriac dalam konser tunggal yang menampilkan katalog dream-pop mereka, dari materi album awal hingga karya terbaru. Sebagai pembuka, Thee Marloes, band asal Jakarta yang sedang naik daun, akan tampil sebelum Men I Trust naik panggung. Tiket dijual dalam empat kategori: Tribune C Rp518.000, Festival Rp618.000, Tribune B Rp718.000, dan Tribune A Rp818.000, belum termasuk pajak dan biaya administrasi. Pembelian resmi tersedia melalui halaman Plainsong Live di plainsong.id/menitrust serta kanal Loket yang tertera di sana. Musik Men I Trust dikenal lewat atmosfer dream-pop yang lembut dan lirik yang intim, sehingga konser tunggal ini menawarkan pengalaman yang berbeda dari festival besar: satu panggung, satu band, dan penonton yang datang khusus untuk mereka. Konser ini menjadi salah satu pemberhentian Asia Tour 2026 yang paling dinanti penggemar musik indie di Indonesia.",
       "harga": 518000,
       "kategori": "Musik",
       "kota": "Jakarta",
-      "lastCheckedAt": "2026-11-02",
+      "lastCheckedAt": "2026-11-09",
       "lineup": [
         "Men I Trust",
         "Thee Marloes"
@@ -49,11 +21,11 @@
       "venue": "Tennis Indoor Senayan"
     },
     {
-      "description": "My Chemical Romance kembali ke Jakarta pada 22 November 2026 dengan konser tunggal di Jakarta International Stadium, Jakarta Utara. Band yang dipimpin Gerard Way ini membawakan katalog lagu yang membentuk satu generasi penggemar rock, dari era The Black Parade hingga materi reuni mereka. Konser stadion ini menjadi salah satu pertunjukan rock internasional terbesar di Jakarta pada akhir 2026, dengan panggung dan produksi skala stadion yang menjadi ciri tur mereka. Tiket resmi dijual melalui situs mcrjakarta.com dengan harga mulai Rp1.450.000 hingga Rp4.950.000, tergantung kategori. Calon penonton disarankan membeli hanya lewat kanal resmi tersebut untuk menghindari tiket palsu atau harga yang digelembungkan penjual ulang. Sejak kembali aktif, My Chemical Romance kembali mengisi panggung-panggung besar dunia, dan Jakarta menjadi salah satu kota yang disinggahi dalam rangkaian tur mereka. Bagi penggemar Indonesia, konser stadion ini menjadi kesempatan langka menyaksikan band yang lagu-lagunya menemani masa remaja satu generasi, dibawakan langsung dengan formasi dan energi panggung yang membuat mereka legendaris. Jakarta International Stadium, yang juga antre menggelar belasan konser besar, menjadi lokasi yang sepadan dengan skala pertunjukan ini.",
-      "harga": 1450000,
+      "description": "My Chemical Romance kembali ke Jakarta pada 22 November 2026 dengan konser tunggal di Jakarta International Stadium, Jakarta Utara. Band yang dipimpin Gerard Way ini membawakan katalog lagu yang membentuk satu generasi penggemar rock, dari era The Black Parade hingga materi reuni mereka. Konser stadion ini menjadi salah satu pertunjukan rock internasional terbesar di Jakarta pada akhir 2026, dengan panggung dan produksi skala stadion yang menjadi ciri tur mereka. Tiket resmi dijual melalui situs mcrjakarta.com dengan harga mulai Rp1.059.000 (CAT 3 Left/Right) hingga Rp3.299.000 (CAT 1 Center), plus kategori VVIP, belum termasuk pajak dan biaya platform. Sejumlah kategori tengah dilaporkan hampir habis terjual. Calon penonton disarankan membeli hanya lewat kanal resmi tersebut untuk menghindari tiket palsu atau harga yang digelembungkan penjual ulang. Sejak kembali aktif, My Chemical Romance kembali mengisi panggung-panggung besar dunia, dan Jakarta menjadi salah satu kota yang disinggahi dalam rangkaian tur mereka. Bagi penggemar Indonesia, konser stadion ini menjadi kesempatan langka menyaksikan band yang lagu-lagunya menemani masa remaja satu generasi, dibawakan langsung dengan formasi dan energi panggung yang membuat mereka legendaris. Jakarta International Stadium, yang juga antre menggelar belasan konser besar, menjadi lokasi yang sepadan dengan skala pertunjukan ini.",
+      "harga": 1059000,
       "kategori": "Musik",
       "kota": "Jakarta",
-      "lastCheckedAt": "2026-11-02",
+      "lastCheckedAt": "2026-11-09",
       "lineup": [
         "My Chemical Romance"
       ],
@@ -76,7 +48,7 @@
       "harga": 1088000,
       "kategori": "Musik",
       "kota": "Jakarta",
-      "lastCheckedAt": "2026-11-02",
+      "lastCheckedAt": "2026-11-09",
       "lineup": [
         "Slowdive",
         "Caribou",
@@ -106,7 +78,7 @@
       "harga": 910000,
       "kategori": "Musik",
       "kota": "Jakarta",
-      "lastCheckedAt": "2026-11-02",
+      "lastCheckedAt": "2026-11-09",
       "lineup": [
         "5 Seconds of Summer"
       ],
@@ -126,7 +98,7 @@
       "harga": null,
       "kategori": "Esports",
       "kota": "Tangerang",
-      "lastCheckedAt": "2026-11-02",
+      "lastCheckedAt": "2026-11-09",
       "lineup": [
         "Timnas Esports Indonesia"
       ],
@@ -148,7 +120,7 @@
       "harga": 910000,
       "kategori": "Musik",
       "kota": "Jakarta",
-      "lastCheckedAt": "2026-11-02",
+      "lastCheckedAt": "2026-11-09",
       "lineup": [
         "5 Seconds of Summer"
       ],
@@ -167,7 +139,7 @@
       "harga": 1750000,
       "kategori": "Musik",
       "kota": "Jakarta",
-      "lastCheckedAt": "2026-11-02",
+      "lastCheckedAt": "2026-11-09",
       "lineup": [
         "Guns N' Roses",
         "Ian Antono",
@@ -191,11 +163,11 @@
       "venue": "Stadion Madya Gelora Bung Karno"
     },
     {
-      "description": "Lomba Sihir menggelar konser tunggal perdana berskala besar bertajuk Konser Ujung Dunia pada 21 November 2026 di GBK Basketball Hall, Jakarta. Natasha Udu, Rayhan Noor, Enrico Octaviano, Tristan Juliano, dan Baskara Putra (Hindia) merayakan lima tahun perjalanan band dengan membawakan 20 lebih lagu dari album Selamat Datang di Ujung Dunia (2021) dan Obrolan Jam 3 Pagi (2025). Tiket dijual lewat situs resmi lombasihiryes.com dengan kategori Festival Rp450.000 dan Tribune Rp650.000, plus opsi Premium Add On Rp450.000, belum termasuk pajak dan biaya administrasi. Promotor Northstar Entertainment.",
+      "description": "Lomba Sihir menggelar konser tunggal perdana berskala besar bertajuk Konser Ujung Dunia pada 21 November 2026 di GBK Basketball Hall, Jakarta. Natasha Udu, Rayhan Noor, Enrico Octaviano, Tristan Juliano, dan Baskara Putra (Hindia) merayakan lima tahun perjalanan band dengan membawakan 20 lebih lagu dari album Selamat Datang di Ujung Dunia (2021) dan Obrolan Jam 3 Pagi (2025). Pertunjukan dimulai pukul 19.00 WIB. Tiket dijual lewat situs resmi lombasihiryes.com dengan kategori Festival Rp450.000 dan Tribune Rp650.000, plus opsi Premium Add On Rp450.000, belum termasuk pajak dan biaya administrasi. Promotor Northstar Entertainment.",
       "harga": 450000,
       "kategori": "Musik",
       "kota": "Jakarta",
-      "lastCheckedAt": "2026-11-02",
+      "lastCheckedAt": "2026-11-09",
       "lineup": [
         "Lomba Sihir"
       ],
@@ -210,12 +182,12 @@
       "venue": "GBK Basketball Hall"
     },
     {
-      "description": "Doh Kyung-soo (D.O. EXO) membawa tur solo [DAY OFF] ke Jakarta selama dua hari, 21 November 2026 pukul 19.00 WIB dan 22 November 2026 pukul 15.00 WIB, di Istora GBK Senayan. Promotor Lit Xperience menghadirkan konser solo D.O. dalam rangkaian tur 2026–2027. Tiket dijual lewat dohkyungsoojakarta2026.com dan Loket.com sebagai mitra tiket resmi, dengan harga mulai Rp1.350.000 hingga Rp3.500.000 untuk Special Day Package, belum termasuk pajak 10 persen dan platform fee 5 persen.",
+      "description": "Doh Kyung-soo (D.O. EXO) membawa tur solo [DAY OFF] ke Jakarta selama dua hari, 21 November 2026 pukul 19.00 WIB dan 22 November 2026 pukul 15.00 WIB, di Istora GBK Senayan. Promotor Lit Xperience menghadirkan konser solo D.O. dalam rangkaian tur 2026–2027. Tiket dijual lewat dohkyungsoojakarta2026.com dan Loket.com sebagai mitra tiket resmi, dengan harga mulai Rp1.350.000 hingga Rp3.500.000 untuk Special Day Package, belum termasuk pajak 10 persen dan platform fee 5 persen. Per awal November 2026, tiket kedua hari dilaporkan habis terjual.",
       "endDate": "2026-11-22",
       "harga": 1350000,
       "kategori": "Musik",
       "kota": "Jakarta",
-      "lastCheckedAt": "2026-11-02",
+      "lastCheckedAt": "2026-11-09",
       "lineup": [
         "D.O. (Doh Kyung-soo)"
       ],
@@ -230,11 +202,11 @@
       "venue": "Istora GBK Senayan"
     },
     {
-      "description": "Simple Plan merayakan 25 tahun karier lewat The Bigger Than You Think! Tour di Tennis Indoor Senayan, Jakarta, pada 27 November 2026, dengan special guest LOLO. Promotor Akselerasi Entertainment, TSP & Co., dan Midas Promotions menjual tiket lewat simpleplanindonesia.com dengan harga mulai Rp950.000 hingga Rp1.950.000, belum termasuk pajak, royalti, dan biaya admin serta platform. Sehari setelah Jakarta, Simple Plan juga tampil di Surabaya pada 28 November 2026 sebagai show terpisah.",
+      "description": "Simple Plan merayakan 25 tahun karier lewat The Bigger Than You Think! Tour di Tennis Indoor Senayan, Jakarta, pada 27 November 2026, dengan special guest LOLO. Promotor Akselerasi Entertainment, TSP & Co., dan Midas Promotions menjual tiket lewat simpleplanindonesia.com dengan harga mulai Rp950.000 hingga Rp1.950.000, belum termasuk pajak, royalti, dan biaya admin serta platform. Sehari setelah Jakarta, Simple Plan juga tampil di Surabaya pada 28 November 2026 sebagai show terpisah. Tiket pertunjukan Jakarta dilaporkan habis terjual.",
       "harga": 950000,
       "kategori": "Musik",
       "kota": "Jakarta",
-      "lastCheckedAt": "2026-11-02",
+      "lastCheckedAt": "2026-11-09",
       "lineup": [
         "Simple Plan",
         "LOLO"
@@ -254,7 +226,7 @@
       "harga": 300000,
       "kategori": "Musik",
       "kota": "Jakarta",
-      "lastCheckedAt": "2026-11-02",
+      "lastCheckedAt": "2026-11-09",
       "lineup": [
         "Boyz II Men",
         "Dewa 19",
@@ -272,17 +244,38 @@
       "venue": "Indonesia Arena"
     },
     {
-      "description": "Djakarta Warehouse Project 2026 digelar tiga hari, 11–13 Desember 2026, di JIExpo Kemayoran, Jakarta, untuk penonton 18 tahun ke atas. Promotor Ismaya Live menghadirkan fase pertama Afrojack, Alok, dan Axwell × Sebastian Ingrosso (back-to-back), dengan lineup fase kedua diumumkan 1 November 2026. Tiket 3-Day Pass dijual lewat dwpfest.com dan mitra resmi Loket serta Ticketmelon, mulai Rp1.700.000 untuk GA Early Entry 1, belum termasuk pajak dan biaya layanan. Tersedia juga 2-Day Pass dan Daily Pass.",
+      "description": "Djakarta Warehouse Project 2026 digelar tiga hari, 11–13 Desember 2026, di JIExpo Kemayoran, Jakarta, untuk penonton 18 tahun ke atas. Promotor Ismaya Live menghadirkan fase pertama Afrojack, Alok, dan Axwell × Sebastian Ingrosso (back-to-back), dengan lineup fase kedua diumumkan awal November 2026, dipimpin set back-to-back spesial ARTBAT B2B R3HAB, ditemani Agents of Time, Ely Oaks, HALŌ, Ian Asher, serta Whisnu Santika, Adnan Veron x HBRP, Angger Dimas, W.W, Josiah, dan Gil Glaze. Tiket 3-Day Pass dijual lewat dwpfest.com dan mitra resmi Loket serta Ticketmelon, mulai Rp1.700.000 untuk GA Early Entry 1, belum termasuk pajak dan biaya layanan. Tersedia juga 2-Day Pass dan Daily Pass.",
       "endDate": "2026-12-13",
       "harga": 1700000,
       "kategori": "Musik",
       "kota": "Jakarta",
-      "lastCheckedAt": "2026-11-02",
+      "lastCheckedAt": "2026-11-09",
       "lineup": [
         "Afrojack",
         "Alok",
         "Axwell",
-        "Sebastian Ingrosso"
+        "Sebastian Ingrosso",
+        "Billy Gillies",
+        "Cosmic Gate",
+        "Dimension",
+        "Dimitri Vegas",
+        "Eli & Fur",
+        "Lilly Palmer",
+        "Maddix",
+        "MaRLo",
+        "Tye Turner",
+        "ARTBAT",
+        "R3HAB",
+        "Agents of Time",
+        "Ely Oaks",
+        "HALŌ",
+        "Ian Asher",
+        "Whisnu Santika",
+        "Adnan Veron x HBRP",
+        "Angger Dimas",
+        "W.W",
+        "Josiah",
+        "Gil Glaze"
       ],
       "posterCredit": "Foto The Weeknd di DWP 2018: RTotzke, via Wikimedia Commons (CC BY-SA 4.0).",
       "posterUrl": "https://meramu.site/img/dwp-live.webp",
@@ -295,12 +288,12 @@
       "venue": "JIExpo Kemayoran"
     },
     {
-      "description": "BTS membawa WORLD TOUR 'ARIRANG' ke Stadion Utama Gelora Bung Karno, Jakarta, selama tiga malam: 26, 27, dan 29 Desember 2026. Show tambahan 29 Desember diumumkan setelah tiket dua malam pertama habis dalam sekitar satu jam. Promotor iMe Indonesia bersama Live Nation menegaskan tiket resmi hanya dijual lewat Tiket.com, maksimal empat tiket per akun per hari pertunjukan, dengan harga mulai Rp1.800.000 hingga Rp4.500.000 untuk VIP Package, belum termasuk pajak 10 persen dan biaya admin atau platform. Semua kategori seated.",
+      "description": "BTS membawa WORLD TOUR 'ARIRANG' ke Stadion Utama Gelora Bung Karno, Jakarta, selama tiga malam: 26, 27, dan 29 Desember 2026. Show tambahan 29 Desember diumumkan setelah tiket dua malam pertama habis dalam sekitar satu jam; ketiga tanggal kini dilaporkan habis terjual. Promotor iMe Indonesia bersama Live Nation menegaskan tiket resmi hanya dijual lewat Tiket.com, maksimal empat tiket per akun per hari pertunjukan, dengan harga mulai Rp1.800.000 hingga Rp4.500.000 untuk VIP Package, belum termasuk pajak 10 persen dan biaya admin atau platform. Semua kategori seated.",
       "endDate": "2026-12-29",
       "harga": 1800000,
       "kategori": "Musik",
       "kota": "Jakarta",
-      "lastCheckedAt": "2026-11-02",
+      "lastCheckedAt": "2026-11-09",
       "lineup": [
         "BTS"
       ],
