@@ -135,6 +135,27 @@
       "venue": "Indonesia Arena"
     },
     {
+      "description": "Bank Jateng Borobudur Marathon 2026 digelar Minggu, 15 November 2026, di Taman Lumbini, kawasan Candi Borobudur, Magelang, Jawa Tengah. Tiga kategori lomba tersedia: 10K, Half Marathon, dan Marathon, dengan biaya pendaftaran masing-masing Rp650.000, Rp850.000, dan Rp950.000. Pendaftaran dilakukan melalui ballot di aplikasi My Borobudur Marathon; pendaftaran ballot kemungkinan sudah tutup karena dibuka sejak 10 Juli 2026. Rute lomba mengelilingi kawasan Candi Borobudur, salah satu situs warisan dunia UNESCO, sehingga ajang ini memadukan olahraga lari dengan pemandangan candi dan pedesaan Magelang. Informasi resmi tersedia di borobudurmarathon.com.",
+      "harga": 650000,
+      "kategori": "Lifestyle",
+      "kota": "Magelang",
+      "lastCheckedAt": "2026-11-09",
+      "lineup": [
+        "10K",
+        "Half Marathon",
+        "Marathon"
+      ],
+      "posterCredit": "Foto Candi Borobudur: Jakubhal, via Wikimedia Commons (CC BY-SA 4.0).",
+      "posterUrl": "https://meramu.site/img/borobudur-temple.webp",
+      "slug": "bank-jateng-borobudur-marathon-2026",
+      "startDate": "2026-11-15",
+      "status": "upcoming",
+      "sumberUrl": "https://borobudurmarathon.com",
+      "ticketUrl": "https://borobudurmarathon.com",
+      "title": "Bank Jateng Borobudur Marathon 2026",
+      "venue": "Taman Lumbini, Candi Borobudur"
+    },
+    {
       "description": "Guns N' Roses menyapa Jakarta pada 21 November 2026 di Stadion Madya Gelora Bung Karno, Senayan, dalam rangkaian Guns N' Roses World Tour 2026. Axl Rose, Slash, dan Duff McKagan tampil bersama sembilan gitaris legendaris Indonesia sebagai pembuka, dari Ian Antono hingga Rhoma Irama. Promotor Rajawali Indonesia menjual tiket lewat TipTip dan fitur Lifestyle di aplikasi Bale by BTN; harga presale dibuka mulai Rp1.050.000, sementara general sale mulai Rp1.750.000 hingga Rp7.500.000, belum termasuk pajak dan biaya admin. Per akhir Oktober 2026, kategori yang masih tersisa adalah Festival A, B, dan C. Pertunjukan berlangsung pukul 17.00–22.00 WIB.",
       "harga": 1750000,
       "kategori": "Musik",
@@ -222,6 +243,65 @@
       "venue": "Tennis Indoor Senayan"
     },
     {
+      "description": "Syahrini kembali ke panggung lewat konser tunggal \"Aku Kembali\" pada Selasa, 1 Desember 2026, di Tennis Indoor Senayan, Jakarta. Promotor Enjoy Live Experience bersama SYR Records menyiapkan sekitar 3.000 kursi untuk konser kembalinya penyanyi yang dikenal lewat lagu-lagu pop dan citra glamornya ini. Tiket dijual melalui guehadir.id dengan harga mulai Rp500.000 hingga Rp35.000.000 untuk kategori VIP \"Kau Yang Utama\", yang dilaporkan sudah habis terjual untuk 40 kursi yang tersedia. Konser ini menjadi penampilan besar pertama Syahrini setelah sekian lama tidak menggelar konser tunggal, dan menjadi salah satu penutup tahun yang paling dibicarakan di kalangan penggemar musik pop Indonesia.",
+      "harga": 500000,
+      "kategori": "Musik",
+      "kota": "Jakarta",
+      "lastCheckedAt": "2026-11-09",
+      "lineup": [
+        "Syahrini"
+      ],
+      "posterCredit": "Foto Syahrini: Sakkareppu, via Wikimedia Commons (CC BY 2.0).",
+      "posterUrl": "https://meramu.site/img/syahrini-live.webp",
+      "slug": "syahrini-aku-kembali-live-in-concert",
+      "startDate": "2026-12-01",
+      "status": "upcoming",
+      "sumberUrl": "https://guehadir.id",
+      "ticketUrl": "https://guehadir.id",
+      "title": "Syahrini: \"Aku Kembali\" Live in Concert",
+      "venue": "Tennis Indoor Senayan"
+    },
+    {
+      "description": "BOYNEXTDOOR membawa tur dunia pertama mereka, KNOCK ON Vol.2, ke Jakarta pada Sabtu, 5 Desember 2026 pukul 19.00 WIB di ICE BSD Hall 5–6, Tangerang. Boy group asal Korea Selatan di bawah KOZ Entertainment ini tampil dalam rangkaian tur dunia yang menjadi penanda naiknya mereka ke panggung-panggung besar Asia. Promotor PK Entertainment menjual tiket lewat tiket.com dalam empat kategori: Pink Rp1.850.000, CAT 2 Rp2.350.000, CAT 1 Rp2.750.000, dan ONEDOOR VIP Rp3.400.000, belum termasuk pajak dan biaya administrasi. Informasi resmi tersedia di bndinjakarta.com.",
+      "harga": 1850000,
+      "kategori": "Musik",
+      "kota": "Tangerang",
+      "lastCheckedAt": "2026-11-09",
+      "lineup": [
+        "BOYNEXTDOOR"
+      ],
+      "posterCredit": "Foto BOYNEXTDOOR di KCON Japan 2024: tenasia, via Wikimedia Commons (CC BY 3.0).",
+      "posterUrl": "https://meramu.site/img/boynextdoor-live.webp",
+      "slug": "boynextdoor-knock-on-vol-2-jakarta",
+      "startDate": "2026-12-05",
+      "status": "upcoming",
+      "sumberUrl": "https://bndinjakarta.com",
+      "ticketUrl": "https://www.tiket.com",
+      "title": "BOYNEXTDOOR: KNOCK ON Vol.2 — Live in Jakarta",
+      "venue": "ICE BSD Hall 5-6"
+    },
+    {
+      "description": "SOUND OUUUT LOUD 2026 digelar Minggu, 6 Desember 2026 pukul 16.00–23.00 WIB di Stadion Gajayana, Malang. Festival musik ini menghadirkan Dewa 19 feat. Marcello Tahitoe (Ello) sebagai penampil utama, ditemani Pee Wee Gaskins dan Morfem, dengan penampil tambahan yang masih akan diumumkan. Tiket THIRD CALL dijual lewat Ruang Event: Tribun Pass Rp99.000, Festival Rp149.000, Premium Festival Rp279.000, dan Platinum Seating Rp999.000; tersedia juga bundling Dua Sedjoli Rp275.000 dan Rayakan Berempat Rp540.000. Acara ini khusus untuk penonton berusia 18 tahun ke atas, dan tiket wajib ditukar menjadi wristband di lokasi pada hari acara.",
+      "harga": 99000,
+      "kategori": "Musik",
+      "kota": "Malang",
+      "lastCheckedAt": "2026-11-09",
+      "lineup": [
+        "Dewa 19 feat. Marcello Tahitoe",
+        "Pee Wee Gaskins",
+        "Morfem"
+      ],
+      "posterCredit": "Foto Dewa 19: Irwandy Mazwir, via Wikimedia Commons (CC BY 2.0).",
+      "posterUrl": "https://meramu.site/img/dewa-19-live.webp",
+      "slug": "sound-ouuut-loud-2026",
+      "startDate": "2026-12-06",
+      "status": "upcoming",
+      "sumberUrl": "https://ruangevent.com/e/sound-out-loud",
+      "ticketUrl": "https://ruangevent.com/e/sound-out-loud",
+      "title": "SOUND OUUUT LOUD 2026",
+      "venue": "Stadion Gajayana Malang"
+    },
+    {
       "description": "Boyz II Men dan Dewa 19 berbagi panggung di Indonesia Arena, Jakarta, pada 9 Desember 2026 pukul 19.00 WIB, masing-masing dengan set penuh berdurasi setara. Dewa 19 tampil bersama Ari Lasso dan Virzha. Promotor Rajawali Indonesia menjual tiket lewat Loket.com dengan harga mulai Rp300.000 hingga Rp7.500.000 untuk VIP BOX, belum termasuk pajak dan biaya platform. Penjualan dibuka 26 September 2026.",
       "harga": 300000,
       "kategori": "Musik",
@@ -286,6 +366,25 @@
       "ticketUrl": "https://dwpfest.com",
       "title": "Djakarta Warehouse Project 2026",
       "venue": "JIExpo Kemayoran"
+    },
+    {
+      "description": "Dimash Qudaibergen membawa DiMENSIONS World Tour ke Indonesia pada Sabtu, 12 Desember 2026, di SICC Sentul, Bogor. Penyanyi asal Kazakhstan yang dikenal lewat jangkauan vokal luar biasa ini tampil dalam rangkaian tur dunia yang singgah di berbagai kota besar. Tiket dijual lewat Loket.com dengan harga mulai CAT 4 Rp850.000 hingga VVIP Rp8.700.000; general sale dibuka 26 Oktober 2026. Informasi resmi tersedia di DQDiMENSIONSWorldTourINA.com; konferensi pers digelar 14 Oktober 2026.",
+      "harga": 850000,
+      "kategori": "Musik",
+      "kota": "Bogor",
+      "lastCheckedAt": "2026-11-09",
+      "lineup": [
+        "Dimash Qudaibergen"
+      ],
+      "posterCredit": "Foto Dimash Qudaibergen di OVO Arena Wembley 2025: Tammy Edison, via Wikimedia Commons (CC BY-SA 4.0).",
+      "posterUrl": "https://meramu.site/img/dimash-live.webp",
+      "slug": "dimash-qudaibergen-live-in-indonesia",
+      "startDate": "2026-12-12",
+      "status": "upcoming",
+      "sumberUrl": "https://dqdimensionsworldtourina.com",
+      "ticketUrl": "https://www.loket.com",
+      "title": "Dimash Qudaibergen: LIVE IN INDONESIA",
+      "venue": "SICC Sentul"
     },
     {
       "description": "BTS membawa WORLD TOUR 'ARIRANG' ke Stadion Utama Gelora Bung Karno, Jakarta, selama tiga malam: 26, 27, dan 29 Desember 2026. Show tambahan 29 Desember diumumkan setelah tiket dua malam pertama habis dalam sekitar satu jam; ketiga tanggal kini dilaporkan habis terjual. Promotor iMe Indonesia bersama Live Nation menegaskan tiket resmi hanya dijual lewat Tiket.com, maksimal empat tiket per akun per hari pertunjukan, dengan harga mulai Rp1.800.000 hingga Rp4.500.000 untuk VIP Package, belum termasuk pajak 10 persen dan biaya admin atau platform. Semua kategori seated.",
