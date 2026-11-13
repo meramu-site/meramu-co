@@ -81,6 +81,8 @@ function assignSlugs(docs: { id: string; title: string; createdMs: number }[]): 
 export default function AdminPanel(props) {
   const {
     articles,
+    adminLoading,
+    refreshArticles,
     brandSettings,
     setBrandSettings,
     FIREBASE_READY,
@@ -267,6 +269,9 @@ export default function AdminPanel(props) {
 
       setAdminTab('articles');
       setEditingArticle(null);
+      // Fase 2: the admin list is a one-time getDocs (no live listener),
+      // so re-fetch it now that the save landed.
+      if (refreshArticles) await refreshArticles();
     } catch (error) {
       console.error('Error saving article:', error);
       showToast('Gagal menyimpan berita. Coba lagi.');
@@ -280,6 +285,7 @@ export default function AdminPanel(props) {
       await deleteDoc(docRef);
       setDeleteConfirmId(null);
       showToast('Berita berhasil dihapus.');
+      if (refreshArticles) await refreshArticles();
     } catch (error) {
       console.error('Error deleting article:', error);
       showToast('Gagal menghapus berita.');
@@ -301,6 +307,7 @@ export default function AdminPanel(props) {
         isFeatured: !article.isFeatured
       });
       showToast(`"${article.title.slice(0, 28)}..." dijadikan Headline Utama.`);
+      if (refreshArticles) await refreshArticles();
     } catch (error) {
       console.error('Error toggling featured:', error);
     }
@@ -481,6 +488,13 @@ export default function AdminPanel(props) {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-neutral-100 dark:divide-white/10 text-sm">
+                      {adminLoading && articles.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="py-10 px-5 text-center text-sm text-neutral-500 dark:text-neutral-400">
+                            Memuat daftar berita…
+                          </td>
+                        </tr>
+                      )}
                       {articles.map((article) => (
                         <tr key={article.id} className="hover:bg-neutral-50/60 dark:hover:bg-white/5 transition-colors">
                           <td className="py-4 px-5 max-w-md">

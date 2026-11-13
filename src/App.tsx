@@ -1,12 +1,17 @@
 import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
-import Pagination from './components/Pagination';
 import { initializeApp } from 'firebase/app';
-import { 
-  getFirestore, 
-  collection, 
-  doc, 
-  setDoc, 
-  onSnapshot 
+import {
+  getFirestore,
+  collection,
+  doc,
+  setDoc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
+  startAfter,
 } from 'firebase/firestore';
 import { 
   Search, 
@@ -59,6 +64,14 @@ const app = FIREBASE_READY ? initializeApp(firebaseConfig) : null;
 const db = FIREBASE_READY ? getFirestore(app) : null;
 // Firestore namespace for this site's articles & brand settings.
 const appId = 'meramu-site-app';
+
+// Fase 2 (Nov 2026): sessionStorage cache for the public home data —
+// grid batch 1 + trending + viral + brand, TTL 10 minutes. A revisit
+// inside the TTL costs 0 Firestore reads. Only batch 1 is cached; the
+// "Muat lebih banyak" batches are fetched live and are not cached.
+const HOME_CACHE_KEY = 'meramu-spa-home-v1';
+const HOME_CACHE_TTL_MS = 10 * 60 * 1000;
+const GRID_BATCH_SIZE = 12;
 
 // ==========================================
 // CONSTANTS
@@ -333,7 +346,18 @@ export default function App() {
   // App only keeps the last admin flag it reported (reader edit gating).
   const [isAdmin, setIsAdmin] = useState(false);
   const [pendingEditArticle, setPendingEditArticle] = useState(null);
-  const [articles, setArticles] = useState([]);
+  // Fase 2 (Nov 2026): no more onSnapshot on the whole collection.
+  // Public home reads only what it shows: the newest grid stream (paged
+  // 12 at a time), the flagged trending (max 4) and viral (max 5) picks,
+  // plus one brand doc read. The full list lives ONLY in the admin view.
+  const [gridBatch, setGridBatch] = useState([]);
+  const [gridCursor, setGridCursor] = useState(null); // createdAt of the last loaded grid article
+  const [gridHasMore, setGridHasMore] = useState(false);
+  const [gridLoadingMore, setGridLoadingMore] = useState(false);
+  const [trendingLoaded, setTrendingLoaded] = useState([]);
+  const [viralLoaded, setViralLoaded] = useState([]);
+  const [adminArticles, setAdminArticles] = useState([]);
+  const [adminLoading, setAdminLoading] = useState(false);
   const [brandSettings, setBrandSettings] = useState(DEFAULT_BRAND);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -399,88 +423,163 @@ export default function App() {
     }, 3500);
   };
 
-  // 2. Firestore Data Sync Effect. Reads need no auth: the Firestore rules
-  // allow public reads (the serverless pages already read unauthenticated
-  // via REST), so the anonymous reader session is gone with Effect 1.
-  // (If reads ever required auth, this effect would subscribe to nothing;
-  // that is a live-verification item for the deploy, not a code guess.)
+  // 2. Firestore Data Effect (Fase 2, Nov 2026). No live listeners: the
+  // public home fetches only what it shows, once, and the admin view
+  // fetches the full list only when it opens (see the admin effect below).
+  // Reads need no auth: the Firestore rules allow public reads (the
+  // serverless pages already read unauthenticated via REST).
   useEffect(() => {
-    // Demo mode: no demo articles — serve an empty list, no Firestore listeners.
+    // Demo mode: no demo articles — serve an empty list, no Firestore reads.
     if (!FIREBASE_READY || !db) {
-      setArticles([]);
+      setGridBatch([]);
+      setTrendingLoaded([]);
+      setViralLoaded([]);
       setIsLoading(false);
       return;
     }
 
+    // Session cache first: a revisit inside the TTL costs 0 reads.
+    let cached = null;
+    try {
+      const raw = window.sessionStorage.getItem(HOME_CACHE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && Date.now() - (parsed.savedAt || 0) < HOME_CACHE_TTL_MS) cached = parsed;
+      }
+    } catch {}
+    if (cached) {
+      setGridBatch(Array.isArray(cached.grid) ? cached.grid : []);
+      setGridCursor(typeof cached.cursor === 'number' ? cached.cursor : null);
+      setGridHasMore(Boolean(cached.hasMore));
+      setTrendingLoaded(Array.isArray(cached.trending) ? cached.trending : []);
+      setViralLoaded(Array.isArray(cached.viral) ? cached.viral : []);
+      if (cached.brand) setBrandSettings(cached.brand);
+      setIsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
     const articlesRef = collection(db, 'artifacts', appId, 'public', 'data', 'articles');
     const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'brand');
+    const byNewest = (a, b) => (b.createdAt || 0) - (a.createdAt || 0);
 
-    // Listen to Articles Collection
-    const unsubArticles = onSnapshot(
-      articlesRef,
-      async (snapshot) => {
-        if (snapshot.empty) {
-          // Empty collection: no demo content anymore — show an empty list.
-          setArticles([]);
-          setIsLoading(false);
-        } else {
-          const loaded = snapshot.docs.map((d) => ({
-            id: d.id,
-            ...d.data()
-          }));
-          // Sort in memory by newest first
-          loaded.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-          setArticles(loaded);
-          setIsLoading(false);
-        }
-      },
-      (error) => {
-        console.error('Firestore articles listener error:', error);
-        // Fallback to an empty list if Firestore fails
-        setArticles([]);
-        setIsLoading(false);
-      }
-    );
-
-    // Listen to Brand Settings Document
-    const unsubSettings = onSnapshot(
-      settingsRef,
-      (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
+    (async () => {
+      try {
+        // Grid batch 1: newest first. A bare orderBy (no where) needs no
+        // composite index. Trending/viral are single-field equality
+        // queries (no orderBy, so no composite index either), sorted here.
+        const [gridSnap, trendingSnap, viralSnap, brandSnap] = await Promise.all([
+          getDocs(query(articlesRef, orderBy('createdAt', 'desc'), limit(GRID_BATCH_SIZE))),
+          getDocs(query(articlesRef, where('isTrending', '==', true), limit(4))),
+          getDocs(query(articlesRef, where('isViral', '==', true), limit(5))),
+          getDoc(settingsRef),
+        ]);
+        if (cancelled) return;
+        const grid = gridSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const trending = trendingSnap.docs.map((d) => ({ id: d.id, ...d.data() })).sort(byNewest).slice(0, 4);
+        const viral = viralSnap.docs.map((d) => ({ id: d.id, ...d.data() })).sort(byNewest).slice(0, 5);
+        const last = grid[grid.length - 1];
+        const hasMore = gridSnap.docs.length === GRID_BATCH_SIZE;
+        setGridBatch(grid);
+        setGridCursor(last ? (last.createdAt || 0) : null);
+        setGridHasMore(hasMore);
+        setTrendingLoaded(trending);
+        setViralLoaded(viral);
+        let brand = null;
+        if (brandSnap.exists()) {
+          const data = brandSnap.data();
           // Upgrade legacy default black color to official Meramu Royal Blue (#0D1B8C)
           const resolvedColor =
             !data.accentColor || data.accentColor === '#111827'
               ? '#0D1B8C'
               : data.accentColor;
-          setBrandSettings({
-            ...DEFAULT_BRAND,
-            ...data,
-            accentColor: resolvedColor
-          });
+          brand = { ...DEFAULT_BRAND, ...data, accentColor: resolvedColor };
+          setBrandSettings(brand);
         } else {
           setDoc(settingsRef, DEFAULT_BRAND).catch((e) => console.error(e));
         }
-      },
-      (error) => {
-        console.error('Firestore settings listener error:', error);
+        setIsLoading(false);
+        // Cache batch 1 + picks + brand for the next visit inside the TTL.
+        try {
+          window.sessionStorage.setItem(HOME_CACHE_KEY, JSON.stringify({
+            savedAt: Date.now(),
+            grid,
+            trending,
+            viral,
+            brand,
+            cursor: last ? (last.createdAt || 0) : null,
+            hasMore,
+          }));
+        } catch {}
+      } catch (error) {
+        console.error('Firestore home load error:', error);
+        if (cancelled) return;
+        setGridBatch([]);
+        setTrendingLoaded([]);
+        setViralLoaded([]);
+        setIsLoading(false);
       }
-    );
+    })();
 
-    return () => {
-      unsubArticles();
-      unsubSettings();
-    };
+    return () => { cancelled = true; };
   }, []);
 
-  // Slug map for public article links (Oct 2026): every SPA link to an
-  // article uses its slug, never the Firestore id.
-  const slugMap = useMemo(() => assignSlugs(articles.map((a) => ({ id: a.id, title: a.title, createdMs: a.createdAt || 0 }))), [articles]);
-  const articleHref = (a) => `/berita/${slugMap.get(a.id) || a.id}`;
+  // Admin list (Fase 2, Nov 2026): one full getDocs, only while the admin
+  // view is open. Two admins, tiny traffic — a full read here is fine and
+  // keeps the slug dedup + the admin table exact.
+  const loadAdminArticles = async () => {
+    if (!FIREBASE_READY || !db) return;
+    setAdminLoading(true);
+    try {
+      const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'articles'));
+      const loaded = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      loaded.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      setAdminArticles(loaded);
+    } catch (error) {
+      console.error('Firestore admin load error:', error);
+    } finally {
+      setAdminLoading(false);
+    }
+  };
 
-  // Derived Data for Public View
+  // Called by AdminPanel after a successful save/delete/toggle: re-fetch
+  // the full list and drop the public home cache so the next public visit
+  // sees the change.
+  const refreshAdminArticles = async () => {
+    await loadAdminArticles();
+    try { window.sessionStorage.removeItem(HOME_CACHE_KEY); } catch {}
+  };
+
+  useEffect(() => {
+    if (activeView !== 'admin') return undefined;
+    loadAdminArticles();
+  }, [activeView]);
+
+  // All articles the SPA currently holds (grid stream + picks + admin
+  // list), deduped by id. This is what the slug map, the article reader
+  // and the related list are built from.
+  const allLoadedArticles = useMemo(() => {
+    const seen = new Map();
+    for (const a of [...gridBatch, ...trendingLoaded, ...viralLoaded, ...adminArticles]) {
+      if (a && a.id && !seen.has(a.id)) seen.set(a.id, a);
+    }
+    return [...seen.values()];
+  }, [gridBatch, trendingLoaded, viralLoaded, adminArticles]);
+
+  // Slug map for public article links (Oct 2026): every SPA link to an
+  // article uses its slug, never the Firestore id. A stored slug (written
+  // by AdminPanel since Fase 2) wins; otherwise the computed slug is used.
+  // The audit found 0 duplicate slug bases, so computing over the loaded
+  // subset gives the same slug as computing over the full collection.
+  const slugMap = useMemo(() => assignSlugs(allLoadedArticles.map((a) => ({ id: a.id, title: a.title, createdMs: a.createdAt || 0 }))), [allLoadedArticles]);
+  const articleHref = (a) => `/berita/${a.slug || slugMap.get(a.id) || a.id}`;
+
+  // Derived Data for Public View. NOTE (Fase 2): the category tab and the
+  // search box filter only the LOADED grid articles now (the full
+  // collection is no longer held in memory). The server /kategori/ and
+  // /cari pages stay complete, so this only affects the in-app filter.
   const filteredArticles = useMemo(() => {
-    return articles.filter((art) => {
+    return gridBatch.filter((art) => {
       const matchesCategory = selectedCategory === 'Semua' || art.category === selectedCategory || art.secondaryCategory === selectedCategory;
       const matchesSearch =
         !searchQuery.trim() ||
@@ -489,7 +588,7 @@ export default function App() {
         art.category?.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     });
-  }, [articles, selectedCategory, searchQuery]);
+  }, [gridBatch, selectedCategory, searchQuery]);
 
   const featuredArticle = useMemo(() => {
     const explicitFeatured = filteredArticles.find((a) => a.isFeatured);
@@ -505,32 +604,43 @@ export default function App() {
     return filteredArticles;
   }, [filteredArticles, featuredArticle, selectedCategory, searchQuery]);
 
-  // Homepage grid pagination: 6 articles per page, numbered pages.
-  const GRID_PAGE_SIZE = 6;
-  const [gridPage, setGridPage] = useState(1);
-  const totalGridPages = Math.max(1, Math.ceil(gridArticles.length / GRID_PAGE_SIZE));
-  const safeGridPage = Math.min(gridPage, totalGridPages);
-  const pagedGridArticles = gridArticles.slice(
-    (safeGridPage - 1) * GRID_PAGE_SIZE,
-    safeGridPage * GRID_PAGE_SIZE
-  );
-  const goToGridPage = (p) => {
-    setGridPage(p);
-    document.getElementById('terbaru-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Homepage grid: cursor pagination (Fase 2). The grid shows every loaded
+  // article (batch 1 = newest 12); "Muat lebih banyak" appends the next
+  // batch. The numbered pager is gone — the grid is a single stream now.
+  // The cursor is the last loaded article's createdAt (value-based
+  // startAfter; createdAt is a uniform ms integer, one article at a time,
+  // so two articles never share the value in practice).
+  const loadMoreGrid = async () => {
+    if (!FIREBASE_READY || !db || !gridHasMore || gridLoadingMore || gridCursor == null) return;
+    setGridLoadingMore(true);
+    try {
+      const articlesRef = collection(db, 'artifacts', appId, 'public', 'data', 'articles');
+      const snap = await getDocs(query(articlesRef, orderBy('createdAt', 'desc'), startAfter(gridCursor), limit(GRID_BATCH_SIZE)));
+      const more = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const last = more[more.length - 1];
+      setGridBatch((prev) => {
+        const seen = new Set(prev.map((a) => a.id));
+        return [...prev, ...more.filter((a) => !seen.has(a.id))];
+      });
+      setGridCursor(last ? (last.createdAt || 0) : null);
+      setGridHasMore(snap.docs.length === GRID_BATCH_SIZE);
+    } catch (error) {
+      console.error('Firestore grid load-more error:', error);
+    } finally {
+      setGridLoadingMore(false);
+    }
   };
-  // Back to page 1 whenever the tab or the search query changes.
-  useEffect(() => {
-    setGridPage(1);
-  }, [selectedCategory, searchQuery]);
 
+  // Pilihan Redaksi: the flagged picks (already sorted newest-first by the
+  // load effect); when nothing is flagged, fall back to the newest grid
+  // articles, exactly as before.
   const trendingArticles = useMemo(() => {
-    const trending = articles.filter((a) => a.isTrending);
-    return trending.length > 0 ? trending.slice(0, 4) : articles.slice(0, 4);
-  }, [articles]);
+    return trendingLoaded.length > 0 ? trendingLoaded.slice(0, 4) : gridBatch.slice(0, 4);
+  }, [trendingLoaded, gridBatch]);
 
   // Lagi Viral: redaksi-curated via CMS isViral flag, max 5.
   // Auto-advance: satu judul tampil, tiap 4 detik geser naik ke judul berikut, looping.
-  const viralArticles = useMemo(() => articles.filter((a) => a.isViral).slice(0, 5), [articles]);
+  const viralArticles = useMemo(() => viralLoaded.slice(0, 5), [viralLoaded]);
   const [viralIndex, setViralIndex] = useState(0);
   const [viralNoAnim, setViralNoAnim] = useState(false);
   const [viralPaused, setViralPaused] = useState(false);
@@ -551,15 +661,15 @@ export default function App() {
   }, [viralIndex, viralArticles.length]);
 
   const currentArticle = useMemo(() => {
-    return articles.find((a) => a.id === selectedArticleId) || null;
-  }, [articles, selectedArticleId]);
+    return allLoadedArticles.find((a) => a.id === selectedArticleId) || null;
+  }, [allLoadedArticles, selectedArticleId]);
 
   const relatedArticles = useMemo(() => {
     if (!currentArticle) return [];
-    return articles
+    return allLoadedArticles
       .filter((a) => a.id !== currentArticle.id && a.category === currentArticle.category)
       .slice(0, 3);
-  }, [articles, currentArticle]);
+  }, [allLoadedArticles, currentArticle]);
 
   // Navigation Handlers.
   // Public article reading lives on real separate pages (/berita/<slug>);
@@ -1287,7 +1397,7 @@ export default function App() {
               ) : (
                 <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {pagedGridArticles.map((article) => (
+                  {gridArticles.map((article) => (
                     <a
                       key={article.id}
                       href={articleHref(article)}
@@ -1333,15 +1443,16 @@ export default function App() {
                     </a>
                   ))}
                 </div>
-                {totalGridPages > 1 && (
-                  <Pagination
-                    current={safeGridPage}
-                    total={totalGridPages}
-                    onPage={goToGridPage}
-                    prevLabel={t.prevPage}
-                    nextLabel={t.nextPage}
-                    accentColor={brandSettings.accentColor}
-                  />
+                {gridHasMore && (
+                  <div className="mt-8 text-center">
+                    <button
+                      onClick={loadMoreGrid}
+                      disabled={gridLoadingMore}
+                      className="px-6 py-3 rounded-full bg-neutral-900 text-white text-sm font-bold hover:bg-neutral-800 transition-colors cursor-pointer disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white"
+                    >
+                      {gridLoadingMore ? 'Memuat…' : 'Muat lebih banyak'}
+                    </button>
+                  </div>
                 )}
                 </>
               )}
@@ -1523,7 +1634,9 @@ export default function App() {
           /* ========================================== */
           <Suspense fallback={<div className="max-w-md mx-auto bg-white rounded-2xl border border-neutral-200/80 p-6 text-center text-sm text-neutral-500 dark:bg-neutral-900 dark:border-white/10">Memuat Dapur Redaksi…</div>}>
             <AdminPanel
-              articles={articles}
+              articles={adminArticles}
+              adminLoading={adminLoading}
+              refreshArticles={refreshAdminArticles}
               brandSettings={brandSettings}
               setBrandSettings={setBrandSettings}
               FIREBASE_READY={FIREBASE_READY}
