@@ -1,26 +1,6 @@
 {
   "events": [
     {
-      "description": "Men I Trust, band indie asal Montreal, Kanada, membawa Asia Tour 2026 ke Jakarta pada 12 November 2026 pukul 19.00 WIB di Tennis Indoor Senayan, Jakarta Pusat. Promotor Plainsong Live menghadirkan trio Emma Proulx, Jessy Caron, dan Dragos Chiriac dalam konser tunggal yang menampilkan katalog dream-pop mereka, dari materi album awal hingga karya terbaru. Sebagai pembuka, Thee Marloes, band asal Jakarta yang sedang naik daun, akan tampil sebelum Men I Trust naik panggung. Tiket dijual dalam empat kategori: Tribune C Rp518.000, Festival Rp618.000, Tribune B Rp718.000, dan Tribune A Rp818.000, belum termasuk pajak dan biaya administrasi. Pembelian resmi tersedia melalui halaman Plainsong Live di plainsong.id/menitrust serta kanal Loket yang tertera di sana. Musik Men I Trust dikenal lewat atmosfer dream-pop yang lembut dan lirik yang intim, sehingga konser tunggal ini menawarkan pengalaman yang berbeda dari festival besar: satu panggung, satu band, dan penonton yang datang khusus untuk mereka. Konser ini menjadi salah satu pemberhentian Asia Tour 2026 yang paling dinanti penggemar musik indie di Indonesia.",
-      "harga": 518000,
-      "kategori": "Musik",
-      "kota": "Jakarta",
-      "lastCheckedAt": "2026-11-09",
-      "lineup": [
-        "Men I Trust",
-        "Thee Marloes"
-      ],
-      "posterCredit": "Foto Men I Trust: Makeworldpedia, via Wikimedia Commons (CC BY-SA 4.0).",
-      "posterUrl": "https://meramu.site/img/men-i-trust-live.webp",
-      "slug": "men-i-trust-asia-tour-2026-live-in-jakarta",
-      "startDate": "2026-11-12",
-      "status": "upcoming",
-      "sumberUrl": "https://www.plainsong.id/menitrust",
-      "ticketUrl": "https://www.plainsong.id/menitrust",
-      "title": "Men I Trust: Asia Tour 2026 — Live in Jakarta",
-      "venue": "Tennis Indoor Senayan"
-    },
-    {
       "description": "My Chemical Romance kembali ke Jakarta pada 22 November 2026 dengan konser tunggal di Jakarta International Stadium, Jakarta Utara. Band yang dipimpin Gerard Way ini membawakan katalog lagu yang membentuk satu generasi penggemar rock, dari era The Black Parade hingga materi reuni mereka. Konser stadion ini menjadi salah satu pertunjukan rock internasional terbesar di Jakarta pada akhir 2026, dengan panggung dan produksi skala stadion yang menjadi ciri tur mereka. Tiket resmi dijual melalui situs mcrjakarta.com dengan harga mulai Rp1.059.000 (CAT 3 Left/Right) hingga Rp3.299.000 (CAT 1 Center), plus kategori VVIP, belum termasuk pajak dan biaya platform. Sejumlah kategori tengah dilaporkan hampir habis terjual. Calon penonton disarankan membeli hanya lewat kanal resmi tersebut untuk menghindari tiket palsu atau harga yang digelembungkan penjual ulang. Sejak kembali aktif, My Chemical Romance kembali mengisi panggung-panggung besar dunia, dan Jakarta menjadi salah satu kota yang disinggahi dalam rangkaian tur mereka. Bagi penggemar Indonesia, konser stadion ini menjadi kesempatan langka menyaksikan band yang lagu-lagunya menemani masa remaja satu generasi, dibawakan langsung dengan formasi dan energi panggung yang membuat mereka legendaris. Jakarta International Stadium, yang juga antre menggelar belasan konser besar, menjadi lokasi yang sepadan dengan skala pertunjukan ini.",
       "harga": 1059000,
       "kategori": "Musik",
@@ -405,6 +385,27 @@
       "ticketUrl": "https://www.tiket.com",
       "title": "BTS WORLD TOUR 'ARIRANG' IN JAKARTA",
       "venue": "Stadion Utama Gelora Bung Karno"
+    },
+    {
+      "description": "Susu Mbok Darmi merayakan ulang tahun ke-13 lewat Puncak Darmi Festival 2026 pada Minggu, 20 Desember 2026, pukul 10.00–22.00 WIB di Pesona Square, Depok. Tiga rangkaian acara disiapkan: Darmi Food Festival dengan berbagai makanan berbahan susu, Traditional Dance Competition sebagai ajang unjuk kreativitas tarian tradisional Indonesia, dan penampilan musik spesial dari Sayhivi, NPD, Dfratts, dan Cody. Masuknya gratis.",
+      "harga": "gratis",
+      "kategori": "Lifestyle",
+      "kota": "Depok",
+      "lastCheckedAt": "2026-11-13",
+      "lineup": [
+        "Sayhivi",
+        "NPD",
+        "Dfratts",
+        "Cody"
+      ],
+      "posterCredit": "Poster resmi Puncak Darmi Festival 2026 (Susu Mbok Darmi).",
+      "posterUrl": "https://meramu.site/img/darmi-festival-2026.webp",
+      "slug": "puncak-darmi-festival-2026",
+      "startDate": "2026-12-20",
+      "status": "upcoming",
+      "sumberUrl": "https://docs.google.com/document/d/1okZczuNeMBFfbxLL_gvzIxqgYpsbZz7iBjktKOD_Y7U/edit",
+      "title": "Puncak Darmi Festival 2026",
+      "venue": "Pesona Square"
     }
   ]
 }
