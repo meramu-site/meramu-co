@@ -310,26 +310,27 @@ export default async function handler(req, res) {
     }));
   }
 
-  // Fase 2 (Nov 2026): filtered runQuery first (OR over category /
-  // secondaryCategory, newest first) so rubrik pages see articles the
-  // pageSize=100 list window drops. The OR + orderBy needs composite
-  // indexes; when the query fails, fall back to the list fetch + client
-  // filter, exactly as before.
+  // Fase 2 (Nov 2026): two single-field queries (no orderBy, so no
+  // composite index is needed), merged + sorted in memory. The OR +
+  // orderBy form needs composite indexes that do not exist yet, so it
+  // always fell back to the list scan.
   let docs = null;
   try {
-    docs = await runFirestoreQuery(apiKey, {
+    const byCategory = await runFirestoreQuery(apiKey, {
       from: [{ collectionId: 'articles' }],
-      where: {
-        compositeFilter: {
-          op: 'OR',
-          filters: [
-            { fieldFilter: { field: { fieldPath: 'category' }, op: 'EQUAL', value: { stringValue: category } } },
-            { fieldFilter: { field: { fieldPath: 'secondaryCategory' }, op: 'EQUAL', value: { stringValue: category } } },
-          ],
-        },
-      },
-      orderBy: [{ field: { fieldPath: 'createdAt' }, direction: 'DESCENDING' }],
+      where: { fieldFilter: { field: { fieldPath: 'category' }, op: 'EQUAL', value: { stringValue: category } } },
+      limit: 50,
     });
+    const bySecondary = await runFirestoreQuery(apiKey, {
+      from: [{ collectionId: 'articles' }],
+      where: { fieldFilter: { field: { fieldPath: 'secondaryCategory' }, op: 'EQUAL', value: { stringValue: category } } },
+      limit: 50,
+    });
+    const seen = new Map();
+    for (const d of [...byCategory, ...bySecondary]) {
+      if (!seen.has(d.id)) seen.set(d.id, d);
+    }
+    docs = [...seen.values()];
   } catch {
     docs = null;
   }

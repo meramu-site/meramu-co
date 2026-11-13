@@ -246,12 +246,14 @@ async function relatedFor(hit, apiKey) {
   const seen = new Set([hit.id]);
   const picked = [];
   try {
+    // No orderBy here: category + orderBy needs a composite index that
+    // does not exist yet. Fetch the category's docs and sort in memory.
     const docs = await runFirestoreQuery(apiKey, {
       from: [{ collectionId: 'articles' }],
       where: { fieldFilter: { field: { fieldPath: 'category' }, op: 'EQUAL', value: { stringValue: hit.category } } },
-      orderBy: [{ field: { fieldPath: 'createdAt' }, direction: 'DESCENDING' }],
-      limit: 4,
+      limit: 20,
     });
+    docs.sort((a, b) => msField(b.fields, 'createdAt') - msField(a.fields, 'createdAt'));
     for (const d of docs.map(toListDoc)) {
       if (seen.has(d.id)) continue;
       seen.add(d.id);
