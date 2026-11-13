@@ -55,6 +55,29 @@ const UNSPLASH_PRESETS = [
   { label: 'Komedi / Mic', url: 'https://images.unsplash.com/photo-1585699324551-f6c309eedeca?auto=format&fit=crop&w=1200&q=80' }
 ];
 
+// Article slugs (Fase 2, Nov 2026). Logic MUST stay identical to
+// src/App.tsx and api/berita.js. The admin is the ONLY writer of the
+// `slug` field: computed at create, preserved on edit, computed on first
+// edit when a legacy doc has none.
+function slugifyTitle(title: string): string {
+  const s = String(title || '').toLowerCase().replace(/[''']/g, '').replace(/[–—]/g, '-').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return s || 'artikel';
+}
+function assignSlugs(docs: { id: string; title: string; createdMs: number }[]): Map<string, string> {
+  const groups = new Map<string, { id: string; title: string; createdMs: number }[]>();
+  for (const d of docs) {
+    const base = slugifyTitle(d.title);
+    if (!groups.has(base)) groups.set(base, []);
+    groups.get(base)!.push(d);
+  }
+  const out = new Map<string, string>();
+  for (const [base, list] of groups) {
+    list.sort((a, b) => (a.createdMs - b.createdMs) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    list.forEach((d, i) => out.set(d.id, i === 0 ? base : `${base}-${i + 1}`));
+  }
+  return out;
+}
+
 export default function AdminPanel(props) {
   const {
     articles,
@@ -200,8 +223,22 @@ export default function AdminPanel(props) {
       // Calculate estimated read time automatically if needed
       const wordCount = formData.content.trim().split(/\s+/).length;
       const calcMinutes = Math.max(2, Math.ceil(wordCount / 160));
+      // Fase 2 slug: stored on the doc so the server can look it up with a
+      // filtered query. Create -> compute (dedup vs all articles; the new
+      // one sorts last as the newest). Edit -> preserve the stored slug;
+      // legacy docs without one get it computed on first edit.
+      const createdMs = editingArticle ? (editingArticle.createdAt || 0) : Date.now();
+      let slug = editingArticle?.slug || '';
+      if (!slug) {
+        const docsForSlugs = articles
+          .filter((a) => a.id !== editingArticle?.id)
+          .map((a) => ({ id: a.id, title: a.title, createdMs: a.createdAt || 0 }));
+        docsForSlugs.push({ id: editingArticle ? editingArticle.id : '__new__', title: formData.title, createdMs });
+        slug = assignSlugs(docsForSlugs).get(editingArticle ? editingArticle.id : '__new__') || slugifyTitle(formData.title);
+      }
       const payload = {
         ...formData,
+        slug,
         readTime: `${calcMinutes} Menit Baca`,
         updatedAt: Date.now()
       };
@@ -223,7 +260,7 @@ export default function AdminPanel(props) {
         const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'articles');
         await addDoc(colRef, {
           ...payload,
-          createdAt: Date.now()
+          createdAt: createdMs
         });
         showToast('Berita baru berhasil diterbitkan!');
       }
