@@ -1,9 +1,10 @@
 // Vercel Serverless Function: RSS 2.0 feed for meramu.site.
 // /feed.xml is rewritten (vercel.json) to /api/feed.
 // Reads live from the same public Firestore collection the portal CMS
-// writes to. Latest 20 articles, newest first.
-// NOTE: fetches up to 100 articles per call; add pagination if the
-// portal ever grows past 100 published articles.
+// writes to. Latest 20 articles, newest first. Since Fase 2 (Nov 2026)
+// the 20 come from a filtered runQuery (orderBy createdAt desc, limit 20)
+// so the feed sees articles the pageSize=100 list window drops; the list
+// fetch remains as the fallback when the query fails.
 
 const PROJECT_ID = 'meramu-site';
 const APP_ID = 'meramu-site-app';
@@ -68,30 +69,62 @@ function assignSlugs(docs) {
   return out;
 }
 
+// Fase 2 (Nov 2026): filtered Firestore queries via the REST runQuery
+// endpoint (same helper as api/berita.js; no shared import by design).
+// Returns [{ id, fields }] for each matching document. Fails fast (5s);
+// callers fall back to the list fetch.
+async function runFirestoreQuery(apiKey, structuredQuery) {
+  const parent = `artifacts/${APP_ID}/public/data`;
+  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${parent}:runQuery?key=${apiKey}`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ structuredQuery }),
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!r.ok) throw new Error(`Firestore runQuery ${r.status}`);
+  const arr = await r.json();
+  return (Array.isArray(arr) ? arr : [])
+    .map((e) => e.document)
+    .filter(Boolean)
+    .map((d) => ({ id: String(d.name || '').split('/').pop(), fields: d.fields || {} }));
+}
+
 export default async function handler(req, res) {
   let docs = [];
   const apiKey = process.env.VITE_FIREBASE_API_KEY;
   if (apiKey) {
+    // Fase 2 (Nov 2026): newest 20 via a filtered runQuery (bare orderBy
+    // needs no composite index). Falls back to the list fetch on error.
     try {
-      const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/artifacts/${APP_ID}/public/data/articles?pageSize=100&key=${apiKey}`;
-      const r = await fetch(url);
-      if (r.ok) {
-        const data = await r.json();
-        docs = (data.documents || []).map((d) => {
-          const parts = (d.name || '').split('/');
-          return { id: parts[parts.length - 1], fields: d.fields || {} };
-        });
-      }
+      docs = await runFirestoreQuery(apiKey, {
+        from: [{ collectionId: 'articles' }],
+        orderBy: [{ field: { fieldPath: 'createdAt' }, direction: 'DESCENDING' }],
+        limit: 20,
+      });
     } catch {
       docs = [];
     }
+    if (!docs.length) {
+      try {
+        const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/artifacts/${APP_ID}/public/data/articles?pageSize=100&key=${apiKey}`;
+        const r = await fetch(url);
+        if (r.ok) {
+          const data = await r.json();
+          docs = (data.documents || []).map((d) => {
+            const parts = (d.name || '').split('/');
+            return { id: parts[parts.length - 1], fields: d.fields || {} };
+          });
+        }
+      } catch {
+        docs = [];
+      }
+    }
   }
 
-  // Item links + guids use article slugs (Oct 2026). Note: guids change
-  // from the old ID URLs to slug URLs once; feed readers may show the 20
-  // latest items as new a single time, and the old guid URLs 301-redirect
-  // to the new ones anyway.
-  const slugMap = assignSlugs(docs.map((d) => ({ id: d.id, title: strField(d.fields, 'title'), createdMs: msField(d.fields, 'createdAt') })));
+  // Item links + guids use article slugs. Stored slug wins (Fase 2);
+  // otherwise the computed slug (no duplicate title bases in the
+  // collection, verified Nov 2026).
   const items = docs
     .sort((a, b) => msField(b.fields, 'createdAt') - msField(a.fields, 'createdAt'))
     .slice(0, 20)
@@ -103,7 +136,8 @@ export default async function handler(req, res) {
       const author = strField(f, 'author') || 'Redaksi Meramu';
       const ms = msField(f, 'createdAt');
       const pubDate = ms ? new Date(ms).toUTCString() : '';
-      const link = `${SITE_URL}/berita/${slugMap.get(d.id) || d.id}`;
+      const slug = strField(f, 'slug') || (strField(f, 'title') ? slugifyTitle(title) : d.id);
+      const link = `${SITE_URL}/berita/${slug}`;
       return `    <item>\n      <title>${escapeXml(title)}</title>\n      <link>${escapeXml(link)}</link>\n      <guid isPermaLink="true">${escapeXml(link)}</guid>\n${excerpt ? `      <description>${escapeXml(excerpt)}</description>\n` : ''}${category ? `      <category>${escapeXml(category)}</category>\n` : ''}      <author>${escapeXml(author)}</author>\n${pubDate ? `      <pubDate>${pubDate}</pubDate>\n` : ''}    </item>`;
     })
     .join('\n');

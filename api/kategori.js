@@ -1,8 +1,10 @@
 // Vercel Serverless Function: every category is its own real page.
 // /kategori/<slug> is rewritten (vercel.json) to /api/kategori?slug=<slug>.
 // Lists live from the same public Firestore collection the portal CMS
-// writes to. NOTE: fetches up to 100 articles per call; add pagination
-// if the portal ever grows past 100 published articles.
+// writes to. Since Fase 2 (Nov 2026) the rubrik list comes from a filtered
+// runQuery (category OR secondaryCategory, newest first) so rubrik pages
+// see articles the pageSize=100 list window drops; the list fetch remains
+// as the fallback when the query fails (e.g. missing composite index).
 
 const PROJECT_ID = 'meramu-site';
 const APP_ID = 'meramu-site-app';
@@ -118,6 +120,27 @@ function assignSlugs(docs) {
     list.forEach((d, i) => out.set(d.id, i === 0 ? base : `${base}-${i + 1}`));
   }
   return out;
+}
+
+// Fase 2 (Nov 2026): filtered Firestore queries via the REST runQuery
+// endpoint (same helper as api/berita.js; no shared import by design).
+// Returns [{ id, fields }] for each matching document. Fails fast (5s);
+// callers fall back to the list fetch.
+async function runFirestoreQuery(apiKey, structuredQuery) {
+  const parent = `artifacts/${APP_ID}/public/data`;
+  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${parent}:runQuery?key=${apiKey}`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ structuredQuery }),
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!r.ok) throw new Error(`Firestore runQuery ${r.status}`);
+  const arr = await r.json();
+  return (Array.isArray(arr) ? arr : [])
+    .map((e) => e.document)
+    .filter(Boolean)
+    .map((d) => ({ id: String(d.name || '').split('/').pop(), fields: d.fields || {} }));
 }
 
 
@@ -287,31 +310,56 @@ export default async function handler(req, res) {
     }));
   }
 
-  let docs = [];
+  // Fase 2 (Nov 2026): filtered runQuery first (OR over category /
+  // secondaryCategory, newest first) so rubrik pages see articles the
+  // pageSize=100 list window drops. The OR + orderBy needs composite
+  // indexes; when the query fails, fall back to the list fetch + client
+  // filter, exactly as before.
+  let docs = null;
   try {
-    const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/artifacts/${APP_ID}/public/data/articles?pageSize=100&key=${apiKey}`;
-    const r = await fetch(url);
-    if (!r.ok) throw new Error(`Firestore ${r.status}`);
-    const data = await r.json();
-    docs = (data.documents || []).map((d) => {
-      const parts = (d.name || '').split('/');
-      return { id: parts[parts.length - 1], fields: d.fields || {} };
+    docs = await runFirestoreQuery(apiKey, {
+      from: [{ collectionId: 'articles' }],
+      where: {
+        compositeFilter: {
+          op: 'OR',
+          filters: [
+            { fieldFilter: { field: { fieldPath: 'category' }, op: 'EQUAL', value: { stringValue: category } } },
+            { fieldFilter: { field: { fieldPath: 'secondaryCategory' }, op: 'EQUAL', value: { stringValue: category } } },
+          ],
+        },
+      },
+      orderBy: [{ field: { fieldPath: 'createdAt' }, direction: 'DESCENDING' }],
     });
   } catch {
-    return res.status(500).send(shell({
-      title: 'Rubrik belum bisa dibuka',
-      description: 'Terjadi kendala saat mengambil daftar berita.',
-      canonical: `${SITE_URL}/kategori/${slug}`,
-      body: `<h1>Rubrik belum bisa dibuka</h1><p class="count">Terjadi kendala saat mengambil daftar berita. Coba lagi nanti.</p><a class="back" href="/">&larr; Kembali ke Beranda</a>`,
-    }));
+    docs = null;
+  }
+  if (!docs) {
+    try {
+      const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/artifacts/${APP_ID}/public/data/articles?pageSize=100&key=${apiKey}`;
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(`Firestore ${r.status}`);
+      const data = await r.json();
+      docs = (data.documents || []).map((d) => {
+        const parts = (d.name || '').split('/');
+        return { id: parts[parts.length - 1], fields: d.fields || {} };
+      });
+    } catch {
+      return res.status(500).send(shell({
+        title: 'Rubrik belum bisa dibuka',
+        description: 'Terjadi kendala saat mengambil daftar berita.',
+        canonical: `${SITE_URL}/kategori/${slug}`,
+        body: `<h1>Rubrik belum bisa dibuka</h1><p class="count">Terjadi kendala saat mengambil daftar berita. Coba lagi nanti.</p><a class="back" href="/">&larr; Kembali ke Beranda</a>`,
+      }));
+    }
   }
 
   const items = docs
     .filter((d) => strField(d.fields, 'category') === category || strField(d.fields, 'secondaryCategory') === category)
     .sort((a, b) => msField(b.fields, 'createdAt') - msField(a.fields, 'createdAt'));
-  // Card links use article slugs (Oct 2026); the list fetch already has
-  // every title + createdAt needed for the deterministic assignment.
-  const slugMap = assignSlugs(docs.map((d) => ({ id: d.id, title: strField(d.fields, 'title'), createdMs: msField(d.fields, 'createdAt') })));
+  // Card links use article slugs. Stored slug wins (Fase 2); otherwise the
+  // computed slug — there are no duplicate title bases in the collection
+  // (verified Nov 2026), so slugifyTitle(title) equals the assigned slug
+  // for old articles.
 
   const cards = items.map((d) => {
     const f = d.fields;
@@ -325,7 +373,7 @@ export default async function handler(req, res) {
     const thumb = imageUrl
       ? `<img src="${escapeHtml(wikimediaThumb(imageUrl, 320))}" alt="${escapeHtml(title)}" width="96" height="96" loading="lazy" decoding="async" />`
       : `<div class="ph">M</div>`;
-    const slug = slugMap.get(d.id) || d.id;
+    const slug = strField(f, 'slug') || (strField(f, 'title') ? slugifyTitle(title) : d.id);
     return `<a class="card" href="/berita/${slug}">${thumb}<div><h2>${escapeHtml(title)}</h2>${excerpt ? `<p>${escapeHtml(excerpt)}</p>` : ''}<div class="meta">${escapeHtml(meta)}</div></div></a>`;
   }).join('\n');
 

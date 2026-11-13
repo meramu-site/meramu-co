@@ -4,8 +4,11 @@
 // so links shared before the slug migration keep working.
 // The article is read live from the same public Firestore collection the
 // portal CMS writes to, so a newly published article gets its own page
-// immediately, with no site rebuild. No slug is ever written to Firestore:
-// resolution is purely code (list fetch + slugify + collision rule).
+// immediately, with no site rebuild. Since Fase 2 (Nov 2026) new articles
+// carry a stored `slug` field (AdminPanel computes it at create) and are
+// looked up with a filtered runQuery first; old articles without a stored
+// slug are still resolved by the list scan + slugify + collision rule
+// (lazy migration, kept permanently as the safety net).
 
 const PROJECT_ID = 'meramu-site';
 const APP_ID = 'meramu-site-app';
@@ -174,6 +177,114 @@ function assignSlugs(docs) {
     list.forEach((d, i) => out.set(d.id, i === 0 ? base : `${base}-${i + 1}`));
   }
   return out;
+}
+
+// Fase 2 (Nov 2026): filtered Firestore queries via the REST runQuery
+// endpoint. Articles live in the subcollection
+// artifacts/<APP_ID>/public/data/articles, so the runQuery parent is the
+// `data` document. Returns [{ id, fields }] for each matching document.
+// A single-field equality (slug == X) or a bare orderBy needs no composite
+// index; where(category == X) + orderBy(createdAt) does — callers must
+// catch that failure and fall back (see relatedFor).
+async function runFirestoreQuery(apiKey, structuredQuery) {
+  const parent = `artifacts/${APP_ID}/public/data`;
+  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${parent}:runQuery?key=${apiKey}`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ structuredQuery }),
+    // Fail fast (5s) instead of hanging: callers fall back to the list
+    // scan, so a slow query degrades to today's behavior, never a timeout.
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!r.ok) throw new Error(`Firestore runQuery ${r.status}`);
+  const arr = await r.json();
+  return (Array.isArray(arr) ? arr : [])
+    .map((e) => e.document)
+    .filter(Boolean)
+    .map((d) => ({ id: String(d.name || '').split('/').pop(), fields: d.fields || {} }));
+}
+
+// Map a runQuery document to the list-doc shape used across this file.
+function toListDoc(d) {
+  const ff = d.fields || {};
+  return {
+    id: d.id,
+    fields: ff,
+    title: strField(ff, 'title'),
+    category: strField(ff, 'category'),
+    imageUrl: strField(ff, 'imageUrl'),
+    createdMs: msField(ff, 'createdAt'),
+  };
+}
+
+// Shared list fetch (pageSize=100, same mapping as the pre-Fase-2 code).
+// Used by the list-scan fallback and by the related-articles fallback.
+async function fetchArticleList(apiKey) {
+  const listUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/artifacts/${APP_ID}/public/data/articles?pageSize=100&key=${apiKey}`;
+  const lr = await fetch(listUrl);
+  if (!lr.ok) throw new Error(`Firestore list ${lr.status}`);
+  const lj = await lr.json();
+  return (lj.documents || []).map((d) => toListDoc({ id: String(d.name || '').split('/').pop(), fields: d.fields || {} })).filter((a) => a.id && a.title);
+}
+
+// Related ("Baca Juga") from a list: same-category first (newest first),
+// backfilled with the newest other articles, max 3. Identical to the
+// pre-Fase-2 computation.
+function relatedFromList(listDocs, hit, slugMap) {
+  const others = listDocs.filter((a) => a.id !== hit.id);
+  const same = others.filter((a) => a.category === hit.category).sort((a, b) => b.createdMs - a.createdMs);
+  const rest = others.filter((a) => a.category !== hit.category).sort((a, b) => b.createdMs - a.createdMs);
+  return [...same, ...rest].slice(0, 3).map((r) => ({ ...r, slug: slugMap.get(r.id) }));
+}
+
+// Related ("Baca Juga") for a slug-hit article: same-category first via a
+// filtered runQuery, backfilled from the newest articles overall. If the
+// category query fails (e.g. the composite index does not exist yet), fall
+// back to the list-scan computation so the block never breaks the page.
+async function relatedFor(hit, apiKey) {
+  const seen = new Set([hit.id]);
+  const picked = [];
+  try {
+    const docs = await runFirestoreQuery(apiKey, {
+      from: [{ collectionId: 'articles' }],
+      where: { fieldFilter: { field: { fieldPath: 'category' }, op: 'EQUAL', value: { stringValue: hit.category } } },
+      orderBy: [{ field: { fieldPath: 'createdAt' }, direction: 'DESCENDING' }],
+      limit: 4,
+    });
+    for (const d of docs.map(toListDoc)) {
+      if (seen.has(d.id)) continue;
+      seen.add(d.id);
+      picked.push({ ...d, slug: strField(d.fields, 'slug') || d.id });
+      if (picked.length >= 3) break;
+    }
+  } catch {
+    try {
+      const listDocs = await fetchArticleList(apiKey);
+      const slugMap = assignSlugs(listDocs);
+      return relatedFromList(listDocs, hit, slugMap);
+    } catch {
+      return [];
+    }
+  }
+  if (picked.length < 3) {
+    try {
+      const docs = await runFirestoreQuery(apiKey, {
+        from: [{ collectionId: 'articles' }],
+        orderBy: [{ field: { fieldPath: 'createdAt' }, direction: 'DESCENDING' }],
+        limit: 4,
+      });
+      for (const d of docs.map(toListDoc)) {
+        if (seen.has(d.id)) continue;
+        seen.add(d.id);
+        picked.push({ ...d, slug: strField(d.fields, 'slug') || d.id });
+        if (picked.length >= 3) break;
+      }
+    } catch {
+      // Leave the block short rather than breaking the page.
+    }
+  }
+  return picked;
 }
 
 // True dimensions of a Wikimedia image, for CLS-free figure rendering
@@ -534,28 +645,68 @@ export default async function handler(req, res) {
     return res.status(500).send(html);
   }
 
-  // Slug resolution (no Firestore writes): fetch the article list first.
-  // It powers both the id->slug 301 and the slug->article render, plus the
-  // related-articles block, so the happy path costs one list fetch and no
-  // single-doc fetch at all.
+  // Fase 2 (Nov 2026, lazy slug migration): slugs are now STORED on new
+  // articles (AdminPanel computes them at create). Lookup order:
+  //   1. runQuery where(slug == param) limit 1 (1 read on a hit).
+  //   2. Doc fetch by ID: old /berita/<id> links 301 to the stored slug,
+  //      or fall through to the list scan when the doc has no stored slug.
+  //   3. List scan (pageSize=100, computed slugs): id -> 301, slug -> 200.
+  //      Kept permanently as the safety net for old articles without a
+  //      stored slug.
+  //   4. Single-doc fallback when the list fetch itself fails.
+  const notFound = () => {
+    const { html } = pageShell({
+      title: 'Berita tidak ditemukan',
+      description: 'Artikel yang kamu cari tidak ada di Meramu.',
+      canonical: `${SITE_URL}/`,
+      ogImage: '',
+      body: `<h1>Berita tidak ditemukan</h1><p class="lead">Artikel ini mungkin sudah dihapus atau alamatnya salah.</p><a class="back" href="/">&larr; Kembali ke Beranda</a>`,
+    });
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.status(404).send(html);
+  };
+
+  // (1) Stored-slug lookup.
+  try {
+    const hits = await runFirestoreQuery(apiKey, {
+      from: [{ collectionId: 'articles' }],
+      where: { fieldFilter: { field: { fieldPath: 'slug' }, op: 'EQUAL', value: { stringValue: param } } },
+      limit: 1,
+    });
+    if (hits.length) {
+      const hit = toListDoc(hits[0]);
+      const storedSlug = strField(hit.fields, 'slug');
+      const related = await relatedFor(hit, apiKey);
+      return renderArticlePage({ doc: hit, id: hit.id, slug: storedSlug || param, related, res });
+    }
+  } catch {
+    // runQuery failure (transient): fall through to the list scan.
+  }
+
+  // (2) Old /berita/<id> link: fetch the doc by ID.
+  try {
+    const docPath = `artifacts/${APP_ID}/public/data/articles/${encodeURIComponent(param)}`;
+    const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${docPath}?key=${apiKey}`;
+    const r = await fetch(url);
+    if (r.ok) {
+      const doc = await r.json();
+      const storedSlug = strField(doc.fields || {}, 'slug');
+      if (storedSlug) {
+        res.setHeader('Location', `/berita/${storedSlug}`);
+        res.setHeader('Cache-Control', 'public, s-maxage=3600');
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        return res.status(301).send(`<!DOCTYPE html><html><head><meta charset="utf-8" /><title>Pindah ke ${storedSlug}</title></head><body><p>Artikel ini pindah ke <a href="/berita/${storedSlug}">/berita/${storedSlug}</a>.</p></body></html>`);
+      }
+      // No stored slug: fall through to the list scan (computed slug 301).
+    }
+  } catch {
+    // Not an ID (or transient failure): fall through to the list scan.
+  }
+
+  // (3) List scan (computed slugs), exactly as before Fase 2.
   let listDocs = null;
   try {
-    const listUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/artifacts/${APP_ID}/public/data/articles?pageSize=100&key=${apiKey}`;
-    const lr = await fetch(listUrl);
-    if (lr.ok) {
-      const lj = await lr.json();
-      listDocs = (lj.documents || []).map((d) => {
-        const ff = d.fields || {};
-        return {
-          id: String(d.name || '').split('/').pop(),
-          fields: ff,
-          title: strField(ff, 'title'),
-          category: strField(ff, 'category'),
-          imageUrl: strField(ff, 'imageUrl'),
-          createdMs: msField(ff, 'createdAt'),
-        };
-      }).filter((a) => a.id && a.title);
-    }
+    listDocs = await fetchArticleList(apiKey);
   } catch {
     listDocs = null;
   }
@@ -576,28 +727,15 @@ export default async function handler(req, res) {
     }
     // (b) Assigned-slug match -> 200 with canonical = slug URL.
     const hit = listDocs.find((a) => slugMap.get(a.id) === param);
-    if (!hit) {
-      const { html } = pageShell({
-        title: 'Berita tidak ditemukan',
-        description: 'Artikel yang kamu cari tidak ada di Meramu.',
-        canonical: `${SITE_URL}/`,
-        ogImage: '',
-        body: `<h1>Berita tidak ditemukan</h1><p class="lead">Artikel ini mungkin sudah dihapus atau alamatnya salah.</p><a class="back" href="/">&larr; Kembali ke Beranda</a>`,
-      });
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      return res.status(404).send(html);
-    }
+    if (!hit) return notFound();
     // Related ("Baca Juga"): same-category first (newest first), backfilled
     // with the newest other articles so the block is never empty (several
     // categories still have only one article).
-    const others = listDocs.filter((a) => a.id !== hit.id);
-    const same = others.filter((a) => a.category === hit.category).sort((a, b) => b.createdMs - a.createdMs);
-    const rest = others.filter((a) => a.category !== hit.category).sort((a, b) => b.createdMs - a.createdMs);
-    const related = [...same, ...rest].slice(0, 3).map((r) => ({ ...r, slug: slugMap.get(r.id) }));
+    const related = relatedFromList(listDocs, hit, slugMap);
     return renderArticlePage({ doc: hit, id: hit.id, slug: slugMap.get(hit.id), related, res });
   }
 
-  // Fallback: the list fetch failed. Single-doc fetch by param, ID canonical,
+  // (4) The list fetch failed. Single-doc fetch by param, ID canonical,
   // exactly as before the slug migration; related is omitted (no list).
   // This keeps articles reachable during a transient list-fetch failure.
   let doc;
@@ -608,15 +746,7 @@ export default async function handler(req, res) {
     if (!r.ok) throw new Error(`Firestore ${r.status}`);
     doc = await r.json();
   } catch {
-    const { html } = pageShell({
-      title: 'Berita tidak ditemukan',
-      description: 'Artikel yang kamu cari tidak ada di Meramu.',
-      canonical: `${SITE_URL}/`,
-      ogImage: '',
-      body: `<h1>Berita tidak ditemukan</h1><p class="lead">Artikel ini mungkin sudah dihapus atau alamatnya salah.</p><a class="back" href="/">&larr; Kembali ke Beranda</a>`,
-    });
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    return res.status(404).send(html);
+    return notFound();
   }
   return renderArticlePage({ doc, id: param, slug: null, related: [], res });
 }
@@ -748,6 +878,6 @@ async function renderArticlePage({ doc, id, slug, related, res }) {
       preloadSizes: '(max-width: 808px) calc(100vw - 40px), 768px',
     });
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+    res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=86400');
     return res.status(200).send(html);
 }
