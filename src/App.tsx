@@ -48,6 +48,7 @@ const AdminPanel = lazy(() => import('./AdminPanel'));
 // ==========================================
 // FIREBASE INITIALIZATION
 // ==========================================
+// Firebase config values are injected at build time from VITE_FIREBASE_* env vars (Vercel Production).
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
