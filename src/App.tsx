@@ -50,12 +50,12 @@ const AdminPanel = lazy(() => import('./AdminPanel'));
 // ==========================================
 // Firebase config values are injected at build time from VITE_FIREBASE_* env vars (Vercel Production).
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: "AIzaSyC-uStwQtB_iq5gII228o1dOKxsP3xBn_c",
+  authDomain: "meramu-site.firebaseapp.com",
+  projectId: "meramu-site",
+  storageBucket: "meramu-site.firebasestorage.app",
+  messagingSenderId: "731495094899",
+  appId: "1:731495094899:web:30f74a4e436f8ebc1ce806",
 };
 // Without apiKey + projectId the site runs in demo mode: no demo
 // articles, no sign-in, no Firestore writes. Admin login needs Firebase
