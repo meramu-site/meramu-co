@@ -48,3 +48,4 @@ service cloud.firestore {
 
 Import repo ini di Vercel, pasang env var di atas, lalu hubungkan domain
 `meramu.site` (DNS sudah mengarah ke Vercel).
+Firebase config: 6 nilai VITE_FIREBASE_* sudah di-set di Vercel (Production) — 16 Nov 2026.
